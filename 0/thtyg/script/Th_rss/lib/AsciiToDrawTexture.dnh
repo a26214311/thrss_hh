@@ -1,0 +1,26 @@
+
+function DrawString( pos, str ){
+	let obj		= ObjPrim_Create( OBJ_SPRITE_2D );
+	
+	DrawString_Main( obj, pos, str );
+	
+	return obj;
+}
+
+task DrawString_Main( obj, pos, str ){
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjSprite2D_SetSourceRect( obj, 0, 0, 0, 0 );
+	ObjSprite2D_SetDestCenter( obj );
+}
+
+task Ascii(){
+	let str = "abcdefg012";
+	
+	ascent( let i in 0..( length(str) ) ){
+		WriteLog( str[i] );
+	}
+	
+	if( str[0] == 97 ){
+		WriteLog( "よいみ" );
+	}
+}

@@ -1,0 +1,309 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　皇女通常02"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm04_setting.dnh"
+	#include "./lib_enm04_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1500 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "EndSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm04a( enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 3, 0 ];
+		//　ショット画像
+		let shote	= [ BGW_AQUA_15, ADD_BGB_BLUE_14 ];
+
+		let rspeed	= [ 2 ];
+		
+		let angle	= 0;
+
+		let vl = 36;
+		let sd = 120;
+		let way = 3;
+		let wide = 96;
+
+		let loopcount = 360;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way = 1;
+			wide = 0;
+			lp		= [ 8, 3 ];
+		}
+		case( "Normal" ){
+			lp		= [ 12, 5 ];
+		}
+		case( "Hard" ){
+			lp		= [ 12, 5 ];
+			rspeed	= [ 2, 1.8 ];
+			sd = 100;
+			wide = 172;
+			vl = 64;
+			way = 5;
+			loopcount = 320;
+		}
+		case( "Lunatic" ){
+			lp		= [ 12, 7 ];
+			rspeed	= [ 1, 0.9 ];
+			wide = 128;
+			way = 5;
+			vl = 24;
+			sd = 80;
+			loopcount = 280;
+		}
+		case( "OverDrive" ){
+			lp		= [ 24, 0 ];
+		}
+		
+		let type = 0;
+		let move_count = 0;
+		
+		SetEffect_Enm04( ID, 0 );
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　初期化
+			if( frame > loopcount ){
+				Concentration03_Main(ID, power_rgb, 60 );
+				EnemyMove(enm, 2, 8 );
+				count = -60;
+				frame = -60;
+				type++;
+			}
+			
+			if( count == 60 ){
+				ObjMove_SetSpeed( ID, 0 );
+				ObjMove_SetAcceleration( ID, 0.3 );
+				ObjMove_SetMaxSpeed( ID, 100 );
+				if( type%2 == 0 ){
+					ObjMove_SetAngle( ID, 180 );
+				}
+				else{
+					ObjMove_SetAngle( ID, 0 );
+				}
+			}
+			
+			//　ワープ移動カウンタ
+			if( move_count > lp[1] ){
+				if( type%2 == 0 ){
+					ObjMove_SetDestAtWeight(enm, CenX-96, CenY-96, 16, 32 );
+				}
+				else{
+					ObjMove_SetDestAtWeight(enm, CenX+96, CenY-96, 16, 32 );
+				}
+				move_count = 0;
+			}
+			
+			//　画面の端を繋げる
+			if( gpos[0] < MinX - 256 ){
+				ObjMove_SetPosition( ID, MaxX+128, gpos[1] );
+				CreateBraidShot(
+					[ MaxX, gpos[1]+rand(-64,64) ],
+					[ MinX, gpos[1]+rand(-64,64) ], shote, lp[0]
+				);
+				move_count++;
+			}
+			if( gpos[0] > MaxX + 256 ){
+				ObjMove_SetPosition( ID, MinX-128, gpos[1] );
+				CreateBraidShot(
+					[ MinX, gpos[1]+rand(-64,64) ],
+					[ MaxX, gpos[1]+rand(-64,64) ], shote, lp[0]
+				);
+				move_count++;
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+		task CreateBraidShot( Spos, Epos, shote, lp ){
+			let m_angle		= GetGapAngle( Spos, Epos );
+			let distance	= GetDistance( Spos, Epos );
+			let move		= 0;
+			
+			let pos = [ rand(Spos[0],Epos[0]), rand(Spos[1],Epos[1]) ];
+			ascent( let i in 0..( lp ) ){
+				ascent( idx in 0..length( rspeed ) ){
+					CreateShot01( pos, rspeed[idx], i*(360/lp), 0, 10, shote[0], 32 );
+				}
+			}
+			
+			let rd = rand( -36, 36 );
+			let delay = 120;
+			loop( lp+1 ){
+				if( Obj_IsDeleted(enm) ){ break; }
+				
+				let pos = [
+					Spos[0] + move * cos( m_angle ),
+					Spos[1] + move * sin( m_angle ),
+				];
+				let angle	= GetGapAngle( pos, [ GetPlayerX(), GetPlayerY() ] );
+				
+				let sht = CreateShotA2( pos[0], pos[1], 4, angle, -0.2, 0, shote[1], 16 );
+				CreateShotGun( sht, rd, delay, BGW_BLUE_16 );
+				NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				
+				ObjSound_Play( CreateShotSE[1] );
+				
+				move += distance / lp;
+				delay--;
+				yield;
+			}
+		}
+		task CreateShotGun( CallID, p, long, shote ){
+			
+			//　削除まで long フレーム待機
+			loop( long ){
+				if( Obj_IsDeleted(enm) ){ break; }
+				yield;
+			}
+			
+			//　削除済みなら生成しない
+			if( Obj_IsDeleted(CallID) ){ return; }
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let ppos = [ GetPlayerX+vl*cos(GetAngleToPlayer(enm)), GetPlayerY+vl*sin(GetAngleToPlayer(enm)) ];
+			let radius = GetDistance( [ObjMove_GetX(enm), ObjMove_GetY(enm)] , ppos );
+			p += GetAngleToPlayer(enm) - wide / 2;
+
+			loop( way ){
+				let epos = [ ObjMove_GetX(enm)+radius*cos(p), ObjMove_GetY(enm)+radius*sin(p) ];
+				
+				let speed = GetDistance( gpos, epos ) / sd;
+				let acc = -speed / 60;
+				let mx = speed / 2;
+				let angle = GetGapAngle( gpos, epos );
+				let sht = CreateShotA2( gpos[0], gpos[1], speed, angle, acc, mx, shote, 0 );
+				
+				p += wide / ( way - 1 );
+			}
+			
+			//　削除エフェクトだけ出るようにする
+			Obj_SetValue( CallID, "Item_Off", true );
+			//　アイテムとして削除
+			ObjShot_ToItem( CallID );
+		}
+	}
+	

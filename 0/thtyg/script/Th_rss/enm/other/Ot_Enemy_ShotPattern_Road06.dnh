@@ -1,0 +1,409 @@
+task Road06_ShotPattern01( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let swt 	= 220;
+	let wt		= 80;
+
+	let lp		= 3;
+
+	let spd		= 1.8;
+	let acc		= 0;
+
+	let way		= 2;
+	let wide	= 0;
+	let delay	= 15;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		lp = 1;
+		wt = 60;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		lp = 6;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		wide = 6;
+		lp = 6;
+	}
+
+	loop( swt ){ yield; }
+	while( !Obj_IsDeleted( objID ) ){
+		if( ObjMove_GetY( objID )  > MaxY-64 ){ break; }
+		let v = 100;
+		let speed = spd;
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let p = GetAngleToPlayer( objID );
+			let angle = p - wide / 2;
+			let mx = speed;
+			loop( way ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ObjSound_Play( CreateShotSE[ 0 ] );
+				angle += wide / ( way - 1 );
+			}
+			speed *= 1.15;
+			loop( 2 ){ yield; }
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+
+task Road06_ShotPattern02A( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let swt 	= 24;
+	let lp		= 1;
+	let wt		= 12;
+
+	let speed	= 3;
+	let acc		= -0.05;
+	let mx		= 1.2;
+
+	let way		= 2;
+	let wide	= 12;
+	let agp		= 16;
+	let delay	= 5;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		agp = 0;
+		wide = 0;
+		way = 2;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		way = 2;
+		wide = 36;
+		agp = 24;
+		wt = 10;
+		lp = 2;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		wide = 96;
+		agp = 72;
+		mx = 2;
+		lp = 2;
+		wt = 7;
+	}
+	local{
+
+	}
+
+	loop( swt ){ yield; }
+	let r = 1;
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = ObjMove_GetAngle( objID ) + agp * r;
+		loop( lp ){
+			let angle = p - wide / 2 + round( rand( -1, 1 ) ) * 3;
+			loop( way ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				angle += wide / ( way - 1 );
+			}
+			loop( 2 ){ yield; }
+		}
+		
+		r = -r;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road06_ShotPattern02B( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let swt 	= 80;
+	let wt		= 70;
+
+	let lp		= 1;
+
+	let spd		= 1.25;
+	let acc		= 0;
+
+	let way		= 2;
+	let wide	= 180;
+	let delay	= 5;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		wt = 140;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		wt = 50;
+	}
+	case( "Lunatic" ){
+		lp = 2;
+		wt = 50;
+	}
+
+	loop( swt ){ yield; }
+	let r = 1;
+	while( !Obj_IsDeleted( objID ) ){
+		let v = 100;
+		let px = ObjMove_GetX( objID ) + v * cos( ObjMove_GetAngle( objID ) );
+		let py = ObjMove_GetY( objID ) + v * sin( ObjMove_GetAngle( objID ) );
+		let speed = spd;
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let p = atan2( py - pos[1], px - pos[0] );
+			let angle = p - wide / 2;
+			let mx = speed;
+			let dis = [0,0];
+			if( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] ){
+				loop( way ){
+					let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	//				ObjSound_Play( CreateShotSE[ 1 ] );
+					angle += wide / ( way - 1 );
+				}
+			}
+			speed *= 1.12;
+			loop( 2 ){ yield; }
+		}
+		
+		r = -r;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road06_ShotPattern02C( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.02;
+	let mx		= 1.25;
+	let delay	= 24;
+	
+	let way		= 2;
+	let wide	= 0;
+	let lp		= 1;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 0;
+	}
+	case( "Normal" ){
+		way = 2;
+	}
+	case( "Hard" ){
+		way = 3;
+		wide = 50;
+		lp = 2;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		wide = 120;
+		lp = 2;
+	}
+	
+	if( way > 0 ){
+		//　敵削除待ち
+		while( !Obj_IsDeleted(objID) ){
+			pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle	= GetAngleToPlayer( objID );
+			yield;
+		}
+		
+		let dis = [0,0];
+		if( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] ){
+			loop( lp ){
+				let ag = angle - wide / 2;
+				loop( way ){
+					let sht = CreateShotA2( pos[0], pos[1], speed, ag, acc, mx, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					ag += wide / ( way - 1 );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				loop( 4 ){ yield; }
+			}
+			
+		}
+	}
+}
+
+
+task Road06_ShotPattern03( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let wtA 	= 100;
+	let wtB		= 7;
+	let speed 	= 2;
+	let acc 	= 0;
+	let mx 		= 5;
+	let delay 	= 15;
+	let ave 	= 8;
+	let lp		= 3;
+	let distance= 1000;
+	let swt		= 100;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		wtA = 100;
+		swt = 80;
+		ave = 1;
+		lp = 1;
+	}
+	case( "Normal" ){
+		wtA = 100;
+		swt = 80;
+		ave = 4;
+		acc = 0.01;
+	}
+	case( "Hard" ){
+		wtA = 70;
+		wtB = 5;
+		speed = 1;
+		acc = 0.02;
+		swt = 50;
+	}
+	case( "Lunatic" ){
+		wtA = 50;
+		wtB = 4;
+		lp = 4;
+		speed = 1;
+		acc = 0.05;
+		ave = 8;
+		swt = 50;
+	}
+	
+	loop( swt ){ yield; }
+	
+	while( !Obj_IsDeleted( objID ) ){
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = round( GetAngleToPlayer( objID ) / ave ) * ave;
+			distance = GetObjectDistance( objID, GetPlayerObjectID );
+			if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-128){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ObjSound_Play( CreateShotSE[ 0 ] );
+			}
+			loop( wtB ){ yield; }
+		}
+		loop( wtA ){ yield; }
+	}
+}
+
+
+task Road06_ShotPattern04A( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let swt 	= 120;
+
+	let lp		= 8;
+	let wt		= 25;
+
+	let way		= 7;
+	let spd		= 1.6;
+	let agp		= 3;
+	let delay	= 15;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 12;
+		lp = 1;
+		wt = 70;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		way = 9;
+	}
+	case( "Lunatic" ){
+		spd = 1;
+		way = 9;
+		lp = 10;
+	}
+	local{
+	}
+
+	loop( swt ){ yield; }
+	let r = 1;
+	while( !Obj_IsDeleted( objID ) ){
+		let p = GetAngleToPlayer( objID );
+		let mx = spd;
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let acc = mx / 50;
+			let ag = p;
+			loop( way ){
+				let angle = ag + round( rand( -1, 1 ) ) * 2;
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], 0, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ag += 360 / way;
+			}
+			mx += 0.08;
+			p += agp * r;
+			loop( 7 ){ yield; }
+		}
+		r = -r;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road06_ShotPattern04B( objID, shote, r ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let swt 	= 15;
+	let wt		= 25;
+
+	let way		= 2;
+	let wide	= 0;
+	let mx		= 1.25;
+	let delay	= 10;
+	let seal	= 96;
+	let p = -75 * r;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		p = 0;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		p = 25*r;
+		wide = 180;
+	}
+	case( "Lunatic" ){
+		wide = 240;
+		way = 3;
+		mx = 1.2;
+	}
+	local{
+
+	}
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		if( Obj_IsDeleted( objID ) ){ break; }
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let d = GetObjectDistance( objID, GetPlayerObjectID );
+		let acc = mx / 75;
+		let angle = ObjMove_GetAngle( objID ) + p - wide / 2;
+		loop( way ){
+			if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY&&d>seal){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], 0, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			}
+			angle += wide / ( way - 1 );
+		}
+		loop( wt ){ yield; }
+	}
+}

@@ -1,0 +1,9 @@
+
+let path_effect01	= effect_tex[0];
+let path_effect02	= effect_tex[6];
+let path_effect03	= effect_tex[3];
+
+#include"./lib_effect_01.dnh"
+#include"./lib_effect_02.dnh"
+#include"./lib_effect_03.dnh"
+#include"./lib_effect_04.dnh"

@@ -1,0 +1,77 @@
+
+
+//　使用する効果音はココで列挙
+//　スクリプト中に常駐するから、よく使用するサウンドだけ定義した方がいいよ
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　グレイズ、ボム等のSE
+let PlayerEnviron_SE	= [
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/sePlayerCollision.ogg" ),	//　被弾
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/seGraze.ogg" ),			//　グレイズ
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/boon.ogg" ),				//　トランス普通
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/boon_pitchUP.ogg" ),		//　トランスup
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/boon_pitchDOWN.ogg" ),	//　トランスdown
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/power.ogg" ),				//　パワー集中
+	_PlaySE( GetCurrentScriptDirectory() ~ "../se/power2.ogg" ),			//　パワー集中2
+];
+
+//　自機ショットのSE
+let Player_SE	= [
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/se_plst00.ogg" ),		//　通常ショット音
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/den00.ogg" ),			//　ミサっぽいﾎﾟｺﾎﾟｺ1
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/den03.ogg" ),			//　ミサっぽいﾎﾟｺﾎﾟｺ2
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/laser.ogg" ),			//　ﾚｰｻﾞｰ
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/pan.ogg" ),			//　炸裂1
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/se_slash.ogg" ),		//　炸裂2
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/ex_release03.ogg" ),	//　パワーチャージ
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/power_logo3.ogg" ),	//　パワーチャージ
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/Laser01.ogg" ),		//　レーザー
+	_PlaySE_PLShot( GetCurrentScriptDirectory() ~ "../se/rock_on.ogg" ),		//　ロックオン
+];
+
+//　パスと音量
+function _PlaySE(se_path){
+	let se		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let frag	= true;
+	let wait	= 0;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　自機ショット専用
+function _PlaySE_PLShot(se_path){
+	let se		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "PlayerShot_Volume", 100 );
+	let frag	= true;
+	let wait	= 0;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　呼ぶと一気に削除出来るよ
+function AllSoundObjectDelete(){
+	let i = 0;
+	
+	ascent( i in 0..length( PlayerEnviron_SE ) ){
+		Obj_Delete( PlayerEnviron_SE[i] );
+	}
+	ascent( i in 0..length( Player_SE ) ){
+		Obj_Delete( Player_SE[i] );
+	}
+}

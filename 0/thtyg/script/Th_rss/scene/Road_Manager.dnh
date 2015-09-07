@@ -1,0 +1,631 @@
+	
+	//　弾データ　ALPHA と ADD
+	#include "./../lib/lib_bullet.dnh"
+	#include "./../lib/lib_bullet_ADD.dnh"
+	
+	//　必要ファイルはココでincludeしてね
+	#include "./../enm/other/Ot_Enemy_Texture.dnh"
+	#include "./../enm/other/Ot_Enemy_MovePattern.dnh"
+	#include "./../enm/other/Ot_Enemy_ShotPattern_Control.dnh"
+	
+	//　道中ファイル読み込み
+	#include "./Road_Road01.dnh"
+	#include "./Road_Road02.dnh"
+	#include "./Road_Road03.dnh"
+	#include "./Road_Road04.dnh"
+	#include "./Road_Road05.dnh"
+	#include "./Road_Road06.dnh"
+	#include "./Road_Road07.dnh"
+	#include "./Road_Road08.dnh"
+	
+	
+	
+	
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//　ステージの呼び出し等
+
+//　本編
+task GameStart_Main(){
+	let cst			= GetAreaCommonData( "SaveData", "StageFlg", 0 );
+	let Index_Stg	= GetAreaCommonData( "System", "Stage_Index", 1 );
+	let stg_rankflg	= GetAreaCommonData( "SaveData", "StageRankFlg", [ [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0], [0,0,0,0] ]);
+	let rank		= GetAreaCommonData( "System", "Difficulty", "NULL" );
+	let rank_num;
+	let h;
+	let n;
+	
+	alternative( rank )
+	case( "Easy" ){ rank_num = 0; }
+	case( "Normal" ){ rank_num = 1; }
+	case( "Hard" ){ rank_num = 2; }
+	case( "Lunatic" ){ rank_num = 3; }
+	case( "OverDrive" ){ rank_num = 4; }
+	
+	alternative( rank )
+	case( "Easy", "Normal", "Hard", "Lunatic" ){
+		ascent( let i in 0..6 ){
+			Index_Stg = GetAreaCommonData( "System", "Stage_Index", 1 );
+			
+			if( GetAreaCommonData("SaveData", "StageFlg", 0 ) < i ){
+				SetAreaCommonData("SaveData", "StageFlg", i );
+			}
+			if( Index_Stg == (i+1) ){
+				n = stg_rankflg[ Index_Stg-1 ][ rank_num ];
+				h = stg_rankflg[ Index_Stg-1 ];
+				if( Index_Stg == (i+1) ){
+					SetAreaCommonData( "Score", "StageNumD", Index_Stg );
+					SetAreaCommonData( "SaveData", "Standby_StagePractice", true );
+					if( n != 1 ){
+						h[rank_num] = 1;
+						stg_rankflg[ Index_Stg-1 ] = h;
+						SetAreaCommonData( "SaveData", "StageRankFlg", stg_rankflg );
+					}
+					alternative( Index_Stg )
+					case( 1 ){ Road01(); }
+					case( 2 ){ Road02(); }
+					case( 3 ){ Road03(); }
+					case( 4 ){ Road04(); }
+					case( 5 ){ Road05(); }
+					case( 6 ){ Road06(); }
+					if( Index_Stg < 6 ){
+						RoadToRoad_Main( (i+1) + 1 );
+					}
+					else{
+						RoadToRoad_Main( 0 );
+					}
+				}
+			}
+		}
+	}
+	case( "Extra" ){
+		Road07();
+		RoadToRoad_Main( 0 );
+	}
+	case( "Phantasm" ){
+		Road08();
+		RoadToRoad_Main( 0 );
+	}
+	
+	case( "OverDrive" ){
+		let stmax = 8;
+		let next = 1;
+		ascent( let i in 0..stmax ){
+			Index_Stg = GetAreaCommonData( "System", "Stage_Index", 1 );
+			if( Index_Stg == (i+1) ){
+				SetAreaCommonData( "Score", "StageNumD", Index_Stg );
+				alternative( Index_Stg )
+				case( 1 ){ Road01(); next = 2; }
+				case( 2 ){ Road02(); next = 4; }
+				case( 4 ){ Road04(); next = 5; }
+				case( 5 ){ Road05(); next = 6; }
+				case( 6 ){ Road06(); next = 7; }
+				case( 7 ){ Road07(); next = 8; }
+				case( 8 ){ Road08(); }
+				//*/
+				if( Index_Stg < stmax ){
+					RoadToRoad_Main( next );
+				}
+				else{
+					RoadToRoad_Main( 0 );
+				}
+			}
+		}
+	}
+}
+
+//　道中プラクティス
+task Practice_RoadMain(){
+	let index_stg	= GetAreaCommonData( "System", "stg_ST", 8 );
+	
+	SetAreaCommonData("System", "Stage_Index", index_stg );
+	
+	alternative( index_stg )
+	case( 1 ){
+		Road01();
+		RoadToRoad_Main( 0 );
+	}
+	case( 2 ){
+		Road02();
+		RoadToRoad_Main( 0 );
+	}
+	case( 3 ){
+		Road03();
+		RoadToRoad_Main( 0 );
+	}
+	case( 4 ){
+		Road04();
+		RoadToRoad_Main( 0 );
+	}
+	case( 5 ){
+		Road05();
+		RoadToRoad_Main( 0 );
+	}
+	case( 6 ){
+		Road06();
+		RoadToRoad_Main( 0 );
+	}
+	case( 7 ){
+		Road07();
+		RoadToRoad_Main( 0 );
+	}
+	case( 8 ){
+		Road08();
+		RoadToRoad_Main( 0 );
+	}
+	others{
+		Road01();
+		RoadToRoad_Main( 0 );
+	}
+}
+
+
+
+
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//　道中で出したいエフェクトとか
+
+//　アイテムゲッヨボーダーライン
+task ItemGetBorderLine_Begin(pos,long,rgb_array){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D)
+	];
+	let i		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　302 238 467 242
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../img/front/front01.png" );
+		Obj_SetRenderPriorityI(ID[i], 70 );
+	}
+	
+	ascent( i in 0..2 ){
+		ObjRender_SetPosition(ID[i], pos[0], pos[1], 0 );
+		ObjPrim_SetPrimitiveType(ID[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(ID[i], 4 );
+		ObjPrim_SetVertexUVT(ID[i], 0, 302, 238 );
+		ObjPrim_SetVertexUVT(ID[i], 1, 302, 242 );
+		ObjPrim_SetVertexUVT(ID[i], 2, 467, 238 );
+		ObjPrim_SetVertexUVT(ID[i], 3, 467, 242 );
+		ObjPrim_SetVertexColor(ID[i], 0, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjPrim_SetVertexColor(ID[i], 1, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjPrim_SetVertexColor(ID[i], 2, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjPrim_SetVertexColor(ID[i], 3, rgb_array[0], rgb_array[1], rgb_array[2] );
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	ObjRender_SetPosition(ID[2], pos[0], pos[1]-16, 0 );
+	ObjRender_SetBlendType(ID[2], BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect(ID[2], 256, 192, 512, 224 );
+	ObjSprite2D_SetDestCenter(ID[2]);
+	
+	ItemGetBorderLine(pos);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..2 ){
+			ObjPrim_SetVertexPosition(ID[i], 0, move1*(512/-2), -2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 1, move1*(512/-2), 2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 2, move1*(512/2), -2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 3, move1*(512/2), 2*(i+1), 0 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+		}
+		ObjRender_SetAlpha(ID[2], move1*255 );
+		ObjRender_SetScaleY(ID[2], move1 );
+		
+		moveA += 1;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	loop( long ){ yield; }
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..2 ){
+			ObjPrim_SetVertexPosition(ID[i], 0, (512/-2) - move1*(512/-2), -2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 1, (512/-2) - move1*(512/-2), 2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 2, (512/2) - move1*(512/2), -2*(i+1), 0 );
+			ObjPrim_SetVertexPosition(ID[i], 3, (512/2) - move1*(512/2), 2*(i+1), 0 );
+			ObjRender_SetAlpha(ID[i], 255 - move1*255 );
+		}
+		ObjRender_SetAlpha(ID[2], 255 - move1*255 );
+		ObjRender_SetScaleY(ID[2], 1 - move1 );
+		
+		moveA += 1;
+		
+		yield;
+	}
+	
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　上部回収
+task ItemGetBorderLine(pos){
+	let swb = GetAreaCommonData("System", "StgWorldBreak", true );
+	
+	while( !swb ){
+		if( GetPlayerY() <= pos[1] ){
+			CollectAllItems();
+		}
+		yield;
+	}
+}
+
+//　ステージ接続エフェクト親
+function RoadToRoad_Main( st_index ){
+	//　3秒待機
+	loop( 180 ){ yield; }
+	//　ボス中は待機
+	while( length( GetEnemyBossObjectID() ) > 0 ){ yield; }
+	//　2秒待機
+	loop( 60 ){ yield; }
+	//　ステージクリアアイコ表示
+	StageClearIcon();
+	//　3秒待機
+	loop( 180 ){ yield; }
+	//　ステージインデックを進行
+	if( st_index != 0 ){
+		LoadingDefault_timer( 520, 430, 180 );
+		RoadToRoad_BlackOut( st_index );
+	}
+	else{
+		//　本編の時はホワイトアウトして終わり
+		if( GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+			GameClear_WhiteOut( st_index );
+		}
+		else{
+			//　ステージプラクティスはブラックアウトして終わり
+			RoadToRoad_BlackOut( st_index );
+		}
+	}
+}
+
+//　ステージクリアアイコ
+task StageClearIcon(){
+	let obj			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory();
+	let index_stg	= GetAreaCommonData( "System", "Stage_Index", 1 );
+	let alpha1		= 0;
+	let alphaA		= 0;
+	
+	ObjRender_SetPosition(obj, CenX, CenY-128, 0 );
+	ObjPrim_SetTexture(obj, csd ~ "./../img/front/clear01a.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, 71 );
+	ObjRender_SetAngleXYZ(obj, 0, 0, 0 );
+	ObjRender_SetScaleXYZ(obj, 0.8, 0.8, 0 );
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 256, 128 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	StageClearScore( 30000000 * index_stg );
+	
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, alpha1*255 );
+		
+		alphaA += 1;
+		
+		yield;
+	}
+	loop( 180 ){ yield; }
+	while( alpha1 > 0 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, alpha1*255 );
+		
+		alphaA += 2;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+task StageClearScore( bonus ){
+	let obj1	= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let obj2	= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let gscore	= [
+		truncate(bonus%10),
+		truncate((bonus%100)/10),
+		truncate((bonus%1000)/100),
+		truncate((bonus%10000)/1000),
+		truncate((bonus%100000)/10000),
+		truncate((bonus%1000000)/100000),
+		truncate((bonus%10000000)/1000000),
+		truncate((bonus%100000000)/10000000),
+		truncate((bonus%1000000000)/100000000),
+	];
+	
+	let scale = [ 0.8, 0.7 ];
+	
+	let pos = [ CenX, CenY ];
+	
+	pos[0] = pos[0] + ( truncate( length(obj1)/2 + 1 ) * 11 );
+	
+	ascent( let i in 0..( length(obj1) ) ){
+		ObjRender_SetPosition(obj1[i], pos[0], pos[1]-48, 0 );
+		Obj_SetRenderPriorityI(obj1[i], 71 );
+		ObjPrim_SetTexture(obj1[i], front_tex[0] );
+		ObjRender_SetBlendType(obj1[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(obj1[i], scale[0], scale[1], 0 );
+		ObjSprite2D_SetSourceRect(obj1[i], 0 + 24*uv[ gscore[i] ], 488, 24 + 24*uv[ gscore[i] ], 512 );
+		ObjSprite2D_SetDestCenter(obj1[i]);
+		ObjRender_SetAlpha(obj1[i], 0 );
+		pos[0] = pos[0] - 12;
+		if( i == 2 || i == 5 ){ pos[0] = pos[0] - 6; }
+	}
+	
+	pos[0] = CenX + ( truncate( length(obj1)/2 + 1 ) * 11 );
+	
+	ascent( i in 0..( length(obj2) ) ){
+		if( i == 0 ){
+			ObjRender_SetPosition(obj2[i], pos[0] - 3*12 - 0 + 2, pos[1]-36, 0 );
+		}
+		else{
+			ObjRender_SetPosition(obj2[i], pos[0] - 6*12 - 6 + 2, pos[1]-36, 0 );
+		}
+		Obj_SetRenderPriorityI(obj2[i], 71 );
+		ObjPrim_SetTexture(obj2[i], front_tex[0] );
+		ObjRender_SetBlendType(obj2[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(obj2[i], scale[0], scale[1], 0 );
+		ObjSprite2D_SetSourceRect(obj2[i], 0 + 24*uv[ 14 ], 488, 24 + 24*uv[ 14 ], 512 );
+		ObjSprite2D_SetDestCenter(obj2[i]);
+	}
+	
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ascent( i in 0..( length(obj1) ) ){
+			if( bonus > 10^i ){
+				ObjRender_SetAlpha(obj1[ i ], alpha1*255 );
+			}
+		}
+		ascent( i in 0..( length(obj2) ) ){
+			if( i == 0 ){
+				if( bonus > 100 ){
+					ObjRender_SetAlpha(obj2[i], alpha1*255 );
+				}
+				else{
+					ObjRender_SetAlpha(obj2[i], 0 );
+				}
+			}
+			else{
+				if( bonus > 100000 ){
+					ObjRender_SetAlpha(obj2[i], alpha1*255 );
+				}
+				else{
+					ObjRender_SetAlpha(obj2[i], 0 );
+				}
+			}
+		}
+		
+		alphaA += 1;
+		
+		yield;
+	}
+	AddScoreDelay_Road( 100, bonus/100 );
+	loop( 180 ){ yield; }
+	while( alpha1 > 0 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ascent( i in 0..( length(obj1) ) ){
+			if( bonus > 10^i ){
+				ObjRender_SetAlpha(obj1[ i ], alpha1*255 );
+			}
+		}
+		ascent( i in 0..( length(obj2) ) ){
+			if( i == 0 ){
+				if( bonus > 100 ){
+					ObjRender_SetAlpha(obj2[i], alpha1*255 );
+				}
+				else{
+					ObjRender_SetAlpha(obj2[i], 0 );
+				}
+			}
+			else{
+				if( bonus > 100000 ){
+					ObjRender_SetAlpha(obj2[i], alpha1*255 );
+				}
+				else{
+					ObjRender_SetAlpha(obj2[i], 0 );
+				}
+			}
+		}
+		
+		alphaA += 2;
+		
+		yield;
+	}
+	ascent( i in 0..( length(obj1) ) ){
+		Obj_Delete(obj1[i]);
+	}
+	ascent( i in 0..( length(obj2) ) ){
+		Obj_Delete(obj2[i]);
+	}
+}
+
+task AddScoreDelay_Road( num_loop, add_score ){
+	loop( num_loop ){
+		AddScore( add_score );
+		yield;
+	}
+}
+
+//　ステージ接続ブラックアウト
+function RoadToRoad_BlackOut( st_index ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let alpha2	= 0;
+	let alphaB	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "./../img/front/Effect_White.png" );
+	Obj_SetRenderPriorityI(obj, 31 );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, 0, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, 0, 480, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 640, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 640, 480, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 0 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 480 );
+	ObjPrim_SetVertexUVT(obj, 2, 640, 0 );
+	ObjPrim_SetVertexUVT(obj, 3, 640, 480 );
+	
+	ascent( let i in 0..4 ){
+		ObjPrim_SetVertexColor(obj, i, 0, 0, 0 );
+	}
+	
+	while( alpha1 < 1 || alpha2 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjPrim_SetVertexAlpha(obj, 0, alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 1, alpha2*255 );
+		ObjPrim_SetVertexAlpha(obj, 2, alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 3, alpha2*255 );
+		
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 > 0.5 ){ alphaB += 2; }
+		
+		yield;
+	}
+	SetAreaCommonData( "System", "Stage_Index", st_index );
+	loop( 120 ){ yield; }
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) != "Stage" ){
+		Obj_Delete( obj );
+		RoadToRoad_BlackIn();
+	}
+}
+
+//　ステージ接続ブラックイン
+task RoadToRoad_BlackIn(){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let alpha2	= 0;
+	let alphaB	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "./../img/front/Effect_White.png" );
+	Obj_SetRenderPriorityI(obj, 31 );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, 0, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, 0, 480, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 640, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 640, 480, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 0 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 480 );
+	ObjPrim_SetVertexUVT(obj, 2, 640, 0 );
+	ObjPrim_SetVertexUVT(obj, 3, 640, 480 );
+	
+	ascent( let i in 0..4 ){
+		ObjPrim_SetVertexColor(obj, i, 0, 0, 0 );
+	}
+	
+	while( alpha1 < 1 || alpha2 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjPrim_SetVertexAlpha(obj, 0, 255 - alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 1, 255 - alpha2*255 );
+		ObjPrim_SetVertexAlpha(obj, 2, 255 - alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 3, 255 - alpha2*255 );
+		
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 > 0.5 ){ alphaB += 2; }
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+
+//　ゲームクリアホワイトアウト
+function GameClear_WhiteOut( st_index ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let alpha2	= 0;
+	let alphaB	= 0;
+	
+	loop( 120 ){ yield; }
+	
+	ObjPrim_SetTexture(obj, csd ~ "./../img/front/Effect_White.png" );
+	Obj_SetRenderPriorityI(obj, 89 );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, 0, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, 0, 480, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 640, 0, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 640, 480, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 0 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 480 );
+	ObjPrim_SetVertexUVT(obj, 2, 640, 0 );
+	ObjPrim_SetVertexUVT(obj, 3, 640, 480 );
+	
+	while( alpha1 < 1 || alpha2 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjPrim_SetVertexAlpha(obj, 0, alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 1, alpha2*255 );
+		ObjPrim_SetVertexAlpha(obj, 2, alpha1*255 );
+		ObjPrim_SetVertexAlpha(obj, 3, alpha2*255 );
+		
+		if( alpha1 < 1 ){ alphaA += 0.5; }
+		if( alpha2 < 1 && alpha1 > 0.5 ){ alphaB += 0.5; }
+		
+		yield;
+	}
+	SetAreaCommonData( "System", "Stage_Index", st_index );
+	loop( 180 ){ yield; }
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) != "Stage" ){
+		Obj_Delete( obj );
+	}
+}
+
+//　オーバードライブモードかどうか
+function IsOverDrive{
+	let ans = false;
+	let df = GetAreaCommonData("System", "Difficulty", "NULL" );
+	if( df == "OverDrive" ){ ans = true; }
+	return ans;
+}

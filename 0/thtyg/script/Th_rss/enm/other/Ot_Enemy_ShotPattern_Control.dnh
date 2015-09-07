@@ -1,0 +1,21 @@
+
+
+//　設置型レーザーライブラリ
+#include "./../../lib/lib_laser.dnh"
+
+//　へにょりレーザーライブラリ　下は雷鼓の雷の奴
+#include "./../../lib/lib_laser_3DLaser.dnh"
+#include "./../../lib/lib_laser_Daifukkatu.dnh"
+#include "./../../lib/lib_laser_soft.dnh"
+#include "./../../lib/lib_laser_thunder.dnh"
+#include "./../../lib/lib_laser_BeanSprouts.dnh"
+
+//　各道中攻撃パターン
+#include "./Ot_Enemy_ShotPattern_Road01.dnh"
+#include "./Ot_Enemy_ShotPattern_Road02.dnh"
+#include "./Ot_Enemy_ShotPattern_Road03.dnh"
+#include "./Ot_Enemy_ShotPattern_Road04.dnh"
+#include "./Ot_Enemy_ShotPattern_Road05.dnh"
+#include "./Ot_Enemy_ShotPattern_Road06.dnh"
+#include "./Ot_Enemy_ShotPattern_Road07.dnh"
+#include "./Ot_Enemy_ShotPattern_Road08.dnh"

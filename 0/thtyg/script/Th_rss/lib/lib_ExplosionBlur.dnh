@@ -1,0 +1,71 @@
+
+//　爆発ブラー効果
+task ExplotionBlur( rgb_array ){
+	let frame	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		if( frame%1 == 0 ){
+			ExplotionBlur_Main( 180+move1*180, rgb_array );
+		}
+		frame++;
+		
+		moveA += 0.5;
+		
+		yield;
+	}
+}
+
+task ExplotionBlur_Main( angle, rgb_array ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let R_Tex	= GetReservedRenderTargetName(0);
+	let scar	= rand(1,3);
+	let alpha	= 24;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	
+	//　優先度20〜79(STGフレーム全体)をテクスチャに描画する。
+	RenderToTextureA1( R_Tex, 0, 59, true );
+	
+	ObjRender_SetPosition( ID, 384/2, 448/2, 0 );
+	ObjPrim_SetTexture( ID, R_Tex );
+	Obj_SetRenderPriorityI( ID, 61 );
+	ObjRender_SetBlendType( ID, BLEND_ADD_ARGB );
+	ObjRender_SetColor( ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect( ID, 32, 16, 416, 464 );
+	ObjSprite2D_SetDestCenter( ID );
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAlpha( ID, move1*alpha );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		let dis		= move2 * 128;
+		let scale	= 1 + move2*scar;
+		
+		ObjRender_SetPosition( ID, 384/2 + dis * cos( angle ), 448/2 + dis * sin( angle ), 0 );
+		ObjRender_SetScaleXYZ( ID, scale, scale, 0 );
+		ObjRender_SetAlpha( ID, move1*alpha );
+		
+		moveA += 10;
+		if( move2 < 1 ){ moveB += 10; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

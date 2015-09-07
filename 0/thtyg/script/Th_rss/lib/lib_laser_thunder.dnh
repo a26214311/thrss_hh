@@ -1,0 +1,192 @@
+
+
+
+
+//　雷レーザー　割と重いので沢山出さない様に
+//　長めで使うと良いかもしれないけど、長くしすぎるとバグるよ 32 32
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　雷レーザー　ID返るので状況に応じて動きセット
+function CreateThunderLaserC( pos, speed, angle, acc, mx, av, _length, width ){
+	let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, BGB_WHITE_06, 0 );
+	
+	ObjMove_SetAngularVelocity( sht, av );
+	ObjShot_SetIntersectionEnable( sht, false );
+	Obj_SetVisible( sht, false );
+	ObjShot_SetAutoDelete( sht, false );
+	
+	CreateThunderLaserC_DeleteLine( sht, 256 );
+	
+	//　メインレーザー作成　弾に追従する
+	let MainLaser = CreateThunderLaserC_Parent( sht, _length, width/8 );
+	let SubLaser = [0,0,0,0,0,0,0,0];
+	
+	ascent( let i in 0..8 ){
+		if( i == 0 ){
+			//　戦闘はメインレーザーに追従
+			SubLaser[i] = CreateThunderLaserC_Child( MainLaser, _length, width/8 );
+		}
+		else if( i == 7 ){
+			//　最後尾は長さ要らない
+			SubLaser[i] = CreateThunderLaserC_Child( SubLaser[i-1], 1, width/8 );
+		}
+		else{
+			//　他
+			SubLaser[i] = CreateThunderLaserC_Child( SubLaser[i-1], _length, width/8 );
+		}
+	}
+	
+	//　テクスチャ
+	CreateThunderLaserC_Texture( sht, MainLaser, SubLaser, width );
+	
+	return sht;
+}
+
+task CreateThunderLaserC_Texture( CallID, MainLaser, SubLaser_Array, width ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	let animC	= 0;
+	let anim1	= 0;
+	let i		= 0;
+	
+	let LaserArray = [0,0,0,0,0,0,0,0,0];
+	
+	LaserArray[0] = MainLaser;
+	
+	ascent( i in 0..( length(SubLaser_Array) ) ){
+		LaserArray[1+i] = SubLaser_Array[i];
+	}
+	
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory ~ "./../img/effect/laser_thunder.png" );
+	Obj_SetRenderPriorityI(ID, 71 );
+	ObjRender_SetScaleXYZ(ID, 1, 1, 0 );
+	ObjPrim_SetPrimitiveType(ID, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(ID, 18 );
+	
+	while( !Obj_IsDeleted(CallID) ){
+		ascent( i in 0..( length(LaserArray) ) ){
+			if( Obj_IsDeleted(LaserArray[i]) ){ break; }
+			
+			let LaserAngle = ObjStLaser_GetAngle(LaserArray[i]);
+			let vertex_pos = [
+				[
+					ObjMove_GetX(LaserArray[i]) + (width/2) * cos( LaserAngle+90 ),
+					ObjMove_GetY(LaserArray[i]) + (width/2) * sin( LaserAngle+90 ),
+				],
+				[
+					ObjMove_GetX(LaserArray[i]) + (width/2) * cos( LaserAngle-90 ),
+					ObjMove_GetY(LaserArray[i]) + (width/2) * sin( LaserAngle-90 ),
+				],
+			];
+			
+			ObjPrim_SetVertexPosition(ID, 0 + i*2, vertex_pos[0][0], vertex_pos[0][1], 0 );
+			ObjPrim_SetVertexPosition(ID, 1 + i*2, vertex_pos[1][0], vertex_pos[1][1], 0 );
+			ObjPrim_SetVertexUVT(ID, 0 + i*2, 0 + i*32, 0 + anim1*32 );
+			ObjPrim_SetVertexUVT(ID, 1 + i*2, 0 + i*32, 32 + anim1*32 );
+		}
+		
+		animC++;
+		if( animC > 0 && animC%3 == 0 ){
+			anim1++;
+		}
+		
+		yield;
+	}
+	Obj_Delete(ID);
+	ascent( i in 0..( length(LaserArray) ) ){
+		Obj_Delete(LaserArray[i]);
+	}
+}
+
+//------------------------------------------------------------
+//------------------------------------------------------------
+//　親レーザー　弾に追従する
+
+function CreateThunderLaserC_Parent( CallID, _length, width ){
+	let las		= ObjShot_Create( OBJ_STRAIGHT_LASER );
+	
+	ObjShot_SetGraphic(las, ADD_BGW_WHITE_05 );
+	ObjLaser_SetLength(las, _length );
+	ObjLaser_SetRenderWidth(las, width );
+	ObjShot_SetAutoDelete(las, false );
+	ObjShot_SetSpellResist(las, true );
+	Obj_SetVisible(las, false );
+	ObjShot_Regist(las);
+	
+	CreateThunderLaserC_Parent_Main( CallID, las );
+	
+	return las;
+}
+
+task CreateThunderLaserC_Parent_Main( CallID, ObjID ){
+	while( !Obj_IsDeleted(CallID) ){
+		let gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		ObjMove_SetPosition(ObjID, gpos[0], gpos[1] );
+		ObjStLaser_SetAngle(ObjID, ObjMove_GetAngle(CallID)-180 );
+		
+		yield;
+	}
+	Obj_Delete(ObjID);
+}
+
+
+//------------------------------------------------------------
+//------------------------------------------------------------
+//　子レーザー　前のレーザーを云々
+
+function CreateThunderLaserC_Child( CallID, _length, width ){
+	let las		= ObjShot_Create( OBJ_STRAIGHT_LASER );
+	
+	ObjShot_SetGraphic(las, ADD_BGW_WHITE_05 );
+	ObjLaser_SetLength(las, 1 );
+	ObjLaser_SetRenderWidth(las, width );
+	ObjShot_SetAutoDelete(las, false );
+	ObjShot_SetSpellResist(las, true );
+	Obj_SetVisible(las, false );
+	ObjShot_Regist(las);
+	
+	CreateThunderLaserC_Child_Main( CallID, las, _length );
+	
+	return las;
+}
+
+task CreateThunderLaserC_Child_Main( CallID, ObjID, _length ){
+	let move1 = 0;
+	let moveA = 0;
+	
+	while( !Obj_IsDeleted(CallID) ){
+		let gpos1 = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let gpos2 = [ ObjMove_GetX(ObjID), ObjMove_GetY(ObjID) ];
+		let glen = ObjLaser_GetLength(CallID);
+		let gang = atan2( gpos2[1] - gpos1[1], gpos2[0] - gpos1[0] );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjMove_SetPosition(ObjID, gpos1[0] + (move1*glen) * cos(gang), gpos1[1] + (move1*glen) * sin(gang) );
+		ObjStLaser_SetAngle(ObjID, gang );
+		ObjLaser_SetLength(ObjID, move1*_length );
+		
+		if( move1 < 1 ){ moveA += 1; }
+		
+		yield;
+	}
+	Obj_Delete(ObjID);
+}
+
+task CreateThunderLaserC_DeleteLine( ObjID, distance ){
+	while( !Obj_IsDeleted(ObjID) ){
+		let gpos = [ ObjMove_GetX(ObjID), ObjMove_GetY(ObjID) ];
+		
+		if( gpos[0] < MinX-distance || gpos[0] > MaxX+distance
+			|| gpos[1] < MinY-distance || gpos[1] > MaxY+distance ){
+				break;
+		}
+		
+		yield;
+	}
+	Obj_Delete( ObjID );
+}

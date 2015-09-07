@@ -1,0 +1,953 @@
+
+
+//　雑魚敵出現　妖精
+function CreateEnemy01_Fairy( type, color, life, frame, life_rate, bomb_late, drop ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	if( IsOverDrive ){ life *= 1.5; }
+	ObjMove_SetPosition(ID, -64, -64 );
+	ObjEnemy_SetLife(ID, life) ;
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	Obj_SetValue(ID, "Collision_Player", 8 );
+	CreateEnemy_MagicCircle( ID, [64,128,255] );
+	
+	Muteki(ID, frame, life_rate, bomb_late );
+	CreateEnemyTexture_Fairy(ID, type, color, 41, drop );
+	return ID;
+}
+
+//　雑魚敵出現　陰陽玉
+function CreateEnemy01_Onmyougyoku( color, life, frame, life_rate, bomb_late, delay, drop ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	if( IsOverDrive ){ life *= 1.5; }
+	ObjMove_SetPosition(ID, -64, -64 );
+	ObjEnemy_SetLife(ID, life) ;
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	Obj_SetValue(ID, "Collision_Player", 8 );
+	
+	Muteki(ID, frame, life_rate, bomb_late );
+	CreateEnemyTexture_Onmyou(ID, color, delay, drop );
+	return ID;
+}
+
+//　雑魚敵出現　人魂
+function CreateEnemy01_Soul( color, life, frame, life_rate, bomb_late, drop ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	if( IsOverDrive ){ life *= 1.5; }
+	ObjMove_SetPosition(ID, -64, -64 );
+	ObjEnemy_SetLife(ID, life) ;
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	Obj_SetValue(ID, "Collision_Player", 8 );
+	
+	Muteki(ID, frame, life_rate, bomb_late );
+	CreateEnemy_Hitodama_Texture( ID, life, color, drop );
+	return ID;
+}
+
+//　雑魚敵出現　チルノ
+function CreateEnemy01_Cirno( life, frame, life_rate, bomb_late, drop ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	if( IsOverDrive ){ life *= 1.5; }
+	ObjMove_SetPosition(ID, -64, -64 );
+	ObjEnemy_SetLife(ID, life) ;
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	Obj_SetValue(ID, "Collision_Player", 8 );
+	
+	CreateEnemy_MagicCircle( ID, [64,255,255] );
+	
+	Muteki(ID, frame, life_rate, bomb_late );
+	CreateEnemyTexture_Cirno(ID, 41, drop );
+	return ID;
+}
+
+//　雑魚敵出現　妖精
+function CreateEnemy01_Sakuri( type, color, life, frame, life_rate, bomb_late, drop ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	if( IsOverDrive ){ life *= 1.5; }
+	ObjMove_SetPosition(ID, -64, -64 );
+	ObjEnemy_SetLife(ID, life) ;
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	Obj_SetValue(ID, "Collision_Player", 8 );
+	CreateEnemy_MagicCircle( ID, [64,128,255] );
+	
+	Muteki(ID, frame, life_rate, bomb_late );
+	//CreateEnemyTexture_Fairy(ID, type, color, 41, drop );
+	CreateEnemyTexture_Sakuri(ID, 41, drop );
+	return ID;
+}
+
+//　無敵時間
+task Muteki( ID, long, life_rate, bomb_late ){
+	loop( long ){ yield; }
+	ObjEnemy_SetDamageRate(ID, life_rate, bomb_late );
+}
+
+//　雑魚表示
+task CreateEnemyTexture_Fairy( objID, type, color, lay, drop ){
+	let INDEX_SMALL_FAIRY01		= 0;
+	let INDEX_SMALL_FAIRY02		= 1;
+	let INDEX_LARGE_FAIRY01		= 2;
+	let INDEX_LARGE_FAIRY02		= 3;
+	let INDEX_LARGE_FAIRY03		= 4;
+	let INDEX_LARGE_FAIRY04		= 5;
+	let INDEX_MIDDLE_FAIRY01	= 6;
+	let INDEX_MIDDLE_FAIRY02	= 7;
+	let csd			= GetCurrentScriptDirectory();
+	let img			= [
+		csd ~ "./ot_img/fairy_red.png",
+		csd ~ "./ot_img/fairy_green.png",
+		csd ~ "./ot_img/fairy_blue.png",
+		csd ~ "./ot_img/fairy_yellow.png",
+		csd ~ "./ot_img/fairy_white.png",
+		csd ~ "./ot_img/fairy_black.png",
+	];
+	
+	//　rect開始位置
+	let rectpos		= [0,0];
+	//　画像サイズ
+	let size		= 0;
+	
+	//　妖精タイプ
+	alternative( type )
+	case( INDEX_SMALL_FAIRY01 ){
+		rectpos[0] = 0;
+		rectpos[1] = 0;
+		size = 32;
+	}
+	case( INDEX_SMALL_FAIRY02 ){
+		rectpos[0] = 224;
+		rectpos[1] = 0;
+		size = 32;
+	}
+	case( INDEX_LARGE_FAIRY01 ){
+		rectpos[0] = 0;
+		rectpos[1] = 32;
+		size = 48;
+	}
+	case( INDEX_LARGE_FAIRY02 ){
+		rectpos[0] = 0;
+		rectpos[1] = 80;
+		size = 48;
+	}
+	case( INDEX_LARGE_FAIRY03 ){
+		rectpos[0] = 0;
+		rectpos[1] = 128;
+		size = 48;
+	}
+	case( INDEX_LARGE_FAIRY04 ){
+		rectpos[0] = 0;
+		rectpos[1] = 176;
+		size = 48;
+	}
+	case( INDEX_MIDDLE_FAIRY01 ){
+		rectpos[0] = 0;
+		rectpos[1] = 224;
+		size = 64;
+	}
+	case( INDEX_MIDDLE_FAIRY02 ){
+		rectpos[0] = 0;
+		rectpos[1] = 288;
+		size = 64;
+	}
+	
+	//　待機アニメ3　移動アニメ4
+	let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+	let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+	let A_count		= 0;
+	let Animetion	= false;
+	let AR_count	= 0;
+	let AL_count	= 0;
+	let A_returnR	= 0;
+	let A_returnL	= 0;
+	let RotationY	= 0;
+	
+	ObjPrim_SetTexture(objID, img[color] );
+	ObjRender_SetBlendType(objID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(objID, lay );
+	ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size );
+	ObjSprite2D_SetDestCenter(objID);
+	
+	let EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+	let pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	
+	while( EnemyLife > 0 && !Obj_IsDeleted(objID) ){
+		let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+		let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+		
+		EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		ObjRender_SetPosition(objID, pos[0], pos[1], 0 );
+		ObjRender_SetAngleXYZ(objID, 0, RotationY, 0 );
+		
+		ObjEnemy_SetIntersectionCircleToShot(objID, pos[0], pos[1], size/2 );
+		if( Obj_GetValueD( objID, "Collision_Player", 0 ) > 0 ){
+			ObjEnemy_SetIntersectionCircleToPlayer(objID, pos[0], pos[1], Obj_GetValueD( objID, "Collision_Player", 0 ) );
+		}
+		
+		//　待機
+		if( GetSpeedX == 0  && AL_count == 0  && AR_count == 0 ){
+			if( A_count >= 0  && A_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size ); }
+			if( A_count >= 10 && A_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*1, rectpos[1], rectpos[0]+size*2, rectpos[1]+size ); }
+			if( A_count >= 20 && A_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*2, rectpos[1], rectpos[0]+size*3, rectpos[1]+size ); }
+		}
+		//　移動　左
+		if( GetSpeedX < 0 && AL_count > 0 ){
+			RotationY = 180;
+			if( AL_count >= 0 && AL_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1], rectpos[0]+size*4, rectpos[1]+size ); }
+			if( AL_count >= 10 && AL_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1], rectpos[0]+size*5, rectpos[1]+size ); }
+			if( AL_count >= 20 && AL_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1], rectpos[0]+size*6, rectpos[1]+size ); }
+			if( AL_count >= 30 && AL_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1], rectpos[0]+size*7, rectpos[1]+size ); }
+		}
+		//　移動　右
+		if( GetSpeedX > 0 && AR_count > 0 ){
+			RotationY = 0;
+			if( AR_count >= 0 && AR_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1], rectpos[0]+size*4, rectpos[1]+size ); }
+			if( AR_count >= 10 && AR_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1], rectpos[0]+size*5, rectpos[1]+size ); }
+			if( AR_count >= 20 && AR_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1], rectpos[0]+size*6, rectpos[1]+size ); }
+			if( AR_count >= 30 && AR_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1], rectpos[0]+size*7, rectpos[1]+size ); }
+		}
+		
+		/* アニメーション */
+		if( A_count >= 30 ){ A_count = 0; }
+		if( ObjMove_GetSpeed(objID) <= 0 ){
+			if( AL_count > 0 ){
+				A_returnL ++;
+				//　左移動→待機への変化速度
+				if( A_returnL %1 == 0 ){
+					AL_count --;
+				}
+			}
+			else{
+				AL_count = 0;
+				A_returnL = 0;
+			}
+			if( AR_count > 0 ){
+				A_returnR ++;
+				//　右移動→待機への変化速度
+				if( A_returnR %1 == 0 ){
+					AR_count --;
+				}
+			}
+			else{
+				AR_count = 0;
+				A_returnR = 0;
+			}
+			A_count ++;
+		}
+		else{
+			AL_count ++;
+			AR_count ++;
+		}
+		if( AL_count >= 40 ){ AL_count = 30; }
+		if( AR_count >= 40 ){ AR_count = 30; }
+		
+		yield;
+	}
+	EnemyDeleteManager( EnemyLife, pos, drop );
+	Obj_Delete(objID);
+}
+
+
+
+
+//　陰陽玉
+task CreateEnemyTexture_Onmyou( CallID, color, delay, drop ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let csd		= GetCurrentScriptDirectory();
+	let frag	= false;
+	let move1	= 0;
+	let moveA	= 0;
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let spin	= 0;
+	let i		= 0;
+	let px		= 0;
+	let py		= 0;
+	let rgbeff1	= [255,255,255];
+	let rgbeff2	= [255,255,255];
+	let rgbeff3	= [64,64,64];
+	
+	let d_ang	= rand(0,360);
+	
+	ObjPrim_SetTexture(ID[0], csd ~ "./ot_img/unknown01a.png" );
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID[0], 42 );
+	
+	loop( 2 ){
+		ObjPrim_SetTexture(ID[1+i], csd ~ "./ot_img/unknown01a.png" );
+		ObjRender_SetBlendType(ID[1+i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(ID[1+i], 41 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	alternative(color)
+	case("RED"){
+		px = 0;
+		py = 0;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,0,0];
+		rgbeff3 = [64,0,0];
+	}
+	case("ORANGE"){
+		px = 1;
+		py = 0;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,128,0];
+		rgbeff3 = [64,32,0];
+	}
+	case("YELLOW"){
+		px = 2;
+		py = 0;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,255,0];
+		rgbeff3 = [64,64,0];
+	}
+	case("GREEN"){
+		px = 3;
+		py = 0;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,255,0];
+		rgbeff3 = [0,64,0];
+	}
+	case("AQUA"){
+		px = 0;
+		py = 1;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,255,255];
+		rgbeff3 = [0,64,64];
+	}
+	case("BLUE"){
+		px = 1;
+		py = 1;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,0,255];
+		rgbeff3 = [0,0,64];
+	}
+	case("PURPLE"){
+		px = 2;
+		py = 1;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,0,255];
+		rgbeff3 = [64,0,64];
+	}
+	case("WHITE"){
+		px = 3;
+		py = 1;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,255,255];
+		rgbeff3 = [64,64,64];
+	}
+
+	let EnemyLife = ObjEnemy_GetInfo(CallID,INFO_LIFE);
+	
+	ObjSprite2D_SetSourceRect(ID[0], 0+32*px, 0+32*py, 32+32*px, 32+32*py );
+	ObjSprite2D_SetDestCenter(ID[0]);
+	
+	ObjSprite2D_SetSourceRect(ID[1], 0+32*px, 64+32*py, 32+32*px, 96+32*py );
+	ObjSprite2D_SetDestCenter(ID[1]);
+	
+	ObjSprite2D_SetSourceRect(ID[2], 0+32*px, 64+32*py, 32+32*px, 96+32*py );
+	ObjSprite2D_SetDestCenter(ID[2]);
+	
+	//　回転は外が右、中が左
+	while( EnemyLife > 0 && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		EnemyLife = ObjEnemy_GetInfo(CallID,INFO_LIFE);
+		move1 = 1 * sin( moveA );
+		
+		//　撃ち込み判定と体当たり判定を付ける
+		if( move1 >= 1 ){
+			ObjEnemy_SetIntersectionCircleToShot(CallID, gpos[0], gpos[1], 16 );
+			if( Obj_GetValueD( CallID, "Collision_Player", 0 ) > 0 ){
+				ObjEnemy_SetIntersectionCircleToPlayer(CallID, gpos[0], gpos[1], Obj_GetValueD( CallID, "Collision_Player", 0 ) );
+			}
+		}
+		
+		ascent( i in 0..( length(ID) ) ){
+			let spos = [
+				gpos[0] + (256-move1*256) * cos( d_ang + move1*360 ),
+				gpos[1] + (256-move1*256) * sin( d_ang + move1*360 ),
+			];
+			ObjRender_SetPosition(ID[i], spos[0], spos[1], 0 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+		}
+		
+		ObjRender_SetAngleXYZ(ID[1], 0, 0, spin*-3 );
+		ObjRender_SetAngleXYZ(ID[2], 0, 0, spin*3 );
+		
+		ObjRender_SetScaleXYZ(ID[0], move1*0.6, move1*0.6, 0 );
+		ObjRender_SetScaleXYZ(ID[1], move1*1.2, move1*1.2, 0 );
+		ObjRender_SetScaleXYZ(ID[2], move1*1.4, move1*1.4, 0 );
+		
+		spin += 4;
+		if( move1 < 1 ){ moveA += 0.5; }
+		
+		yield;
+	}
+	EnemyDeleteManager( EnemyLife, gpos, drop );
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+	Obj_Delete( CallID );
+}
+
+
+
+
+//　チルノ表示
+task CreateEnemyTexture_Cirno( objID, lay, drop ){
+	let csd			= GetCurrentScriptDirectory();
+	let img			= csd ~ "./ot_img/cirno_01.png";
+	
+	//　rect開始位置
+	let rectpos		= [0,0];
+	//　画像サイズ
+	let size		= 32;
+	
+	//　待機アニメ3　移動アニメ4
+	let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+	let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+	let A_count		= 0;
+	let Animetion	= false;
+	let AR_count	= 0;
+	let AL_count	= 0;
+	let A_returnR	= 0;
+	let A_returnL	= 0;
+	let RotationY	= 0;
+	
+	ObjPrim_SetTexture(objID, img );
+	ObjRender_SetBlendType(objID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(objID, lay );
+	ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size );
+	ObjSprite2D_SetDestCenter(objID);
+	
+	let EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+	let pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	
+	while( EnemyLife > 0 && !Obj_IsDeleted(objID) ){
+		let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+		let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+		
+		EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		ObjRender_SetPosition(objID, pos[0], pos[1], 0 );
+		ObjRender_SetAngleXYZ(objID, 0, RotationY, 0 );
+		
+		ObjEnemy_SetIntersectionCircleToShot(objID, pos[0], pos[1], size );
+		if( Obj_GetValueD( objID, "Collision_Player", 0 ) > 0 ){
+			ObjEnemy_SetIntersectionCircleToPlayer(objID, pos[0], pos[1], Obj_GetValueD( objID, "Collision_Player", 0 ) );
+		}
+		
+		//　待機
+		if( GetSpeedX == 0  && AL_count == 0  && AR_count == 0 ){
+			if( A_count >= 0  && A_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size ); }
+			if( A_count >= 10 && A_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*1, rectpos[1], rectpos[0]+size*2, rectpos[1]+size ); }
+			if( A_count >= 20 && A_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*2, rectpos[1], rectpos[0]+size*3, rectpos[1]+size ); }
+		}
+		//　移動　左
+		if( GetSpeedX < 0 && AL_count > 0 ){
+			RotationY = 180;
+			if( AL_count >= 0 && AL_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1], rectpos[0]+size*4, rectpos[1]+size ); }
+			if( AL_count >= 10 && AL_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1], rectpos[0]+size*5, rectpos[1]+size ); }
+			if( AL_count >= 20 && AL_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1], rectpos[0]+size*6, rectpos[1]+size ); }
+			if( AL_count >= 30 && AL_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1], rectpos[0]+size*7, rectpos[1]+size ); }
+		}
+		//　移動　右
+		if( GetSpeedX > 0 && AR_count > 0 ){
+			RotationY = 0;
+			if( AR_count >= 0 && AR_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1], rectpos[0]+size*4, rectpos[1]+size ); }
+			if( AR_count >= 10 && AR_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1], rectpos[0]+size*5, rectpos[1]+size ); }
+			if( AR_count >= 20 && AR_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1], rectpos[0]+size*6, rectpos[1]+size ); }
+			if( AR_count >= 30 && AR_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1], rectpos[0]+size*7, rectpos[1]+size ); }
+		}
+		
+		/* アニメーション */
+		if( A_count >= 30 ){ A_count = 0; }
+		if( ObjMove_GetSpeed(objID) <= 0 ){
+			if( AL_count > 0 ){
+				A_returnL ++;
+				//　左移動→待機への変化速度
+				if( A_returnL %1 == 0 ){
+					AL_count --;
+				}
+			}
+			else{
+				AL_count = 0;
+				A_returnL = 0;
+			}
+			if( AR_count > 0 ){
+				A_returnR ++;
+				//　右移動→待機への変化速度
+				if( A_returnR %1 == 0 ){
+					AR_count --;
+				}
+			}
+			else{
+				AR_count = 0;
+				A_returnR = 0;
+			}
+			A_count ++;
+		}
+		else{
+			AL_count ++;
+			AR_count ++;
+		}
+		if( AL_count >= 40 ){ AL_count = 30; }
+		if( AR_count >= 40 ){ AR_count = 30; }
+		
+		yield;
+	}
+	EnemyDeleteManager( EnemyLife, pos, drop );
+	Obj_Delete(objID);
+}
+
+
+
+
+//　サクリ表示
+task CreateEnemyTexture_Sakuri( objID, lay, drop ){
+	let csd			= GetCurrentScriptDirectory();
+	let img			= csd ~ "./ot_img/sakuri_01.png";
+	
+	//　rect開始位置
+	let rectpos		= [0,0];
+	//　画像サイズ
+	let size		= 64;
+	
+	//　待機アニメ3　移動アニメ4
+	let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+	let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+	let A_count		= 0;
+	let Animetion	= false;
+	let AR_count	= 0;
+	let AL_count	= 0;
+	let A_returnR	= 0;
+	let A_returnL	= 0;
+	let RotationY	= 0;
+	
+	ObjPrim_SetTexture(objID, img );
+	ObjRender_SetBlendType(objID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(objID, lay );
+	ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size );
+	ObjSprite2D_SetDestCenter(objID);
+	
+	let EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+	let pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	
+	while( EnemyLife > 0 && !Obj_IsDeleted(objID) ){
+		let GetSpeedX	= ObjMove_GetSpeed(objID) * cos( ObjMove_GetAngle(objID) );
+		let GetSpeedY	= ObjMove_GetSpeed(objID) * sin( ObjMove_GetAngle(objID) );
+		
+		EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		ObjRender_SetPosition(objID, pos[0], pos[1], 0 );
+		ObjRender_SetAngleXYZ(objID, 0, RotationY, 0 );
+		
+		ObjEnemy_SetIntersectionCircleToShot(objID, pos[0], pos[1], size );
+		if( Obj_GetValueD( objID, "Collision_Player", 0 ) > 0 ){
+			ObjEnemy_SetIntersectionCircleToPlayer(objID, pos[0], pos[1], Obj_GetValueD( objID, "Collision_Player", 0 ) );
+		}
+		
+		//　待機
+		if( GetSpeedX == 0  && AL_count == 0  && AR_count == 0 ){
+			if( A_count >= 0  && A_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*0, rectpos[1], rectpos[0]+size*1, rectpos[1]+size ); }
+			if( A_count >= 10 && A_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*1, rectpos[1], rectpos[0]+size*2, rectpos[1]+size ); }
+			if( A_count >= 20 && A_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*2, rectpos[1], rectpos[0]+size*3, rectpos[1]+size ); }
+		}
+		//　移動　左
+		if( GetSpeedX < 0 && AL_count > 0 ){
+			RotationY = 180;
+			if( AL_count >= 0 && AL_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1]+size, rectpos[0]+size*4, rectpos[1]+size*2 ); }
+			if( AL_count >= 10 && AL_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1]+size, rectpos[0]+size*5, rectpos[1]+size*2 ); }
+			if( AL_count >= 20 && AL_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1]+size, rectpos[0]+size*6, rectpos[1]+size*2 ); }
+			if( AL_count >= 30 && AL_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1]+size, rectpos[0]+size*7, rectpos[1]+size*2 ); }
+		}
+		//　移動　右
+		if( GetSpeedX > 0 && AR_count > 0 ){
+			RotationY = 0;
+			if( AR_count >= 0 && AR_count < 10 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*3, rectpos[1], rectpos[0]+size*4, rectpos[1]+size ); }
+			if( AR_count >= 10 && AR_count < 20 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*4, rectpos[1], rectpos[0]+size*5, rectpos[1]+size ); }
+			if( AR_count >= 20 && AR_count < 30 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*5, rectpos[1], rectpos[0]+size*6, rectpos[1]+size ); }
+			if( AR_count >= 30 && AR_count < 40 ){ ObjSprite2D_SetSourceRect(objID, rectpos[0]+size*6, rectpos[1], rectpos[0]+size*7, rectpos[1]+size ); }
+		}
+		
+		/* アニメーション */
+		if( A_count >= 30 ){ A_count = 0; }
+		if( ObjMove_GetSpeed(objID) <= 0 ){
+			if( AL_count > 0 ){
+				A_returnL ++;
+				//　左移動→待機への変化速度
+				if( A_returnL %1 == 0 ){
+					AL_count --;
+				}
+			}
+			else{
+				AL_count = 0;
+				A_returnL = 0;
+			}
+			if( AR_count > 0 ){
+				A_returnR ++;
+				//　右移動→待機への変化速度
+				if( A_returnR %1 == 0 ){
+					AR_count --;
+				}
+			}
+			else{
+				AR_count = 0;
+				A_returnR = 0;
+			}
+			A_count ++;
+		}
+		else{
+			AL_count ++;
+			AR_count ++;
+		}
+		if( AL_count >= 40 ){ AL_count = 30; }
+		if( AR_count >= 40 ){ AR_count = 30; }
+		
+		yield;
+	}
+	EnemyDeleteManager( EnemyLife, pos, drop );
+	Obj_Delete(objID);
+}
+
+
+
+
+//　人魂1
+task CreateEnemy_Hitodama_Texture( objID, life, color, drop ){
+	let csd			= GetCurrentScriptDirectory();
+	let pos			= [ 0, 0 ];
+	let sca1		= 0;
+	let scaA		= 0;
+	let anim		= 0;
+	let px			= 0;
+	let py			= 0;
+	let rgbeff1		= [255,255,255];
+	let rgbeff2		= [255,255,255];
+	let rgbeff3		= [64,64,64];
+	
+	ObjPrim_SetTexture(objID, csd ~ "./ot_img/ghost01a.png" );
+	ObjRender_SetBlendType(objID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(objID, 41 );
+	ObjRender_SetAngleXYZ(objID, 0, 0, rand(0,360) );
+	
+	alternative(color)
+	case("RED"){
+		py = 0;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,0,0];
+		rgbeff3 = [64,0,0];
+	}
+	case("GREEN"){
+		py = 1;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,255,0];
+		rgbeff3 = [0,64,0];
+	}
+	case("BLUE"){
+		py = 2;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,0,255];
+		rgbeff3 = [0,0,64];
+	}
+	case("YELLOW"){
+		py = 3;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,255,0];
+		rgbeff3 = [64,64,0];
+	}
+	case("PURPLE"){
+		py = 4;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,0,255];
+		rgbeff3 = [64,0,64];
+	}
+	case("AQUA"){
+		py = 5;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [0,255,255];
+		rgbeff3 = [0,64,64];
+	}
+	case("ORANGE"){
+		py = 6;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,128,0];
+		rgbeff3 = [64,32,0];
+	}
+	case("WHITE"){
+		py = 7;
+		rgbeff1 = [255,255,255];
+		rgbeff2 = [255,255,255];
+		rgbeff3 = [64,64,64];
+	}
+
+	let EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+	
+	while( EnemyLife > 0 && !Obj_IsDeleted(objID) ){
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		EnemyLife = ObjEnemy_GetInfo(objID,INFO_LIFE);
+		sca1 = 1 * sin( scaA );
+		
+		//　撃ち込み判定と体当たり判定を付ける
+		ObjEnemy_SetIntersectionCircleToShot(objID, pos[0], pos[1], 16 );
+		if( Obj_GetValueD( objID, "Collision_Player", 0 ) > 0 ){
+			ObjEnemy_SetIntersectionCircleToPlayer(objID, pos[0], pos[1], Obj_GetValueD( objID, "Collision_Player", 0 ) );
+		}
+		
+		ObjRender_SetPosition(objID, pos[0], pos[1], 0 );
+		ObjRender_SetScaleXYZ(objID, sca1*1.3, sca1*1.3, 0 );
+		ObjSprite2D_SetSourceRect(objID, 0+32*px, 0+32*py, 32+32*px, 32+32*py );
+		ObjSprite2D_SetDestCenter(objID);
+		
+		if( anim%4 == 0 ){
+			CreateEnemy_Aura_Hitodama( objID, color );
+			px++;
+		}
+		if( px > 7 ){ px = 0; }
+		
+		anim++;
+		if( sca1 < 1 ){ scaA += 2; }
+		
+		yield;
+	}
+	EnemyDeleteManager( EnemyLife, pos, drop );
+	Obj_Delete(objID);
+}
+
+//　人魂用オーラ
+task CreateEnemy_Aura_Hitodama( CallID, color ){
+	let objID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory();
+	let pos			= [ 0, 0 ];
+	let sca1		= 0;
+	let scaA		= 0;
+	let anim		= 0;
+	let px			= 0;
+	let py			= 0;
+	let ang			= 270 + rand(-32,32);
+	
+	ObjPrim_SetTexture(objID, csd ~ "./ot_img/ghost01a.png" );
+	ObjRender_SetBlendType(objID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(objID, 41 );
+	ObjRender_SetAngleXYZ(objID, 0, 0, rand(0,360) );
+	
+	alternative(color)
+	case("RED"){
+		py = 0;
+	}
+	case("GREEN"){
+		py = 1;
+	}
+	case("BLUE"){
+		py = 2;
+	}
+	case("YELLOW"){
+		py = 3;
+	}
+	case("PURPLE"){
+		py = 4;
+	}
+	case("AQUA"){
+		py = 5;
+	}
+	case("ORANGE"){
+		py = 6;
+	}
+	case("WHITE"){
+		py = 7;
+	}
+	
+	while( !Obj_IsDeleted(CallID) && sca1 < 1 ){
+		pos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(objID, pos[0]+(sca1*32)*cos(ang), pos[1]+(sca1*32)*sin(ang), 0 );
+		
+		ObjRender_SetScaleXYZ(objID, 1-sca1, 1-sca1, 0 );
+		ObjSprite2D_SetSourceRect(objID, 0+32*px, 0+32*py, 32+32*px, 32+32*py );
+		ObjSprite2D_SetDestCenter(objID);
+		
+		anim++;
+		if( anim%2 == 0 ){ px++; }
+		if( px > 7 ){ px = 0; }
+		
+		if( sca1 < 1 ){ scaA += 5; }
+		
+		yield;
+	}
+	Obj_Delete( objID );
+}
+
+
+
+
+//　敵オーラ
+task CreateEnemy_Aura(objID,rgb_h){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let enx			= ObjMove_GetX(objID);
+	let eny			= ObjMove_GetY(objID);
+	let csd			= GetCurrentScriptDirectory();
+	let A_count1	= 0;
+	let A_count2	= 0;
+	let sca			= [ [1,1], [1.2,1.2] ];
+	let i			= 0;
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], csd ~ "./ot_img/enemy_aura_alpha.png" );
+		Obj_SetRenderPriorityI(ID[i], 40 );
+		ObjRender_SetScaleXYZ(ID[i], sca[i][0], sca[i][1], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 64 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetBlendType(ID[0],BLEND_ALPHA);
+	ObjRender_SetBlendType(ID[1],BLEND_ADD_ARGB);
+	ObjRender_SetColor(ID[1], rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjRender_SetAlpha(ID[1], 64 );
+	
+	while( !Obj_IsDeleted(objID) ){
+		enx				= ObjMove_GetX(objID);
+		eny				= ObjMove_GetY(objID);
+		
+		/*テクスチャ操作(乱雑ver)*/
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], enx, eny, 0 );
+			ObjSprite2D_SetSourceRect(ID[i], 0 + (A_count2*64), 0, 64 + (A_count2*64), 64 );
+			ObjSprite2D_SetDestCenter(ID[i]);
+		}
+		
+		A_count1++;
+		if( A_count1%4 == 0 ){ A_count2++; }
+		if( A_count2 >= 8 ){ A_count2 = 0; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　敵魔方陣
+task CreateEnemy_MagicCircle(objID,rgb_h){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let enx			= ObjMove_GetX(objID);
+	let eny			= ObjMove_GetY(objID);
+	let csd			= GetCurrentScriptDirectory();
+	let A_count1	= 0;
+	let A_count2	= 0;
+	let sca			= [ [0.5,0.5], [0.7,0.7] ];
+	let i			= 0;
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/effect/enm_effect01.png" );
+		Obj_SetRenderPriorityI(ID[i], 40 );
+		ObjRender_SetScaleXYZ(ID[i], sca[i][0], sca[i][1], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 64, 320, 128, 384 ) ;
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetBlendType(ID[0],BLEND_ALPHA);
+	ObjRender_SetAlpha(ID[0], 128 );
+	ObjRender_SetBlendType(ID[1],BLEND_ADD_ARGB);
+	ObjRender_SetColor(ID[1], rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjRender_SetAlpha(ID[1], 64 );
+	
+	while( !Obj_IsDeleted(objID) ){
+		enx				= ObjMove_GetX(objID);
+		eny				= ObjMove_GetY(objID);
+		
+		/*テクスチャ操作(乱雑ver)*/
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], enx, eny, 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca[i][0] + 0.04*sin(A_count1*6), sca[i][1] + 0.04*sin(A_count1*6), 0 );
+		}
+		
+		ObjRender_SetAngleZ(ID[0], A_count1*8 );
+		ObjRender_SetAngleZ(ID[1], A_count1*-8 );
+		
+		A_count1++;
+		if( A_count1%4 == 0 ){ A_count2++; }
+		if( A_count2 >= 8 ){ A_count2 = 0; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　敵が画面内で死んだか
+function EnemyDeleteManager(life,pos,drop){
+	let v = 64;
+//	if( pos[0] > MinX - v && pos[0] < MaxX + v && pos[1] > MinY - v && pos[1] < MaxY + v){
+	if( life <= 0 ){
+		//　ハイパー中は点符倍加
+		if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+			drop *= 2;
+		}
+		//　座標と個数データを送付
+		let data = [ pos[0], pos[1], drop ];
+		NotifyEventAll( EV_USER + 35, data );
+		ObjSound_Play( UtilitySE[7] );
+	}
+}
+
+//　赤魔法陣（ボス戦のを流用）
+task RedMagicCircle( ID, delay ){
+	let def			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1		= 0;
+	let moveA		= 0;
+	let sca1		= 0;
+	let scaA		= 0;
+	let alpha		= 128;
+	let gpos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	let spin		= 0;
+	let RMangle		= 0;
+	
+	ObjPrim_SetTexture(def, eff01a );
+	Obj_SetRenderPriorityI(def, 32 );
+	ObjRender_SetBlendType(def, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(def, 0, 0, RMangle );
+	ObjRender_SetScaleXYZ(def, sca1, sca1, 0 );
+	ObjSprite2D_SetSourceRect(def, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestCenter(def);
+	ObjRender_SetAlpha(def, alpha );
+	
+	loop( delay ){
+		ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+		yield;
+	}
+//	ObjSound_Play( UtilitySE[9] );
+	
+	while( !Obj_IsDeleted( ID ) ){
+		gpos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ(def, 24 - 24 * cos(spin), 24 - 24 * sin(spin), RMangle - move1*180 - spin*10 );
+		ObjRender_SetScaleXYZ(def, sca1 + 0.1 * sin( spin*5 ), sca1 + 0.1 * sin( spin*5 ), 0 );
+		if( move1 < 1 ){ moveA += 2; }
+		move1 = 1 * sin( moveA );
+		if( sca1 < 1 ){ scaA += 2; }
+		sca1 = 1 * sin( scaA );
+		if( sca1 >= 1 && move1 >= 1 ){ spin += 0.6; }
+		
+		yield;
+	}
+	Obj_Delete(def);
+}
+	

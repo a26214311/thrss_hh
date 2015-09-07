@@ -1,0 +1,86 @@
+
+
+//　使用する効果音はココで列挙
+//　スクリプト中に常駐するから、よく使用するサウンドだけ定義した方がいいよ
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　攻撃音など
+let CreateShotSE = [
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot1.ogg" ),			//　0  ﾃﾝｯ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot2.ogg" ),			//　1  ｷﾗｷﾗ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot3.ogg" ),			//　2  リコのやつ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot4.ogg" ),			//　3  新SE　攻撃的
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot5.ogg" ),			//　4  新SE　キラキラ高音
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/boon.ogg" ),			//　5  ﾌﾞｰﾝ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/boon_pitchDOWN.ogg" ),	//　6  ﾌﾞｰﾝ　低音
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/boon_pitchUP.ogg" ),	//　7  ﾌﾞｰﾝ　高音
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/flare.ogg" ),			//　8  ﾊﾞｰﾝ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/flare2.ogg" ),			//　9  ﾊﾞｰﾝ　sweep
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/Laser01.ogg" ),			//　10 レーザー　sweep
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/Laser02.ogg" ),			//　11 レーザー
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/ice.ogg" ),				//　12 氷結
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/slash00.ogg" ),			//　13 斬撃
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/shot6.ogg" ),			//　14 敵ショット高音
+];
+
+//　ユーティリティ
+let UtilitySE = [
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/bulletbreak.ogg" ),		//　0  弾消え
+	PlaySEs_ShotHit( GetCurrentScriptDirectory ~ "../se/mo.ogg" ),		//　1  攻撃ヒット　元気
+	PlaySEs_ShotHit( GetCurrentScriptDirectory ~ "../se/moUP.ogg" ),	//　2  攻撃ヒット　体力消耗時
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/ex_release01.ogg" ),	//　3  特殊アイテム放出1
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/ex_release02.ogg" ),	//　4  特殊アイテム放出2
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/ex_release03.ogg" ),	//　5  特殊アイテム放出3
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/BossEnd.ogg" ),			//　6  ボス撃破SE
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/enemy_vanish_B.ogg" ),	//　7  雑魚撃破SE
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/se_extend4.ogg" ),		//　8  ゲージMAX
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/power_logo.ogg" ),		//　9  ﾃｨｳﾝｳｲｲｨﾝ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/warp.ogg" ),			//　10 ワープ
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/se_extend1.ogg" ),		//　11 ライフ エクステンド
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/se_extend2.ogg" ),		//　12 ボム エクステンド
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/se_extend3.ogg" ),		//　13 かけら 出現
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/se_extend4.ogg" ),		//　14 ゲージMAX
+	PlaySEs( GetCurrentScriptDirectory ~ "../se/spellcard.ogg" )		//　15 ボススペル起動
+];
+
+//　ダイレクトサウンドのバッファ的なやつ
+function PlaySEs(se_path){
+	let se		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　被弾音用
+function PlaySEs_ShotHit(se_path){
+	let se		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "ShotHit_Volume", 0 );
+	
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　呼ぶと一気に削除出来るよ
+function AllSoundObjectDelete(){
+	let i = 0;
+	
+	ascent( i in 0..length( CreateShotSE ) ){
+		Obj_Delete( CreateShotSE[i] );
+	}
+	ascent( i in 0..length( UtilitySE ) ){
+		Obj_Delete( UtilitySE[i] );
+	}
+}

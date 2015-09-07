@@ -1,0 +1,535 @@
+
+/*このファイルにある関数
+
+	//　最大得点表示
+	MaxPoint(lay);
+	
+	//　グレイズ表示
+	MaxGraze(lay);
+	
+	いずれもレイヤー指定
+*/
+
+task MaxPoint(lay){
+	let seff	= [ObjPrim_Create(OBJ_SPRITE_2D),//一
+					ObjPrim_Create(OBJ_SPRITE_2D),//十
+					ObjPrim_Create(OBJ_SPRITE_2D),//百
+					ObjPrim_Create(OBJ_SPRITE_2D),//千
+					ObjPrim_Create(OBJ_SPRITE_2D),//万
+					ObjPrim_Create(OBJ_SPRITE_2D),//十万
+					ObjPrim_Create(OBJ_SPRITE_2D)];//百万
+	let seft	= [ObjPrim_Create(OBJ_SPRITE_2D),//間の点
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i		= 0;
+	let rgb		= [92,192,255];
+	let rgb_fl	= [rgb[0]/2,rgb[1]/2,rgb[2]/2];
+	let countC	= 0;
+	let count	= 0;
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	let sca		= [0.7,0.6];
+	
+	loop( length(seff) ){
+		ObjPrim_SetTexture(seff[i], path_front01 );
+		Obj_SetRenderPriorityI(seff[i], lay );
+		ObjRender_SetBlendType(seff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seff[i], sca[0], sca[0], 0 );
+		ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(seff[i]);
+		ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seff[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	loop( length(seft) ){
+		ObjPrim_SetTexture(seft[i], path_front01 );
+		Obj_SetRenderPriorityI(seft[i], lay );
+		ObjRender_SetBlendType(seft[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seft[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seft[i], sca[1], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(seft[i], 0 + 24*uv[14], 488, 24 + 24*uv[14], 512 );
+		ObjSprite2D_SetDestCenter(seft[i]);
+		ObjRender_SetColor(seft[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seft[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	PointToFragment(lay);
+	
+	while( !swb ){
+		let gpos		= [ObjRender_GetX(seff[0]),ObjRender_GetY(seff[0])];
+		let point		= GetAreaCommonData("Trance", "max_score", 0 );
+		let score		= [truncate( point%10 ),
+							truncate( (point%100)/10 ),
+							truncate( (point%1000)/100 ),
+							truncate( (point%10000)/1000 ),
+							truncate( (point%100000)/10000 ),
+							truncate( (point%1000000)/100000 ),
+							truncate( (point%10000000)/1000000 )];
+		
+		swb = GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		if( countC%2 == 0 && count < 21 ){ count++; }
+		if( count%2 == 0 ){
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb_fl[0], rgb_fl[1], rgb_fl[2] );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+				i++;
+			}
+			i = 0;
+		}
+		
+		ObjRender_SetPosition(seff[0], MaxX+200+38, MinY+256-20, 0 );
+		ObjRender_SetPosition(seff[1], gpos[0] - 12, gpos[1], 0 );
+		ObjRender_SetPosition(seff[2], gpos[0] - 24, gpos[1], 0 );
+		ObjRender_SetPosition(seff[3], gpos[0] - 42, gpos[1], 0 );
+		ObjRender_SetPosition(seff[4], gpos[0] - 54, gpos[1], 0 );
+		ObjRender_SetPosition(seff[5], gpos[0] - 66, gpos[1], 0 );
+		ObjRender_SetPosition(seff[6], gpos[0] - 84, gpos[1], 0 );
+		
+		ObjRender_SetPosition(seft[0], gpos[0] - 34, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[1], gpos[0] - 76, gpos[1] + 6, 0 );
+		
+		if( point < 1000000 ){
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[ score[i] ], 488, 24 + 24*uv[ score[i] ], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[9], 488, 24 + 24*uv[9], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( point >= 0 ){
+			ObjRender_SetAlpha(seff[0], 255 );
+		}
+		if( point >= 10 ){
+			ObjRender_SetAlpha(seff[1], 255 );
+		}
+		if( point >= 100 ){
+			ObjRender_SetAlpha(seff[2], 255 );
+		}
+		if( point >= 1000 ){
+			ObjRender_SetAlpha(seff[3], 255 );
+			ObjRender_SetAlpha(seft[0], 255 );
+		}
+		if( point >= 10000 ){
+			ObjRender_SetAlpha(seff[4], 255 );
+		}
+		if( point >= 100000){
+			ObjRender_SetAlpha(seff[5], 255 );
+		}
+		if( point >= 1000000 ){
+			ObjRender_SetAlpha(seff[6], 255 );
+			ObjRender_SetAlpha(seft[1], 255 );
+		}
+		
+		countC++;
+		
+		yield;
+	}
+	loop( length(seff) ){
+		Obj_Delete(seff[i]);
+		i++;
+	}
+	i = 0;
+	loop( length(seft) ){
+		Obj_Delete(seft[i]);
+		i++;
+	}
+	i= 0;
+}
+
+task MaxGraze(lay){
+	let seff	= [ObjPrim_Create(OBJ_SPRITE_2D),//一
+					ObjPrim_Create(OBJ_SPRITE_2D),//十
+					ObjPrim_Create(OBJ_SPRITE_2D),//百
+					ObjPrim_Create(OBJ_SPRITE_2D),//千
+					ObjPrim_Create(OBJ_SPRITE_2D),//万
+					ObjPrim_Create(OBJ_SPRITE_2D),//十万
+					ObjPrim_Create(OBJ_SPRITE_2D)];//百万
+	let seft	= [ObjPrim_Create(OBJ_SPRITE_2D),//間の点
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i		= 0;
+	let rgb		= [192,192,192];
+	let rgb_fl	= [rgb[0]/2,rgb[1]/2,rgb[2]/2];
+	let countC	= 0;
+	let count	= 0;
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	let sca		= [0.7,0.6];
+	
+	loop( length(seff) ){
+		ObjPrim_SetTexture(seff[i], path_front01 );
+		Obj_SetRenderPriorityI(seff[i], lay );
+		ObjRender_SetBlendType(seff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seff[i], sca[0], sca[0], 0 );
+		ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(seff[i]);
+		ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seff[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	loop( length(seft) ){
+		ObjPrim_SetTexture(seft[i], path_front01 );
+		Obj_SetRenderPriorityI(seft[i], lay );
+		ObjRender_SetBlendType(seft[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seft[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seft[i], sca[1], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(seft[i], 0 + 24*uv[14], 488, 24 + 24*uv[14], 512 );
+		ObjSprite2D_SetDestCenter(seft[i]);
+		ObjRender_SetColor(seft[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seft[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	while( !swb ){
+		let gpos		= [ObjRender_GetX(seff[0]),ObjRender_GetY(seff[0])];
+		let score		= [truncate( GetGraze()%10 ),
+							truncate( (GetGraze()%100)/10 ),
+							truncate( (GetGraze()%1000)/100 ),
+							truncate( (GetGraze()%10000)/1000 ),
+							truncate( (GetGraze()%100000)/10000 ),
+							truncate( (GetGraze()%1000000)/100000 ),
+							truncate( (GetGraze()%10000000)/1000000 )];
+		let swb			= GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		if( countC%2 == 0 && count < 21 ){ count++; }
+		if( count%2 == 0 ){
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb_fl[0], rgb_fl[1], rgb_fl[2] );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+				i++;
+			}
+			i = 0;
+		}
+		
+		ObjRender_SetPosition(seff[0], MaxX+200+38, MinY+256+14, 0 );
+		ObjRender_SetPosition(seff[1], gpos[0] - 12, gpos[1], 0 );
+		ObjRender_SetPosition(seff[2], gpos[0] - 24, gpos[1], 0 );
+		ObjRender_SetPosition(seff[3], gpos[0] - 42, gpos[1], 0 );
+		ObjRender_SetPosition(seff[4], gpos[0] - 54, gpos[1], 0 );
+		ObjRender_SetPosition(seff[5], gpos[0] - 66, gpos[1], 0 );
+		ObjRender_SetPosition(seff[6], gpos[0] - 84, gpos[1], 0 );
+		
+		ObjRender_SetPosition(seft[0], gpos[0] - 34, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[1], gpos[0] - 76, gpos[1] + 6, 0 );
+		
+		if( GetGraze() < 1000000 ){
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[ score[i] ], 488, 24 + 24*uv[ score[i] ], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[9], 488, 24 + 24*uv[9], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( GetGraze() >= 0 ){
+			ObjRender_SetAlpha(seff[0], 255 );
+		}
+		if( GetGraze() >= 10 ){
+			ObjRender_SetAlpha(seff[1], 255 );
+		}
+		if( GetGraze() >= 100 ){
+			ObjRender_SetAlpha(seff[2], 255 );
+		}
+		if( GetGraze() >= 1000 ){
+			ObjRender_SetAlpha(seff[3], 255 );
+			ObjRender_SetAlpha(seft[0], 255 );
+		}
+		if( GetGraze() >= 10000 ){
+			ObjRender_SetAlpha(seff[4], 255 );
+		}
+		if( GetGraze() >= 100000){
+			ObjRender_SetAlpha(seff[5], 255 );
+		}
+		if( GetGraze() >= 1000000 ){
+			ObjRender_SetAlpha(seff[6], 255 );
+			ObjRender_SetAlpha(seft[1], 255 );
+		}
+		
+		countC++;
+		
+		yield;
+	}
+	loop( length(seff) ){
+		Obj_Delete(seff[i]);
+		i++;
+	}
+	i = 0;
+	loop( length(seft) ){
+		Obj_Delete(seft[i]);
+		i++;
+	}
+	i= 0;
+}
+
+
+task PointToFragment(lay){
+	let seff	= [ObjPrim_Create(OBJ_SPRITE_2D),//一
+					ObjPrim_Create(OBJ_SPRITE_2D),//十
+					ObjPrim_Create(OBJ_SPRITE_2D),//百
+					ObjPrim_Create(OBJ_SPRITE_2D),//千
+					ObjPrim_Create(OBJ_SPRITE_2D),//万
+					ObjPrim_Create(OBJ_SPRITE_2D),//十万
+					ObjPrim_Create(OBJ_SPRITE_2D)];//百万
+	let seft	= [ObjPrim_Create(OBJ_SPRITE_2D),//間の点
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i		= 0;
+	let rgb		= [128,255,255];
+	let rgb_fl	= [ rgb[0]/2, rgb[1]/2, rgb[2]/2 ];
+	let countC	= 0;
+	let count	= 0;
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	let point	= GetAreaCommonData("Trance", "max_score", 0 );
+	let line	= 500;
+	let level	= 1;
+	
+	let sca		= [ 0.6, 0.5 ];
+	
+	let text_scale = 0.7;
+	let distance = 16*text_scale;
+	let text = [ "N", "E", "X", "T" ];
+	ascent( i in 0..( length(text) ) ){
+		CreateText_AsciiFront( [ MaxX + 70 + i*distance, MinY+256-4 ], lay, text_scale, text[i], rgb, i*8 );
+	}
+	
+	ascent( i in 0..( length(seff) ) ){
+		ObjPrim_SetTexture(seff[i], path_front01 );
+		Obj_SetRenderPriorityI(seff[i], lay );
+		ObjRender_SetBlendType(seff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seff[i], sca[0], sca[0], 0 );
+		ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(seff[i]);
+		ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seff[i], 0 );
+	}
+	
+	ascent( i in 0..( length(seft) ) ){
+		ObjPrim_SetTexture(seft[i], path_front01 );
+		Obj_SetRenderPriorityI(seft[i], lay );
+		ObjRender_SetBlendType(seft[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seft[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seft[i], sca[1], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(seft[i], 0 + 24*uv[14], 488, 24 + 24*uv[14], 512 );
+		ObjSprite2D_SetDestCenter(seft[i]);
+		ObjRender_SetColor(seft[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seft[i], 0 );
+	}
+	
+	while( !swb ){
+		let gpos	= [ObjRender_GetX(seff[0]),ObjRender_GetY(seff[0])];
+		
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		point	= GetAreaCommonData("Trance", "max_score", 0 );
+		
+		//　各桁数値算出
+		let num		= [
+			truncate( (level*line)%10 ),
+			truncate( ((level*line)%100)/10 ),
+			truncate( ((level*line)%1000)/100 ),
+			truncate( ((level*line)%10000)/1000 ),
+			truncate( ((level*line)%100000)/10000 ),
+			truncate( ((level*line)%1000000)/100000 ),
+			truncate( ((level*line)%10000000)/1000000 ),
+		];
+		
+		if( countC%2 == 0 && count < 21 ){ count++; }
+		if( count%2 == 0 ){
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb_fl[0], rgb_fl[1], rgb_fl[2] );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+				i++;
+			}
+			i = 0;
+		}
+		
+		ascent( i in 0..( length(seff) ) ){
+			ObjRender_SetPosition(seff[i], MaxX+200+38 - i*11, MinY+256-5, 0 );
+		}
+		ObjRender_SetPosition(seft[0], gpos[0] - 28, gpos[1] + 7, 0 );
+		ObjRender_SetPosition(seft[1], gpos[0] - 61, gpos[1] + 7, 0 );
+		
+		if( (level*line) < 1000000 ){
+			ascent( i in 0..( length(seff) ) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[ num[i] ], 488, 24 + 24*uv[ num[i] ], 512 );
+			}
+		}
+		else{
+			ascent( i in 0..( length(seff) ) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[9], 488, 24 + 24*uv[9], 512 );
+			}
+		}
+		
+		if( (level*line) >= 0 ){
+			ObjRender_SetAlpha(seff[0], 255 );
+		}
+		if( (level*line) >= 10 ){
+			ObjRender_SetAlpha(seff[1], 255 );
+		}
+		if( (level*line) >= 100 ){
+			ObjRender_SetAlpha(seff[2], 255 );
+		}
+		if( (level*line) >= 1000 ){
+			ObjRender_SetAlpha(seff[3], 255 );
+			ObjRender_SetAlpha(seft[0], 255 );
+		}
+		if( (level*line) >= 10000 ){
+			ObjRender_SetAlpha(seff[4], 255 );
+		}
+		if( (level*line) >= 100000){
+			ObjRender_SetAlpha(seff[5], 255 );
+		}
+		if( (level*line) >= 1000000 ){
+			ObjRender_SetAlpha(seff[6], 255 );
+			ObjRender_SetAlpha(seft[1], 255 );
+		}
+		
+		if( point >= (level*line) ){
+			let data = [
+				["F","R","A","G","M","E","N","T"," ","U","P"],
+				["B","O","N","U","S","+","1","0","0","0","0","0","0"],
+			];
+			
+			if( level % 2 ){
+				NotifyEventAll( EV_USER + 41, data );
+			}else{
+				NotifyEventAll( EV_USER + 36, data );
+			}
+			
+			level++;
+		}
+		
+		countC++;
+		
+		yield;
+	}
+	ascent( i in 0..( length(seff) ) ){
+		Obj_Delete(seff[i]);
+	}
+	ascent( i in 0..( length(seft) ) ){
+		Obj_Delete(seft[i]);
+	}
+}
+
+//　ascii.pngの画像で文字作成　フロント用
+task CreateText_AsciiFront( pos, lay, scale, char_text, rgb_array, delay ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	let move1	= 0;
+	let moveA	= 0;
+	let _rect	= [ 0, 0 ];
+	
+	loop( delay ){ yield; }
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, front_tex[12] );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, lay );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	alternative( char_text )
+	case( "0" ){ _rect = [ 0, 0 ]; }
+	case( "1" ){ _rect = [ 1, 0 ]; }
+	case( "2" ){ _rect = [ 2, 0 ]; }
+	case( "3" ){ _rect = [ 3, 0 ]; }
+	case( "4" ){ _rect = [ 4, 0 ]; }
+	case( "5" ){ _rect = [ 5, 0 ]; }
+	case( "6" ){ _rect = [ 6, 0 ]; }
+	case( "7" ){ _rect = [ 7, 0 ]; }
+	case( "8" ){ _rect = [ 8, 0 ]; }
+	case( "9" ){ _rect = [ 9, 0 ]; }
+	case( "/" ){ _rect = [ 10, 0 ]; }
+	case( ":" ){ _rect = [ 11, 0 ]; }
+	case( "-" ){ _rect = [ 12, 0 ]; }
+	case( "×" ){ _rect = [ 13, 0 ]; }
+	case( "%" ){ _rect = [ 14, 0 ]; }
+	case( "." ){ _rect = [ 15, 0 ]; }
+	case( "+" ){ _rect = [ 16, 0 ]; }
+	case( "A" ){ _rect = [ 0, 1 ]; }
+	case( "B" ){ _rect = [ 1, 1 ]; }
+	case( "C" ){ _rect = [ 2, 1 ]; }
+	case( "D" ){ _rect = [ 3, 1 ]; }
+	case( "E" ){ _rect = [ 4, 1 ]; }
+	case( "F" ){ _rect = [ 5, 1 ]; }
+	case( "G" ){ _rect = [ 6, 1 ]; }
+	case( "H" ){ _rect = [ 7, 1 ]; }
+	case( "I" ){ _rect = [ 8, 1 ]; }
+	case( "J" ){ _rect = [ 9, 1 ]; }
+	case( "K" ){ _rect = [ 10, 1 ]; }
+	case( "L" ){ _rect = [ 11, 1 ]; }
+	case( "M" ){ _rect = [ 12, 1 ]; }
+	case( "N" ){ _rect = [ 13, 1 ]; }
+	case( "O" ){ _rect = [ 14, 1 ]; }
+	case( "P" ){ _rect = [ 15, 1 ]; }
+	case( "Q" ){ _rect = [ 16, 1 ]; }
+	case( "R" ){ _rect = [ 17, 1 ]; }
+	case( "S" ){ _rect = [ 18, 1 ]; }
+	case( "T" ){ _rect = [ 19, 1 ]; }
+	case( "U" ){ _rect = [ 20, 1 ]; }
+	case( "V" ){ _rect = [ 21, 1 ]; }
+	case( "W" ){ _rect = [ 22, 1 ]; }
+	case( "X" ){ _rect = [ 23, 1 ]; }
+	case( "Y" ){ _rect = [ 24, 1 ]; }
+	case( "Z" ){ _rect = [ 25, 1 ]; }
+	case( " " ){ _rect = [ 26, 1 ]; }
+	
+	ObjSprite2D_SetSourceRect(ID, 0 + _rect[0]*16, 0 + _rect[1]*20, 16 + _rect[0]*16, 20 + _rect[1]*20 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, scale*2 - move1*scale, scale*2 - move1*scale, 0 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	while( !swb ){
+		swb = GetAreaCommonData("System", "StgWorldBreak", false );
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}

@@ -1,0 +1,1469 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8ボス　オーバードライブ"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	#include "./lib_enm08_family.dnh"
+	
+	let enm;
+	let dummy;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 208;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+
+		dummy = ObjEnemy_Create( OBJ_ENEMY );
+		ObjEnemy_SetDamageRate( dummy, 0, 0 );
+		ObjEnemy_Regist( dummy );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 56, 32, 56, 32 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( 999999990 );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 9, 10 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+//		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+//		RedMagicCircle( 1, 0 );
+		Aura( dummy, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+
+		SetDummy;
+		task SetDummy{
+			while( !Obj_IsDeleted( enm ) ){
+				ObjMove_SetPosition( dummy, ObjMove_GetX( enm ), ObjMove_GetY( enm ) );
+				if( GetAreaCommonData( "anime", "alpha", 255 ) == 0 ){ break; }
+				yield;
+			}
+			Obj_Delete( dummy );
+		}
+	}
+	
+	task CallSpellCard{
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		SetBackGroundEffect_08b( enm );
+		SpellCardMagicTimer( enm );
+
+		ObjSound_Play( UtilitySE[15] );
+	}
+
+	task CutInSpellCard{
+		let spell_text = "「深淵弾幕結界 -星命ノ宮-」";
+		
+		SpellCounter( GetDifficult, 9, 10 );
+		let sct = GetSpellCounter( GetDifficult, 9, 10 );
+		
+		CutinSP2( enm, spell_text, 0, 0, true );
+		SpellCardCutin( enm, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay( spl,enm );
+		SpellCardHistoryDisplay( enm, sct[1], sct[0] );
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	function Wait_S( long ){
+		loop( long ){
+			yield;
+			while( IsPlayerInv ){
+				yield;
+			}
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+
+	function IsPlayerInv{
+		let ps = GetPlayerState;
+		if( GetPlayerInvincibilityFrame > 0 ){ return true; }
+		if( ps == STATE_DOWN || ps == STATE_HIT || ps == STATE_END ){ return true; }
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+
+		Wait_S( 160 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		CreateWaveEffect( enm, [255,255,255], 32 );
+		CallSpellCard;
+		State;
+		TimeSealed( [ CenX, MinY+40 ], [255,255,255], 0.8, BLEND_ALPHA );
+		
+
+		//　敵透明化
+		SetAreaCommonData("anime", "alpha", 128 );
+		//　中央に移動
+		ObjMove_SetDestAtWeight( enm, CenX, CenY, 8, 1 );
+
+		Wait_S( 120 );
+		
+		
+		Pattern0;
+		Wait_S( 700 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		CutInSpellCard;
+		Pattern1;
+		Wait_S( 800 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+
+		Pattern2;
+		Wait_S( 860 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+
+		Pattern3;
+		Wait_S( 960 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		
+		Pattern4;
+		Wait_S( 900 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		
+		Pattern5;
+		Wait_S( 980 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+
+		Pattern6;
+		Wait_S( 900 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		
+		Pattern7;
+		Wait_S( 900 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		
+		Pattern8;
+		Wait_S( 1080 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+
+		Pattern9;
+		Wait_S( 860 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+		//*/
+		Pattern10;
+		Wait_S( 1080 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait_S( 80 );
+
+		Pattern11;
+		
+		task Pattern11{
+			let ar_fam = [];
+			let col = [ 0, 2, 3, 5, 6 ];
+			let way = 5;
+			let ag = 0;
+			ascent( idx in 0..way ){
+				SetFamilier( ag, col[ idx ], idx );
+				ag += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let idx ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+				ar_fam = ar_fam~[fam];
+
+				Move;
+
+				Wait_S( 20 );
+				Laser;
+				Wait_S( 100 );
+				let shote = BGW_RED_24 + c[col];
+
+				Sub;
+				
+				let wt = 3;
+				let lim = 30;
+				let rel = 720;
+				let count = 0;
+				let i = 2.4;
+				let speed = 2;
+				while( !Obj_IsDeleted( fam ) ){
+					let p = atan2( gpos[1] - sy, gpos[0] - sx );
+					let angle = p + i;
+
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+					ShotPattern( sht, lim, rel, speed/4 );
+					speed += 0.01;
+					lim += 0.3;
+					i += 0.25;
+					rel -= wt;
+					ObjSound_Play( CreateShotSE[1] );
+					Wait_S( wt );
+				}
+
+				task Sub{
+					let speed = 1;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+
+				task Laser{
+					let color = [ [ 255, 0, 0 ],
+								  [ 255, 100, 100 ],
+								  [ 255, 255, 0 ],
+								  [ 0, 255, 0 ],
+								  [ 100, 100, 255 ],
+								  [ 0, 0, 255 ],
+								  [ 255, 0, 255 ],
+								  [ 128, 128, 128 ]];
+					let lsr = CreateSwordLaser( [ sx, sy ], ag, 0, 48, 650, color[col], 120 );
+					while( !Obj_IsDeleted( fam ) ){
+						let target = ar_fam[ ( idx + 2 ) % length( ar_fam ) ];
+						let tpos = [ ObjMove_GetX( target ), ObjMove_GetY( target ) ];
+						let p = atan2( tpos[1] - sy, tpos[0] - sx );
+						let leng = GetDistance( [ sx, sy ], tpos );
+						ObjMove_SetPosition( lsr, sx, sy );
+						ObjStLaser_SetAngle( lsr, p );
+						ObjLaser_SetLength( lsr, leng );
+						Wait( 1 );
+					}
+					Obj_Delete( lsr );
+				}
+				
+				task Move{
+					let dist = 0;
+					let flg = false;
+					loop( 800 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist <= 240 && !flg ){ dist += 2; }
+						else{ flg = true; }
+						if( flg ){
+							dist -= 0.3;
+						}
+						ag += -1.34;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern10{
+			let way = 2;
+			let col = 6;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 166, 0, 0, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 80 );
+			loop( way ){
+				SetFamilier( angle, col, 200, 60, 1, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 80 );
+			loop( way ){
+				SetFamilier( angle, col, 244, 120, 2, 1 );
+				angle += 360 / way;
+			}
+			
+			task SetFamilier( let ag, let col, let dmax, let disp, let type, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_12 + c[col];
+				Sub;
+				let wt = 2;
+				let s_speed = 1;
+
+				let lim = 10;
+				let rel = 540;
+				let speed = 1;
+
+				let i = 0 * r;
+				if( type == 1 ){
+					i = 24 * r;
+				}
+				if( type == 2 ){
+					i = -24 * r;
+				}
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 32 ){
+						if( Obj_IsDeleted( fam ) ){ break; }
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, s_speed );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 10 ){
+						Prm;
+					}
+					function Prm{
+//						lim += 0.2;
+						speed += 0.01;
+						i += 0.3 * r;
+						if( type == 2 ){
+							i += 0.1 * r;
+						}
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 1.5;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 4 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.7;
+					let u = 0;
+					let v = 0;
+					let wt = 120;
+					loop( 600 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 2.03 * r;
+						disp += -0.2;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern9{
+			let way = 4;
+			let col = 5;
+			let type = 0;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 244, 45, type%2, -1 );
+				angle += 360 / way;
+				type++;
+			}
+			task SetFamilier( let ag, let col, let dmax, let disp, let type, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_12 + c[col];
+				Sub;
+				
+				let lim = 10;
+				let rel = 540;
+				let wt = 2;
+				let speed = 2.5;
+				let i = -10 * r;
+				if( type == 1 ){ i = 10 * r; }
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 30 ){
+						if( Obj_IsDeleted( fam ) ){ break; }
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, speed/2.5 );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 12 ){
+						Prm;
+					}
+					function Prm{
+						lim += 0.1;
+						speed += 0.01;
+						if( type == 1 ){
+							i += -0.2 * r;
+						}else{
+							i += 0.4 * r;
+						}
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 2;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 4 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.75;
+					let u = 0;
+					let v = 0;
+					let wt = 120;
+					loop( 600 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 1.47 * r;
+						disp += -0.5;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern8{
+			let way = 2;
+			let col = 3;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 90, 45, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 40 );
+			angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 240, 135, -1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let disp, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_12 + c[col];
+				Sub;
+				
+				let lim = 30;
+				let rel = 550;
+				let wt = 2;
+				let speed = 1;
+				let i = 32;
+				while( !Obj_IsDeleted( fam ) ){
+					let p = atan2( gpos[1] - sy, gpos[0] - sx );
+					let angle = p + i;
+					
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+					ShotPattern( sht, lim, rel, speed/2 );
+					
+					ObjSound_Play( CreateShotSE[1] );
+					Prm;
+					function Prm{
+//						lim += 0.4;
+						speed += 0.01;
+						i += 0.4 * r;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 2;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 4 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.7;
+					let u = 0;
+					let v = 0;
+					let wt = 60;
+					loop( 620 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 1.47 * r;
+						disp += 0.3 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern7{
+			let way = 6;
+			let angle = 30;
+			let type = 0;
+			loop( way ){
+				SetFamilier( angle, 2, type % 2 );
+				type++;
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let type ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+				let r = 1;
+				let dmax = 200;
+				if( type ){ dmax = 100; r = -r; }
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_12 + c[col];
+				Sub;
+				
+				let lim = 40;
+				let rel = 600;
+				let wt = 2;
+				let speed = 1;
+				let sp = 0.01;
+				let i = -15;
+				while( !Obj_IsDeleted( fam ) ){
+					let p = atan2( gpos[1] - sy, gpos[0] - sx );
+					let angle = p + i;
+					
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+					ShotPattern( sht, lim, rel, speed/1.25 );
+					
+					ObjSound_Play( CreateShotSE[1] );
+					Prm;
+					function Prm{
+						i += 0.5 * r;
+						speed += sp;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 1.2;
+					let wide = 20;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+				
+				task Move{
+					let dist = 0;
+					loop( 600 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist < dmax ){ dist += dmax / 120; }
+						ag += 2 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern6{
+			let way = 4;
+			let angle = 45;
+			let type = 0;
+			loop( way ){
+				SetFamilier( angle, 0, type % 2 );
+				type++;
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let type ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+				let r = 1;
+				let dmax = 160;
+				if( type ){ dmax = 200; r = -r; }
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_12 + c[col];
+				Sub;
+				
+				let lim = 10;
+				let rel = 600;
+				let wt = 2;
+				let speed = 3.5;
+				let sp = 0.015;
+				if( type ){
+					speed = 1.5;
+					sp = 0.005;
+				}
+				let i = 0;
+				while( !Obj_IsDeleted( fam ) ){
+					let p = atan2( gpos[1] - sy, gpos[0] - sx );
+					let angle = p + i;
+					
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+					ShotPattern( sht, lim, rel, 1 );
+					
+					ObjSound_Play( CreateShotSE[1] );
+					Prm;
+					function Prm{
+						lim += 0.45;
+						i += 0.2 * r;
+						speed += sp;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 0.6;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+				
+				task Move{
+					let dist = 0;
+					loop( 660 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist < dmax ){ dist += dmax / 120; }
+						ag += 2 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern5{
+			let way = 2;
+			let col = 6;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 240, 0, -1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let disp, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_24 + c[col];
+				Sub;
+				let wt = 3;
+				let s_speed = 1.8;
+				ShotA;
+				ShotB;
+
+				task ShotA{
+					let lim = 10;
+					let rel = 780;
+					let speed = 1;
+
+					let i = 0 * r;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, s_speed );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+						function Prm{
+							lim += 0.5;
+							speed += 0.01;
+							i += 0.45 * r;
+							rel -= wt;
+							Wait_S( wt );
+						}
+					}
+				}
+				task ShotB{
+					let lim = 10;
+					let rel = 780;
+					let speed = 1;
+					let i = 0 * r;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, s_speed );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+						function Prm{
+							lim += 0.5;
+							speed += 0.015;
+							i += 0.45 * r;
+							rel -= wt;
+							Wait_S( wt );
+						}
+					}
+				}
+				
+				task Sub{
+					let speed = 1.5;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 4 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.7;
+					let u = 0;
+					let v = 0;
+					let wt = 120;
+					loop( 800 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 2.03 * r;
+						disp += 0.4;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern4{
+			let way = 4;
+			let col = 5;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 250, 45, 1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let disp, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_24 + c[col];
+				Sub;
+				
+				let lim = 10;
+				let rel = 700;
+				let wt = 3;
+				let speed = 1;
+				let s_speed = 2.4;
+				let i = 12 * r;
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 12 ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, s_speed );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 7 ){
+						Prm;
+					}
+					function Prm{
+						lim += 0.4;
+						speed += 0.01;
+						i += -0.1 * r;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 1.5;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 4 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.6;
+					let u = 0;
+					let v = 0;
+					let wt = 120;
+					loop( 740 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 1.03 * r;
+						disp += 0.5;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern3{
+			let way = 2;
+			let col = 3;
+			let angle = 0;
+			loop( way ){
+				SetFamilier( angle, col, 240, 45, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 40 );
+			angle = 180;
+			loop( way ){
+				SetFamilier( angle, col, 260, 135, -1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let disp, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_24 + c[col];
+				Sub;
+				
+				let lim = 40;
+				let rel = 700;
+				let wt = 3;
+				let speed = 1;
+				let i = -42 * r;
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 3 ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, 1.6 );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 3 ){
+						Prm;
+					}
+					function Prm{
+						lim += 0.4;
+						speed += 0.005;
+						i += 0.3 * r;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 2;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 3 );
+					}
+				}
+				
+				task Move{
+					let um = dmax;
+					let vm = dmax*0.6;
+					let u = 0;
+					let v = 0;
+					let wt = 60;
+					loop( 700 ){
+						sx = gpos[0] + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+						sy = gpos[1] + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( u < um ){ u += um / wt; }
+						if( v < vm ){ v += vm / wt; }
+						ag += 1.41 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern2{
+			let way = 3;
+			let col = 2;
+			let angle = 40;
+			loop( way ){
+				SetFamilier( angle, col, 240, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 30 );
+			angle = 180;
+			loop( way ){
+				SetFamilier( angle, col, 200, -1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_24 + c[col];
+				Sub;
+				
+				let lim = 16;
+				let rel = 600;
+				let wt = 3;
+				let speed = 1;
+				let i = 20 * r;
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 16 ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, 1 );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 12 ){
+						Prm;
+					}
+					function Prm{
+						lim += 0.7;
+						speed += 0.01;
+						i += -0.2 * r;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 0.6;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+				
+				task Move{
+					let dist = 0;
+					loop( 600 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist < dmax ){ dist += dmax / 120; }
+						ag += 1.13 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern1{
+			let way = 2;
+			let col = 0;
+			let angle = 30;
+			loop( way ){
+				SetFamilier( angle, col, 170, 1 );
+				angle += 360 / way;
+			}
+			Wait_S( 60 );
+			angle = 150;
+			loop( way ){
+				SetFamilier( angle, col, 200, -1 );
+				angle += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let dmax, let r ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+
+				Move;
+				Wait_S( 120 );
+				
+				let shote = BGW_RED_24 + c[col];
+				Sub;
+				
+				let lim = 16;
+				let rel = 600;
+				let wt = 3;
+				let speed = 2;
+				let i = -20 * r;
+				while( !Obj_IsDeleted( fam ) ){
+					loop( 8 ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + i;
+						
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+						ShotPattern( sht, lim, rel, 2.6 );
+						
+						ObjSound_Play( CreateShotSE[1] );
+						Prm;
+					}
+					loop( 6 ){
+						Prm;
+					}
+					function Prm{
+						lim += 0.5;
+						i += 0.3 * r;
+						rel -= wt;
+						Wait_S( wt );
+					}
+				}
+				
+				task Sub{
+					let speed = 0.6;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+				
+				task Move{
+					let dist = 0;
+					loop( 600 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist < dmax ){ dist += dmax / 120; }
+						ag += 1.13 * r;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task Pattern0{
+			let ar_fam = [];
+			let col = [ 0, 2, 3, 5, 6 ];
+			let way = 5;
+			let ag = 0;
+			ascent( idx in 0..way ){
+				SetFamilier( ag, col[ idx ], idx );
+				ag += 360 / way;
+			}
+			task SetFamilier( let ag, let col, let idx ){
+				ObjSound_Play( CreateShotSE[13] );
+				let fam = CreateEnemy_Sikigami( 100, col, true, false );
+				let sx = CenX;
+				let sy = CenY;
+				let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+				ar_fam = ar_fam~[fam];
+
+				Move;
+
+				Wait_S( 60 );
+				Laser;
+				Wait_S( 60 );
+				let shote = BGW_RED_24 + c[col];
+
+				Sub;
+				
+				let wt = 3;
+				let lim = 30;
+				let rel = 580;
+				let count = 0;
+				let speed = 2;
+				while( !Obj_IsDeleted( fam ) ){
+					let p = atan2( gpos[1] - sy, gpos[0] - sx );
+					let angle = p + 10 + count/3;
+
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+					ShotPattern( sht, lim, rel, 2 );
+					speed += 0.01;
+					lim += 0.3;
+					count++;
+					rel -= wt;
+					ObjSound_Play( CreateShotSE[1] );
+					Wait_S( wt );
+				}
+
+				task Sub{
+					let speed = 1;
+					let wide = 40;
+					while( !Obj_IsDeleted( fam ) ){
+						let p = atan2( gpos[1] - sy, gpos[0] - sx );
+						let angle = p + 180 - wide / 2;
+						loop( 3 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, 0 );
+							ShotPattern( sht, 1000, 0, speed );
+							angle += wide / 2;
+						}
+						Wait_S( 6 );
+					}
+				}
+
+				task Laser{
+					let color = [ [ 255, 0, 0 ],
+								  [ 255, 100, 100 ],
+								  [ 255, 255, 0 ],
+								  [ 0, 255, 0 ],
+								  [ 100, 100, 255 ],
+								  [ 0, 0, 255 ],
+								  [ 255, 0, 255 ],
+								  [ 128, 128, 128 ]];
+					let lsr = CreateSwordLaser( [ sx, sy ], ag, 0, 48, 520, color[col], 90 );
+					while( !Obj_IsDeleted( fam ) ){
+						let target = ar_fam[ ( idx + 2 ) % length( ar_fam ) ];
+						let tpos = [ ObjMove_GetX( target ), ObjMove_GetY( target ) ];
+						let p = atan2( tpos[1] - sy, tpos[0] - sx );
+						let leng = GetDistance( [ sx, sy ], tpos );
+						ObjMove_SetPosition( lsr, sx, sy );
+						ObjStLaser_SetAngle( lsr, p );
+						ObjLaser_SetLength( lsr, leng );
+						Wait( 1 );
+					}
+					Obj_Delete( lsr );
+				}
+				
+				task Move{
+					let dist = 0;
+					loop( 660 ){
+						sx = gpos[0] + dist * cos( ag );
+						sy = gpos[1] + dist * sin( ag );
+						ObjMove_SetPosition( fam, sx, sy );
+						ObjMove_SetAngle( fam, atan2( gpos[1] - sy, gpos[0] - sx ) );
+						if( dist <= 190 ){ dist += 1; }
+						ag += 1.34;
+						Wait_S( 1 );
+					}
+					ObjEnemy_AddLife( fam, -256 );
+				}
+			}
+		}
+
+		task ShotPattern( let obj, let lim, let rel, let spd ){
+			ObjShot_SetSpellResist( obj, true );
+			let speed = ObjMove_GetSpeed( obj );
+			let angle = ObjMove_GetAngle( obj );
+			let s_spd = speed;
+			let sx = ObjMove_GetX( obj );
+			let sy = ObjMove_GetY( obj );
+			let vx = speed * cos( angle );
+			let vy = speed * sin( angle );
+			ObjMove_SetSpeed( obj, 0 );
+			loop( lim ){
+				sx += vx;
+				sy += vy;
+				ObjMove_SetPosition( obj, sx, sy );
+				if( Wait( 1 ) ){ return; }
+				while( IsPlayerInv ){
+					if( Wait( 1 ) ){ return; }
+				}
+			}
+			if( Obj_IsDeleted( obj ) ){ return; }
+			loop( max( rel-lim, 0 ) ){
+				ObjMove_SetPosition( obj, sx, sy );
+				if( Wait_S( 1 ) ){ return; }
+			}
+			speed = 0;
+			while( !Obj_IsDeleted( obj ) ){
+				vx = speed * cos( angle );
+				vy = speed * sin( angle );
+				sx += vx;
+				sy += vy;
+				ObjMove_SetPosition( obj, sx, sy );
+				if( speed < spd ){ speed += spd / 90; }
+				if( Wait( 1 ) ){ return; }
+				while( IsPlayerInv ){
+					if( Wait( 1 ) ){ return; }
+				}
+			}
+		}
+
+		
+		task State{
+			let timer = ObjEnemyBossScene_GetInfo( spl, INFO_TIMERF );
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				if( IsPlayerInv ){
+					ObjEnemyBossScene_SetSpellTimer( spl, timer );
+				}else{
+					timer = ObjEnemyBossScene_GetInfo( spl, INFO_TIMERF );
+				}
+				SetAreaCommonData( "anime", "spa", true );
+				yield;
+			}
+			SetAreaCommonData( "anime", "spa", false );
+		}
+
+		task TimeSealed( pos, rgb_array, scale, blend ){
+			let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+			let alpha	= 0;
+			let count	= 0;
+			let animC	= 0;
+			let anim1	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+			ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg4img/chokurei.png" );
+			Obj_SetRenderPriorityI(ID, 79 );
+			ObjRender_SetBlendType(ID, blend );
+			ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjSprite2D_SetSourceRect(ID, 64, 96, 192, 128 );
+			ObjSprite2D_SetDestCenter(ID);
+			
+			while( !Obj_IsDeleted( enm ) ){
+				move1 = 1 * sin( moveA );
+				
+				if( IsPlayerInv ){
+					if( alpha < 255 ){ alpha += 15; }
+				}
+				else{
+					if( alpha > 0 ){ alpha -= 15; }
+				}
+				
+				ObjRender_SetScaleXYZ(ID, scale*2 - move1*scale, scale*2 - move1*scale, 0 );
+				ObjRender_SetAlpha(ID, move1*alpha );
+				
+				count++;
+				if( move1 < 1 ){ moveA += 5; }
+				animC++;
+				if( animC > 0 && animC%2 == 0 ){ anim1++; }
+				
+				yield;
+			}
+			while( move1 > 0 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetScaleXYZ(ID, move1*scale, scale*2 - move1*scale, 0 );
+				ObjRender_SetAlpha(ID, move1*alpha );
+				
+				count++;
+				moveA += 10;
+				animC++;
+				if( animC > 0 && animC%2 == 0 ){ anim1++; }
+				
+				yield;
+			}
+			Obj_Delete( ID );
+		}
+	}
+	
+	

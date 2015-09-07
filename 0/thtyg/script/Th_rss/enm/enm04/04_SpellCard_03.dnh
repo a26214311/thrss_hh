@@ -1,0 +1,504 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　大剣「安徳帝入刀」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm04_setting.dnh"
+	#include "./lib_enm04_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　エフェクト展開済みにしておく
+		SetEffect_Enm04( enm, 1 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+			ShotMain( enm );
+		}
+		
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 4, 3 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm04a( enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "大剣「安徳帝入刀」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "宝剣「ソウルディバイド」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "宝剣「斬海剣」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "宝剣「斬海剣」";
+		}
+		
+		SpellCounter( GetDifficult, 4, 3 );
+		let sct = GetSpellCounter( GetDifficult, 4, 3 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 256, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_04(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　way数
+		let roundway= 1;
+		let lp		= 5;
+
+		let slp		= 1;
+
+		let wtA		= 60;
+		let wtB		= 0;
+
+		let wd		= 8;
+		let rd		= 3;
+
+		let speed	= 4;
+		let acc		= -0.2;
+		let mx		= 1;
+
+
+		let loopcount = 260;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			roundway = 1;
+			loopcount = 360;
+			rd = 0;
+		}
+		case( "Normal" ){
+			wd = 16;
+		}
+		case( "Hard" ){
+			lp			= 7;
+			roundway = 4;
+			loopcount = 240;
+		}
+		case( "Lunatic" ){
+			lp			= 5;
+			slp = 3;
+			wtB = 30;
+			roundway = 3;
+			loopcount = 280;
+		}
+		case( "OverDrive" ){
+		}
+
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		State;
+		task State{
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+		
+		loop{
+			if( Wait( 30 ) ){ return; }
+			let angle = GetAngleToPlayer( ID );
+			let plx = GetPlayerX;
+			let ply = GetPlayerY;
+			loop( slp ){
+				let px = gpos[0];
+				let py = gpos[1];
+				if( GetDifficult == "Lunatic" ){ px = plx; py = ply; }
+				while( px > MinX && px < MaxX && py > MinY && py < MaxY ){
+					px += 10*cos(angle+180);
+					py += 10*sin(angle+180);
+				}
+				local{
+					px += 64*cos(angle+180);
+					py += 64*sin(angle+180);
+				}
+				CreateBraidAttackA( [ px, py ], angle, 0.8, 60 );
+				if( Wait( wtB ) ){ return; }
+				angle += 360 / slp;
+			}
+
+			if( Wait(loopcount) ){ return; }
+			/*
+			if( GetDifficult == "Hard" || GetDifficult == "Lunatic" ){
+				if( frame == 60 ){
+					CreateBraidAttack( [ MinX-64, GetPlayerY() ], 0, 0.8, 60, lp[0] );
+				}
+			}
+			//*/
+			//　パワー溜め
+			Concentration03_Main(enm, power_rgb, 60 );
+			EnemyMove(enm, 2, 8 );
+			SetAreaCommonData( "anime", "spa", false );
+		}
+
+		function Wait(wt){
+			loop(wt){
+				yield;
+				if( Obj_IsDeleted(ID) ){ return true; }
+			}
+			return false;
+		}
+
+		task CreateBraidAttackA( pos, angle, width, delay ){
+			let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+			let frame	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			let rgb_array = [ 255, 255, 255 ];
+			
+			ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+			ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg4img/enm4eff_02a.png" );
+			Obj_SetRenderPriorityI(ID, 50 );
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjRender_SetScaleX(ID, 0.01 );
+			ObjRender_SetAngleZ(ID, angle-90 );
+			ObjPrim_SetVertexPosition(ID, 0, -256, 0, 0 );
+			ObjPrim_SetVertexPosition(ID, 1, -256, move1*1024, 0 );
+			ObjPrim_SetVertexPosition(ID, 2, 256, -0, 0 );
+			ObjPrim_SetVertexPosition(ID, 3, 256, move1*1024, 0 );
+			ObjPrim_SetVertexUVT(ID, 0, 0, 0 );
+			ObjPrim_SetVertexUVT(ID, 1, 0, 1024 );
+			ObjPrim_SetVertexUVT(ID, 2, 512, 0 );
+			ObjPrim_SetVertexUVT(ID, 3, 512, 1024 );
+			
+			ObjSound_Play( CreateShotSE[5] );
+			WorldShake_Single( delay+120, 4 );
+			
+			while( !Obj_IsDeleted(enm) && move1 < 1 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetAlpha(ID, move1*255 );
+				ObjPrim_SetVertexPosition(ID, 1, -256, move1*1024, 0 );
+				ObjPrim_SetVertexPosition(ID, 3, 256, move1*1024, 0 );
+				ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+				
+				if( frame%4 == 0 ){
+					FlashLight(
+						[ rand(MinX,MaxX), pos[1]+512, 0 ],
+						[ 0, rand(-1,-8), rand(0,360) ],
+						rand(0.01,0.1),
+						rand(192,255),
+						rand(30,60),
+						[255,255,255]
+					);
+				}
+				
+				frame++;
+				moveA += 1;
+				
+				yield;
+			}
+			
+			loop( delay ){
+				if( Obj_IsDeleted(enm) ){ break; }
+				
+				ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+				
+				if( frame%4 == 0 ){
+					FlashLight(
+						[ rand(MinX,MaxX), pos[1]+512, 0 ],
+						[ 0, rand(-1,-8), rand(0,360) ],
+						rand(0.01,0.1),
+						rand(192,255),
+						rand(30,60),
+						[255,255,255]
+					);
+				}
+				
+				frame++;
+				
+				yield;
+			}
+			
+			ObjSound_Play( CreateShotSE[8] );
+			WorldShake_Single( 16, 32 );
+			
+			SetAreaCommonData( "anime", "spa", true );
+			
+			//　剣戟
+			let epos = [ pos[0]+724*cos(angle), pos[1]+724*sin(angle) ];
+			CreateBraidShot( pos, epos );
+			
+			move1 = 0;
+			moveA = 0;
+			while( !Obj_IsDeleted(enm) && move1 < 1 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetScaleX(ID, 0.01+move1*width );
+				ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+
+				//斬撃判定
+				local{
+					if( IsIntersected_Line_Circle( 
+					 pos[0], pos[1], epos[0], epos[1],
+					 64, GetPlayerX, GetPlayerY, 1 ) ){
+						PlayerShootingDown;
+					}
+
+					//自機を撃墜させる関数が無いので酷いやり方で実装
+					task PlayerShootingDown{
+						let obj = ObjShot_Create( OBJ_SHOT );
+						ObjShot_SetAutoDelete( obj, false );
+						ObjMove_SetPosition( obj, -100, -100 );
+						ObjShot_SetIntersectionCircleA2( obj, GetPlayerX, GetPlayerY, 10 );
+						ObjShot_Regist( obj );
+						yield;
+						Obj_Delete( obj );
+					}
+				}
+				
+				if( frame%4 == 0 ){
+					FlashLight(
+						[ rand(MinX,MaxX), pos[1]+512, 0 ],
+						[ 0, rand(-1,-8), rand(0,360) ],
+						rand(0.01,0.1),
+						rand(192,255),
+						rand(30,60),
+						[255,255,255]
+					);
+				}
+				
+				frame++;
+				moveA += 10;
+				
+				yield;
+			}
+			move1 = 0;
+			moveA = 0;
+			while( !Obj_IsDeleted(enm) && move1 < 1 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetScaleX(ID, (0.01+width) + move1*(0.01+width) );
+				ObjRender_SetAlpha(ID, 255 - move1*255 );
+				ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+				ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+				
+				if( frame%4 == 0 ){
+					FlashLight(
+						[ rand(MinX,MaxX), pos[1]+512, 0 ],
+						[ 0, rand(-1,-8), rand(0,360) ],
+						rand(0.01,0.1),
+						rand(192,255),
+						rand(30,60),
+						[255,255,255]
+					);
+				}
+				
+				frame++;
+				moveA += 5;
+				
+				yield;
+			}
+			Obj_Delete( ID );
+		}
+
+		task CreateBraidShot( Spos, Epos ){
+			let m_angle		= GetGapAngle( Spos, Epos );
+			let distance	= GetDistance( Spos, Epos );
+			let move		= 0;
+			let shote1		= [
+				ADD_BGW_RED_22,
+				ADD_BGW_ORANGE_22,
+				ADD_BGW_YELLOW_22,
+				ADD_BGW_GREEN_22,
+				ADD_BGW_AQUA_22,
+				ADD_BGW_BLUE_22,
+				ADD_BGW_PURPLE_22,
+			];
+			let shote2		= [
+				BGB_RED_14,
+				BGB_ORANGE_14,
+				BGB_YELLOW_14,
+				BGB_GREEN_14,
+				BGB_AQUA_14,
+				BGB_BLUE_14,
+				BGB_PURPLE_14,
+			];
+			
+			loop( lp ){
+				if( Obj_IsDeleted(enm) ){ break; }
+				
+				let pos = [
+					Spos[0] + move * cos( m_angle ),
+					Spos[1] + move * sin( m_angle ),
+				];
+				
+				ascent( let i in 0..( length(shote2) ) ){
+					let sht = [
+						CreateShotA2( pos[0], pos[1], rand(0,1)+(i+1), m_angle+rand(-90,90), -0.3, 0, shote1[ i ], 16 ),
+						CreateShotA2( pos[0], pos[1], rand(0,1)+(i+1), m_angle+rand(90,270), -0.3, 0, shote1[ i ], 16 ),
+					];
+					ascent( let j in 0..( length(sht) ) ){
+						SetShot( sht[j], shote2[ i ] );
+						NotifyEventAll( EV_USER + 40, [ sht[j], 16 ] );
+					}
+				}
+				
+				task SetShot( CallID, shote ){
+					loop( wtA ){
+						if( Obj_IsDeleted(enm) ){ break; }
+						yield;
+					}
+					
+					//　削除済みなら生成しない
+					if( Obj_IsDeleted(CallID) ){ return; }
+					
+					let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+					let angle	= GetGapAngle( gpos, [ GetPlayerX, GetPlayerY ] );
+
+					angle += round( rand( -rd, rd ) ) * wd;
+
+					loop( roundway ){
+						CreateShot01( gpos, speed, angle, acc, mx, shote, 16 );
+						angle += 360 / roundway;
+					}
+					
+					Obj_SetValue( CallID, "Item_Off", true );
+					ObjShot_ToItem( CallID );
+				}
+				
+				ObjSound_Play( CreateShotSE[1] );
+				
+				move += distance / lp;
+				
+				yield;
+			}
+		}
+	}	
+	

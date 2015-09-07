@@ -1,0 +1,48 @@
+	
+	
+	//　stage3ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 255000000;
+	
+	//　ボスオーラ色
+	let aura_rgb	= [
+		[ 60, 74, 149 ],
+		[ 16, 32, 8 ],
+	];
+	
+	//　敵パワー集中エフェクト色　ボス用
+	let power_rgb	= [ 161, 156, 199 ];
+	let power_rgb_c = [64,64,255];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path_c	= csd ~ "./../../img/stg/stg8img/00_enm8.png";
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg8img/enm08a.png";
+	let enemy_cutin_path1	= chara_tex[64];	//　2
+	let enemy_cutin_path2	= chara_tex[67];
+
+	//　しずえカットインの設定
+	let CHAR_CUTIN_MODE		= "TOUGENKYU";
+	let enemy_cutin2_pos	= [ 260, 160 ];
+
+	//　2点間の距離を取得
+	function GetDistance( pos1, pos2 ){
+		return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+	}
+
+	//　pos1 から見た pos2 への角度を取得
+	function GetGapAngle( pos1, pos2 ){
+		return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+	}
+	

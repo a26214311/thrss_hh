@@ -1,0 +1,282 @@
+
+/*このファイルにある関数
+
+Front1
+STGフレーム(外枠)表示
+
+FrontLine(x,y,delay,r,g,b,mxs)	引数7
+x:表示座標X
+y:表示座標Y
+delay:延滞時間
+r:色r
+g:色g
+b:色b
+mxs:長さ
+
+Front2()
+ハイ得点とかの文字表示
+
+DisplayNowFps()
+現在Fps表示
+
+*/
+
+task Front1(BOOL_SCENE_CENTER,path){
+	let fron		= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let i	= 0;
+	let swb	= GetAreaCommonData("System","StgWorldBreak",true);
+	
+	if( BOOL_SCENE_CENTER ){
+		SetStgFrame(128, 16, 640-128, 480-16, 20, 80 );
+	}
+	
+	loop( length(fron) ){
+		ObjPrim_SetTexture(fron[i], path );
+		Obj_SetRenderPriorityI(fron[i], 1 );
+		ObjRender_SetBlendType(fron[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(fron[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(fron[i], 1, 1, 0 );
+		i++;
+	}
+	i = 0;
+	
+	if( !BOOL_SCENE_CENTER ){
+		ObjRender_SetPosition(fron[0], 0+16, 0+240, 0 );
+		ObjRender_SetPosition(fron[1], 512+16, 0+240, 0 );
+		ObjRender_SetPosition(fron[2], 32+192, 0+8, 0 );
+		ObjRender_SetPosition(fron[3], 32+192, 480-8, 0 );
+		
+		ObjSprite2D_SetSourceRect(fron[0], 0, 0, 32, 480 );
+		ObjSprite2D_SetDestCenter(fron[0]);
+		ObjSprite2D_SetSourceRect(fron[1], 32, 0, 256, 480 );
+		ObjSprite2D_SetDestCenter(fron[1]);
+		ObjSprite2D_SetSourceRect(fron[2], 0, 480, 384, 496 );
+		ObjSprite2D_SetDestCenter(fron[2]);
+		ObjSprite2D_SetSourceRect(fron[3], 0, 496, 384, 512 );
+		ObjSprite2D_SetDestCenter(fron[3]);
+	}
+	else{
+		ObjRender_SetPosition(fron[0], 0+64, 0+240, 0 );
+		ObjRender_SetPosition(fron[1], 640-64, 0+240, 0 );
+		ObjRender_SetPosition(fron[2], 0+192+128, 0+8, 0 );
+		ObjRender_SetPosition(fron[3], 0+192+128, 480-8, 0 );
+		
+		ObjSprite2D_SetSourceRect(fron[0], 0, 0, 128, 480 );
+		ObjSprite2D_SetDestCenter(fron[0]);
+		ObjSprite2D_SetSourceRect(fron[1], 128, 0, 256, 480 );
+		ObjSprite2D_SetDestCenter(fron[1]);
+		ObjSprite2D_SetSourceRect(fron[2], 0, 480, 384, 496 );
+		ObjSprite2D_SetDestCenter(fron[2]);
+		ObjSprite2D_SetSourceRect(fron[3], 0, 496, 384, 512 );
+		ObjSprite2D_SetDestCenter(fron[3]);
+	}
+	
+	while( !swb ){
+		swb	= GetAreaCommonData("System","StgWorldBreak",true);
+		yield;
+	}
+	loop( length(fron) ){
+		Obj_Delete(fron[i]);
+		i++;
+	}
+	i = 0;
+}
+
+task FrontLine(x,y,delay,rgb_h,mxs){
+	let fronl	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let swb		= GetAreaCommonData("System","StgWorldBreak",true);
+	let move1	= 0;
+	let moveA	= 0;
+	let alpha	= 0;
+	
+	ObjRender_SetPosition(fronl, x, y, 0 );
+	ObjPrim_SetTexture(fronl, path_front01 );
+	Obj_SetRenderPriorityI(fronl, 1 );
+	ObjRender_SetBlendType(fronl, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(fronl, 0, 0, move1 );
+	ObjRender_SetScaleXYZ(fronl, move1, 1.2, 0 );
+	ObjPrim_SetVertexCount(fronl, 6 );
+	ObjPrim_SetVertexPosition(fronl, 0, -18, -1, 0 );
+	ObjPrim_SetVertexPosition(fronl, 1, -18, 1, 0 );
+	ObjPrim_SetVertexPosition(fronl, 2, 0, -1, 0 );
+	ObjPrim_SetVertexPosition(fronl, 3, 0, 1, 0 );
+	ObjPrim_SetVertexPosition(fronl, 4, 18, -1, 0 );
+	ObjPrim_SetVertexPosition(fronl, 5, 18, 1, 0 );
+	ObjPrim_SetVertexUVT(fronl, 0, 128, 64 );
+	ObjPrim_SetVertexUVT(fronl, 1, 128, 65 );
+	ObjPrim_SetVertexUVT(fronl, 2, 190, 64 );
+	ObjPrim_SetVertexUVT(fronl, 3, 190, 65 );
+	ObjPrim_SetVertexUVT(fronl, 4, 256, 64 );
+	ObjPrim_SetVertexUVT(fronl, 5, 256, 65 );
+	ObjPrim_SetVertexColor(fronl, 0, 255, 255, 255 );
+	ObjPrim_SetVertexColor(fronl, 1, 255, 255, 255 );
+	ObjPrim_SetVertexColor(fronl, 2, rgb_h[0],rgb_h[1],rgb_h[2]);
+	ObjPrim_SetVertexColor(fronl, 3, rgb_h[0],rgb_h[1],rgb_h[2]);
+	ObjPrim_SetVertexColor(fronl, 4, 255, 255, 255 );
+	ObjPrim_SetVertexColor(fronl, 5, 255, 255, 255 );
+	
+	loop(delay){ yield; }
+	
+	while( move1 < 1 ){
+		swb	= GetAreaCommonData("System","StgWorldBreak",true);
+		
+		if( move1 < 1 ){ moveA += 2; }
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(fronl, move1*mxs, 1, 0 );
+		ObjRender_SetAngleXYZ(fronl, 0, 0, -180 + move1*180 );
+		
+		if( swb ){ break; }
+		
+		yield;
+	}
+	while( !swb ){
+		swb	= GetAreaCommonData("System","StgWorldBreak",true);
+		yield;
+	}
+	Obj_Delete(fronl);
+}
+
+task Front2(lay){
+	let fron2	= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let swb		= GetAreaCommonData("System","StgWorldBreak",true);
+	let i		= 0;
+	
+	loop( length(fron2) ){
+		ObjPrim_SetTexture(fron2[i], path_front01 );
+		Obj_SetRenderPriorityI(fron2[i], lay );
+		ObjRender_SetBlendType(fron2[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(fron2[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(fron2[i], 1, 1, 0 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetPosition(fron2[0], MaxX+38+32, MinY+40+16, 0 );//+32 +16
+	ObjRender_SetPosition(fron2[1], MaxX+27+32, MinY+65+16, 0 );
+	ObjRender_SetPosition(fron2[2], MaxX+39+32, MinY+95+20, 0 );	//　残機
+	ObjRender_SetPosition(fron2[3], MaxX+47+32, MinY+132+20, 0 );	//　スペルカード
+	ObjRender_SetPosition(fron2[5], MaxX+72+30, MinY+235+2, 0 );	//　最大得点
+	ObjRender_SetPosition(fron2[4], MaxX+56+32, MinY+264+8, 0 );	//　グレイズ
+	ObjSprite2D_SetSourceRect(fron2[0], 0, 0, 128, 32 );
+	ObjSprite2D_SetDestCenter(fron2[0]);
+	ObjSprite2D_SetSourceRect(fron2[1], 0, 32, 128, 64 );
+	ObjSprite2D_SetDestCenter(fron2[1]);
+	ObjSprite2D_SetSourceRect(fron2[2], 0, 64, 128, 96 );
+	ObjSprite2D_SetDestCenter(fron2[2]);
+	ObjSprite2D_SetSourceRect(fron2[3], 0, 288, 128, 320 );
+	ObjSprite2D_SetDestCenter(fron2[3]);
+	ObjSprite2D_SetSourceRect(fron2[4], 0, 128, 128, 160 );
+	ObjSprite2D_SetDestCenter(fron2[4]);
+	ObjSprite2D_SetSourceRect(fron2[5], 0, 160, 128, 192 );
+	ObjSprite2D_SetDestCenter(fron2[5]);
+	
+	while( !swb ){
+		swb	= GetAreaCommonData("System","StgWorldBreak",true);
+		yield;
+	}
+	loop( length(fron2) ){
+		Obj_Delete(fron2[i]);
+		i++;
+	}
+	i = 0;
+}
+
+task DisplayNowFps(lay){
+	let id		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i			= 0;
+	let swb			= GetAreaCommonData("System","StgWorldBreak",true);
+	let r			= 255;
+	let g			= 255;
+	let b			= 255;
+	let sca			= 0.6;
+	
+	loop( length(id) ){
+		ObjPrim_SetTexture(id[i], path_front01 );
+		Obj_SetRenderPriorityI(id[i], lay );
+		ObjRender_SetBlendType(id[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(id[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(id[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(id[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(id[i]);
+		ObjRender_SetColor(id[i], 32, 255, 255 );
+		ObjRender_SetAlpha(id[i], 255 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetScaleXYZ(id[4], sca-0.1, sca-0.1, 0 );
+	ObjRender_SetScaleXYZ(id[5], sca-0.1, sca-0.1, 0 );
+	
+	while( !swb ){
+		let gogx		= ObjRender_GetX(id[0]);
+		let gogy		= ObjRender_GetY(id[0]);
+		let fps1		= truncate(GetCurrentFps()%10);
+		let fps2		= truncate((GetCurrentFps()%100)/10);
+		let fps3		= truncate((GetCurrentFps()%1000)/100);
+		let fps4		= truncate((GetCurrentFps()*100%100)/10);
+		let fps5		= truncate((GetCurrentFps()*100%1000)/100);
+		let swb			= GetAreaCommonData("System","StgWorldBreak",true);
+		
+		ObjRender_SetPosition(id[0], MaxX+256-30, MaxY+23, 0 );
+		ObjRender_SetPosition(id[1], gogx-10, gogy, 0 );
+		ObjRender_SetPosition(id[2], gogx-20, gogy, 0 );
+		ObjRender_SetPosition(id[3], gogx+8, gogy+5, 0 );
+		ObjRender_SetPosition(id[4], gogx+15, gogy+1, 0 );
+		ObjRender_SetPosition(id[5], gogx+23, gogy+1, 0 );
+		
+		ObjSprite2D_SetSourceRect(id[0], 0 + 24*uv[fps1], 488, 24 + 24*uv[fps1], 512 );
+		ObjSprite2D_SetSourceRect(id[1], 0 + 24*uv[fps2], 488, 24 + 24*uv[fps2], 512 );
+		ObjSprite2D_SetSourceRect(id[2], 0 + 24*uv[fps3], 488, 24 + 24*uv[fps3], 512 );
+		ObjSprite2D_SetSourceRect(id[3], 0 + 24*uv[13], 488, 24 + 24*uv[13], 512 );
+		ObjSprite2D_SetSourceRect(id[4], 0 + 24*uv[fps4], 488, 24 + 24*uv[fps4], 512 );
+		ObjSprite2D_SetSourceRect(id[5], 0 + 24*uv[fps5], 488, 24 + 24*uv[fps5], 512 );
+		
+		if( GetCurrentFps < 10 ){
+			ObjRender_SetAlpha(id[1], 0 );
+			ObjRender_SetAlpha(id[2], 0 );
+			r = 255;
+			g = 200;
+			b = 200;
+		}
+		else if( GetCurrentFps < 100 ){
+			ObjRender_SetAlpha(id[1], 255 );
+			ObjRender_SetAlpha(id[2], 0 );
+			r = 255;
+			g = 255;
+			b = 255;
+		}
+		else{
+			ObjRender_SetAlpha(id[1], 255 );
+			ObjRender_SetAlpha(id[2], 255 );
+			r = 200;
+			g = 200;
+			b = 255;
+		}
+		
+		loop( length(id) ){
+			ObjRender_SetColor(id[i], r, g, b );
+			i++;
+		}
+		i = 0;
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+}

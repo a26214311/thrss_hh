@@ -1,0 +1,442 @@
+
+	//　BGMのループサンプル数
+	let sample	= [
+		[1516656,4131216],	//　タイトル	0
+		[194736,6777600],	//　1 ROAD		1
+		[209904,4293504],	//　1 BOSS		2
+		[191760,6608256],	//　2 ROAD		3
+		[178272,3886416],	//　2 BOSS		4
+		[680832,5891904],	//　3 ROAD		5
+		[186624,4682208],	//　3 BOSS		6
+		
+		[847344,9207024],	//　4 ROAD		7
+		[334320,6093552],	//　4 BOSS		8
+		[327264,5806176],	//　5 ROAD		9
+		[305760,7424736],	//　5 BOSS		10
+		[516096,5962944],	//　6 ROAD		11
+		[987744,10719312],	//　6 BOSS		12
+		
+		[234816,3306768],	//　ED			13
+		[1166592,5006736],	//　SR			14
+		
+		[864432,8907984],	//　EX ROAD		15
+		[754176,6951888],	//　EX BOSS		16
+		[974688,9634080],	//　PH ROAD		17
+		[1753344,11300976],	//　PH BOSS		18
+		
+		[207984,2766768],	//　PS			19
+	];
+
+
+task PlayMusic( int_play_num, bool_fade_out, int_delay ){
+	SetAreaCommonData("Trance"," BGM_Play", int_play_num );
+	SetAreaCommonData("Trance", "BGM_FadeOut", bool_fade_out );
+	SetAreaCommonData("Trance", "BGM_Delay", int_delay );
+}
+
+//　ゲーム中用
+task PlayMusic_Main(){
+	let delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+	let stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+	let play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+	let fade	= GetAreaCommonData("Trance", "BGM_FadeOut", false );
+	let delay	= GetAreaCommonData("Trance", "BGM_Delay", 0 );
+	let volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	let ID		= ObjSound_Create();
+	let vol1	= 0;
+	let volA	= 0;
+	
+	//　前に流れてたBGM削除中なら待機
+	while( delete && !swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		yield;
+	}
+	
+	//　play -1なら待機
+	while( play < 0 && !swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		yield;
+	}
+	
+	//　プレイヤーズスコアの時は音量を-10
+	if( play == 19 && volume-10 > 0 ){ volume -= 10; }
+	
+	//　ミュージックルーム解放
+	if( GetAreaCommonData("SaveData", "MusicFlg", 0 ) < play ){
+		SetAreaCommonData("SaveData", "MusicFlg", play );
+	}
+	
+	ObjSound_Load(ID, Music_all[ play ] );
+	ObjSound_SetSoundDivision(ID, SOUND_BGM );
+	ObjSound_SetVolumeRate(ID, volume );
+	ObjSound_SetLoopEnable(ID, true );
+	ObjSound_SetRestartEnable(ID, true );
+	ObjSound_SetLoopSampleCount(ID, sample[ play ][0], sample[ play ][1] );
+	
+	loop( delay ){
+		stop = GetAreaCommonData("Trance", "BGM_Stop", false );
+		yield;
+	}
+	
+	ObjSound_Play(ID);
+	
+	if( stop ){
+		ObjSound_Stop(ID);
+	}
+	else{
+		ObjSound_Play(ID);
+	}
+	
+	while( !delete && !swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		
+		volume = 100 - 100 * ( ( 100 - volume ) / 100 )^2;
+		
+		ObjSound_SetVolumeRate(ID, volume );
+		
+		if( stop ){
+			ObjSound_Stop(ID);
+		}
+		else{
+			ObjSound_Play(ID);
+		}
+		
+		yield;
+	}
+	while( fade && vol1 < 1 && !swb && !stop ){
+		volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		
+		volume = 100 - 100 * ( ( 100 - volume ) / 100 )^2;
+		vol1 = 1 * sin( volA );
+		
+		ObjSound_SetVolumeRate(ID, volume - vol1*volume );
+		
+		volA += 2;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+	SetAreaCommonData("Trance", "BGM_Delete", false );
+	SetAreaCommonData("Trance", "BGM_Stop", false );
+	if( !swb ){
+		PlayMusic_Main();
+	}
+	else{
+		SetAreaCommonData("Trance"," BGM_Play", -1 );
+	}
+}
+
+//　タイトル、ミュージックルーム用
+task PlayMusic_Title( int_play_num, bool_fade_out, int_delay ){
+	let delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+	let stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+	let play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+	let volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+	let ID		= ObjSound_Create();
+	let vol1	= 0;
+	let volA	= 0;
+	
+	//　前に流れてたBGM削除中なら待機
+	while( delete && swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		yield;
+	}
+	
+	//　再生ナンバー設定
+	SetAreaCommonData("Trance"," BGM_Play", int_play_num );
+	
+	//　play -1なら待機
+	while( play < 0 && swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		play	= GetAreaCommonData("Trance"," BGM_Play", -1 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		yield;
+	}
+
+	volume = 100 - 100 * ( ( 100 - volume ) / 100 )^2;
+	
+	ObjSound_Load(ID, Music_all[ int_play_num ] );
+	ObjSound_SetSoundDivision(ID, SOUND_BGM );
+	ObjSound_SetVolumeRate(ID, volume );
+	ObjSound_SetLoopEnable(ID, true );
+	ObjSound_SetRestartEnable(ID, false );
+	ObjSound_SetLoopSampleCount(ID, sample[ int_play_num ][0], sample[ int_play_num ][1] );
+	
+	loop( int_delay ){ yield; }
+	
+	ObjSound_Play(ID);
+	
+	while( !delete && swb ){
+		delete	= GetAreaCommonData("Trance", "BGM_Delete", false );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+
+		volume = 100 - 100 * ( ( 100 - volume ) / 100 )^2;
+		
+		ObjSound_SetVolumeRate(ID, volume );
+		
+		if( stop ){
+			ObjSound_Stop(ID);
+		}
+		else{
+			ObjSound_Play(ID);
+		}
+		
+		yield;
+	}
+	while( bool_fade_out && vol1 < 1 && swb && !stop ){
+		volume	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		volume = 100 - 100 * ( ( 100 - volume ) / 100 )^2;
+		vol1 = 1 * sin( volA );
+		
+		ObjSound_SetVolumeRate(ID, volume - vol1*volume );
+		
+		volA += 2;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+	SetAreaCommonData("Trance", "BGM_Delete", false );
+	SetAreaCommonData("Trance", "BGM_Stop", false );
+	SetAreaCommonData("Trance"," BGM_Play", -1 );
+}
+
+//　BGM削除
+task DeleteMusic(){
+	SetAreaCommonData("Trance", "BGM_Delete", true );
+	SetAreaCommonData("Trance"," BGM_Play", -1 );
+}
+
+//　BGM停止
+task StopMusic(){
+	SetAreaCommonData("Trance", "BGM_Stop", true );
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+
+/*
+
+//　旧時代の遺物
+task PlayMusic_Main(){
+	let bgm_vol	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+	let play	= GetAreaCommonData("Trance", "BGM_Play", 0 );
+	let Del		= GetAreaCommonData("Trance", "BGM_Delete", true );
+	let stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+	
+	//　前のBGMの削除待ち
+	while( Del && !swb ){
+		Del		= GetAreaCommonData("Trance", "BGM_Delete", true );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		yield;
+	}
+	//　外部から�が渡されたら再生開始
+	while( play < 0 && !swb ){
+		play	= GetAreaCommonData("Trance", "BGM_Play", 0 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		yield;
+	}
+	
+	let id		= ObjSound_Create();
+	let vol1	= 0;
+	let volA	= 0;
+	let cc		= 0;
+	
+	ObjSound_Load(id, Music_all[play] );
+	ObjSound_SetSoundDivision(id, SOUND_BGM );
+	ObjSound_SetVolumeRate(id, bgm_vol );
+	ObjSound_SetLoopEnable(id, true );
+	ObjSound_SetRestartEnable(id, true );
+	ObjSound_SetLoopSampleCount(id, sample[play][0], sample[play][1] );
+	ObjSound_Play(id);
+	
+	while( !Del && !swb ){
+		Del		= GetAreaCommonData("Trance", "BGM_Delete", true );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		bgm_vol	= GetAreaCommonData("Option", "BGM_Volume", 100 );
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		ObjSound_SetVolumeRate(id, bgm_vol );
+		
+		if( stop ){
+			ObjSound_Stop(id);
+			cc++;
+		}
+		else if( cc > 0 ){
+			cc = 0;
+			ObjSound_Play(id);
+		}
+		yield;
+	}
+	while( vol1 < 1 && !swb && !stop){
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		stop	= GetAreaCommonData("Trance", "BGM_Stop", false );
+		
+		vol1 = 1 * sin(volA);
+		
+		ObjSound_SetVolumeRate(id, bgm_vol - vol1*bgm_vol );
+		
+		volA += 2;
+		
+		yield;
+	}
+	ObjSound_Stop(id);
+	Obj_Delete(id);
+	SetAreaCommonData("Trance", "BGM_Delete", false );
+	SetAreaCommonData("Trance", "BGM_Stop", false );
+	if( !swb ){
+		PlayMusic_Main();
+	}
+}
+
+
+// 再帰なし
+task PlayMusic_MainOne(){
+	let bgm_vol	= GetAreaCommonData("Option","BGM_Volume",100);
+	let play	= GetAreaCommonData("Trance","BGM_Play",0);
+	let Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+	let stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+	
+	//　前のBGMの削除待ち
+	while(Del){
+		Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+		stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+		play	= GetAreaCommonData("Trance","BGM_Play",0);
+		yield;
+	}
+	//　外部から�が渡されたら再生開始
+	while(play<0){
+		play	= GetAreaCommonData("Trance","BGM_Play",0);
+		yield;
+	}
+	
+	let id		= ObjSound_Create();
+	let vol1	= 0;
+	let volA	= 0;
+	let cc		= 0;
+	
+	ObjSound_Load(id,Music_all[play]);
+	ObjSound_SetSoundDivision(id,SOUND_BGM);
+	ObjSound_SetVolumeRate(id,bgm_vol);
+	ObjSound_SetLoopEnable(id,true);
+	ObjSound_SetRestartEnable(id,true);
+	ObjSound_SetLoopSampleCount(id,sample[play][0],sample[play][1]);
+	ObjSound_Play(id);
+	
+	while(!Del){
+		Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+		stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+		bgm_vol	= GetAreaCommonData("Option","BGM_Volume",100);
+		ObjSound_SetVolumeRate(id,bgm_vol);
+		if(stop){
+			cc++;
+			ObjSound_Stop(id);
+		}else if(cc>0){
+			cc=0;
+			ObjSound_Play(id);
+		}
+		yield;
+	}
+	while( vol1 < 1 && !stop){
+		stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+		volA += 5;
+		vol1 = 1 * sin(volA);
+		ObjSound_SetVolumeRate(id, bgm_vol - vol1*bgm_vol );
+		yield;
+	}
+	ObjSound_Stop(id);
+	Obj_Delete(id);
+	SetAreaCommonData("Trance","BGM_Delete",false);
+	SetAreaCommonData("Trance","BGM_Stop",false);
+}
+
+
+//　ミュージックルーム用
+task PlayMusic_MainMR(){
+	let bgm_vol	= GetAreaCommonData("Option","BGM_Volume",100);
+	let play	= GetAreaCommonData("Trance","BGM_Play",0);
+	let Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+	let stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+	let sector	= GetAreaCommonData("System","title_sector",-1);
+	
+	//　前のBGMの削除待ち
+	while(Del && sector==4){
+		Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+		stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+		play	= GetAreaCommonData("Trance","BGM_Play",0);
+		sector	= GetAreaCommonData("System","title_sector",-1);
+		yield;
+	}
+	//　外部から�が渡されたら再生開始
+	while(play<0 && sector==4){
+		play	= GetAreaCommonData("Trance","BGM_Play",0);
+		sector	= GetAreaCommonData("System","title_sector",-1);
+		yield;
+	}
+	
+	let id		= ObjSound_Create();
+	let vol1	= 0;
+	let volA	= 0;
+	let cc		= 0;
+	
+	ObjSound_Load(id,Music_all[play]);
+	ObjSound_SetSoundDivision(id,SOUND_BGM);
+	ObjSound_SetVolumeRate(id,bgm_vol);
+	ObjSound_SetLoopEnable(id,true);
+	ObjSound_SetRestartEnable(id,true);
+	ObjSound_SetLoopSampleCount(id,sample[play][0],sample[play][1]);
+	ObjSound_Play(id);
+	
+	while(!Del && sector==4){
+		Del		= GetAreaCommonData("Trance","BGM_Delete",true);
+		stop	= GetAreaCommonData("Trance","BGM_Stop",false);
+		bgm_vol	= GetAreaCommonData("Option","BGM_Volume",100);
+		sector	= GetAreaCommonData("System","title_sector",-1);
+		ObjSound_SetVolumeRate(id,bgm_vol);
+		if(stop){
+			cc++;
+			ObjSound_Stop(id);
+		}else if(cc>0){
+			cc=0;
+			ObjSound_Play(id);
+		}
+		yield;
+	}
+	while( vol1 < 1 && sector == 4 ){
+		sector	= GetAreaCommonData("System","title_sector",-1);
+		volA += 5;
+		vol1 = 1 * sin(volA);
+		ObjSound_SetVolumeRate(id, bgm_vol - vol1*bgm_vol );
+		yield;
+	}
+	ObjSound_Stop(id);
+	Obj_Delete(id);
+	SetAreaCommonData("Trance","BGM_Delete",false);
+	SetAreaCommonData("Trance","BGM_Stop",false);
+}
+
+*/

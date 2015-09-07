@@ -1,0 +1,218 @@
+#東方弾幕風[Package]
+#Title["東方桃源宮　〜 Riverbed Soul Saver."]
+#Image["./img/title/pack.png"]
+#Text["ver 1.02b〔完成版〕[r]人跡未踏弾幕STG　東方桃源宮[r]〜 Riverbed Soul Saver.〜"]
+#Player[ "./player_rss/SRR_Pl01A.dnh", "./player_rss/SRR_Pl01B.dnh", "./player_rss/SRR_Pl01C.dnh", "./player_rss/SRR_Pl02A.dnh", "./player_rss/SRR_Pl02B.dnh", "./player_rss/SRR_Pl02C.dnh", "./player_rss/SRR_Pl03A.dnh", "./player_rss/SRR_Pl03B.dnh", "./player_rss/SRR_Pl03C.dnh" ]
+
+	//　ファイルinclude
+	#include "./system/Load_AllTexture.dnh"
+	#include "./lib/lib_CommonDataManager.dnh"
+	#include "./system/Score_Control.dnh"
+	#include "./scene/Package_TitleScene.dnh"
+	#include "./lib/lib_LoadingEffect.dnh"		//　少女祈祷中
+	
+	@Initialize{
+		//　ロード中かどうか
+		SetCommonData( "LoadFrag", true );
+		//　ロード
+		LoadScene();
+		//　共通データ系
+		InitializeCommonData();
+	}
+	@MainLoop{ yield; }
+	@Finalize{ }
+	
+	
+	
+	
+	
+	
+	
+	
+	//------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------
+	//　以下ゲーム開始前のロード系処理
+	
+	function LoadMain(){
+		//　ステージ背景とかのロード
+		//　メッシュは読み込み出来ないっぽい
+		
+		//　背景のロード
+		ascent( let i1 in 0..length(world_tex) ){
+			LoadTextureInLoadThread( world_tex[ i1 ] );
+			yield;
+		}
+		
+		//　スペカ背景のロード
+		ascent( let i2 in 0..length(spell_tex) ){
+			LoadTextureInLoadThread( spell_tex[ i2 ] );
+			yield;
+		}
+		
+		//　エフェクト系のロード
+		ascent( let i3 in 0..length(effect_tex) ){
+			LoadTextureInLoadThread( effect_tex[ i3 ] );
+			yield;
+		}
+		
+		//　外枠表示系のロード
+		ascent( let i4 in 0..length(front_tex) ){
+			LoadTextureInLoadThread( front_tex[ i4 ] );
+			yield;
+		}
+		
+		//　立ち絵のロード
+		ascent( let i5 in 0..length(chara_tex) ){
+			LoadTextureInLoadThread( chara_tex[ i5 ] );
+			yield;
+		}
+		
+		//　自機立ち絵のロード
+		ascent( let i7 in 0..length(player_tex) ){
+			LoadTextureInLoadThread( player_tex[ i7 ] );
+			yield;
+		}
+		
+		//　BGMのロード
+		ascent( let i8 in 0..length(Music_all) ){
+			LoadSound( Music_all[ i8 ] );
+			yield;
+		}
+		
+		//　エンディング絵のロード
+		ascent( let i9 in 0..length(ed_tex) ){
+			LoadTextureInLoadThread( ed_tex[ i9 ] );
+			yield;
+		}
+		
+		//　スタッフロール絵のロード
+		ascent( let iA in 0..length(sr_tex) ){
+			LoadTextureInLoadThread( sr_tex[ iA ] );
+			yield;
+		}
+	}
+	
+	//　雪の結晶
+	task CreateSnowflake(CallID,pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+		let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let csd		= GetCurrentScriptDirectory();
+		let dis		= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		let frame	= 0;
+		let sca		= rand(0.4,1);
+		let spin	= rand(0,360);
+		let spinp	= rand(-4,4);
+		
+		while( spinp == 0 ){
+			spinp = rand(-4,4);
+		}
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+		ObjPrim_SetTexture(ID, csd ~ "./img/effect/eff_default.png" );
+		Obj_SetRenderPriorityI(ID, 21 );
+		ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+		ObjSprite2D_SetDestCenter(ID);
+		
+		while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && frame < kill ){
+			
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+			ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+			ObjRender_SetAlpha(ID, move1*alpha );
+			
+			frame++;
+			spin += spinp;
+			dis += speed;
+			if( speed < mx ){ speed += acc; }
+			if( move1 < 1 ){ moveA += 2; }
+			
+			yield;
+		}
+		move1 = 0;
+		moveA = 0;
+		while( !Obj_IsDeleted(ID) && move1 < 1 ){
+			
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+			ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+			ObjRender_SetAlpha(ID, alpha - move1*alpha );
+			
+			frame++;
+			spin += spinp;
+			dis += speed;
+			if( speed < mx ){ speed += acc; }
+			if( move1 < 1 ){ moveA += 5; }
+			
+			yield;
+		}
+		Obj_Delete(ID);
+	}
+	
+	task LoadScene(){
+		let id		= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+		let csd		= GetCurrentScriptDirectory();
+		let alpha1	= 0;
+		let alphaA	= 0;
+		let i		= 0;
+		
+		//　id[0] 東方project
+		//　id[1] ホワイトアウト用テクスチャ
+		ObjPrim_SetTexture(id[0], csd ~ "./img/title/load.png" );
+		ObjPrim_SetTexture(id[1], csd ~ "./img/eff/Effect_White.png" );
+		loop( length(id) ){
+			Obj_SetRenderPriorityI(id[i], 21 );
+			ObjSprite2D_SetSourceRect(id[i], 0, 0, 1024, 512 );
+			ObjSprite2D_SetDestRect(id[i], 0, 0, 1024, 512 );
+			i++;
+		}
+		i = 0;
+		ObjRender_SetAlpha(id[0], 255 - alpha1*255 );
+		ObjRender_SetAlpha(id[1], alpha1*255 );
+		
+		//　少女祈祷中...
+		LoadingDefault( 520, 430 );
+		
+		//　120秒待機
+		loop(60){ yield; }
+		
+		//　ロードを行う
+		LoadMain();
+		
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			ObjRender_SetAlpha(id[0], 255 - alpha1*255 );
+			ObjRender_SetAlpha(id[1], alpha1*255 );
+			
+			alphaA += 5;
+			
+			yield;
+		}
+		Obj_Delete(id[0]);
+		SetCommonData( "LoadFrag", false );
+		alpha1=0;
+		alphaA=0;
+		
+		//　タイトルシーン開始
+		TTitleScene();
+		
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			
+			ObjRender_SetAlpha(id[1], 255 - alpha1*255 );
+			
+			alphaA += 5;
+			
+			yield;
+		}
+		Obj_Delete(id[1]);
+	}
+	

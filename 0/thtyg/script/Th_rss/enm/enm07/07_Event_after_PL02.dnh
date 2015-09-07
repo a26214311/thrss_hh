@@ -1,0 +1,286 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　会話　魔理沙　戦闘後"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./../../lib/lib_balloon.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 999;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　画面外で待機
+		ObjMove_SetPosition(enm, MaxX+128, MinY-128 );
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy_Event(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{ }
+	
+	@MainLoop{
+		
+		//　会話タスク呼び出し
+		if( frame == 120 ){
+			Main(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b(enm, true, enemy_tex_path );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	task Main(CallID){
+		let frame	= 0;
+		let count	= 0;
+		let ctr		= 0;
+		let mpos	= [ 0, 24 ];
+		
+		let enm_pos = [ 300, 64 ];
+		
+		//　自機組のテクスチャ　01がプレイヤー　02がパートナー
+		let player_texture01 = [
+			player_tex[14],player_tex[15],player_tex[16],player_tex[17],player_tex[18],
+			player_tex[19],player_tex[20],player_tex[21],player_tex[22],player_tex[23],
+			player_tex[24],
+		];
+		let player_texture02 = [
+			player_tex[26],player_tex[27],player_tex[28],player_tex[29],player_tex[30],
+		];
+		
+		//　敵のテクスチャ
+		let enemy_texture01 = [
+			chara_tex[54],chara_tex[55],chara_tex[56],chara_tex[57],chara_tex[58],
+			chara_tex[59],chara_tex[60],chara_tex[61],chara_tex[62],
+		];
+		
+		//　共通データ作成　会話カウンタ作成
+		CreateCommonDataArea("Talk");
+		SetAreaCommonData("Talk", "counter", count );
+		
+		while( !Obj_IsDeleted(CallID) ){
+			SetForbidPlayerShot( true );
+			SetForbidPlayerSpell( true );
+			
+			//　会話表示
+			if( frame == 1 ){
+				alternative( count )
+				case( 0 ){
+					let text = [
+/* to be translated */						"ううう〜首が八つ揃っていればこんな事には〜",
+						"NULL",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [true,false], "back", false, [0,0,0], 1, count, player_texture01[0], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [true,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [true,false], "front", false, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager_Reverse( [ CenX-96+mpos[0], CenY+32+mpos[1] ], 4, text, count, 0 );
+				}
+				case( 1 ){
+					let text = [
+/* to be translated */						"首なら地獄の首塚で探しな。",
+/* to be translated */						"平将門の生首も出て来たらしいぞ",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, player_texture01[7], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+96+mpos[1] ], 2, text, count, 0 );
+				}
+				case( 2 ){
+					let text = [
+/* to be translated */						"頼むよ〜、どうせ使わないだろ？",
+/* to be translated */						"草薙の剣返してくれよ〜。",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, player_texture01[7], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager_Reverse( [ CenX+64+mpos[0], CenY+32+mpos[1] ], 2, text, count, 0 );
+				}
+				case( 3 ){
+					let text = [
+/* to be translated */						"あれがあれば元の姿に戻れるんだ、",
+/* to be translated */						"もう我儘は言わないよ〜",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, player_texture01[7], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "front", false, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager_Reverse( [ CenX+64+mpos[0], CenY+32+mpos[1] ], 2, text, count, 0 );
+				}
+				case( 4 ){
+					let text = [
+/* to be translated */						"幻想郷にそいつが住み着けそうな水場、",
+/* to be translated */						"うちの湖しか無いから反対",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, player_texture01[7], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-96+mpos[0], CenY+128+mpos[1] ], 3, text, count, 1 );
+				}
+				case( 5 ){
+					let text = [
+/* to be translated */						"悪い事はもうしないって、",
+/* to be translated */						"約束約束、絶対約束",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, player_texture01[7], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", true, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager_Reverse( [ CenX+64+mpos[0], CenY+32+mpos[1] ], 2, text, count, 0 );
+				}
+				case( 6 ){
+					let text = [
+/* to be translated */						"八つ首に戻った後に",
+/* to be translated */						"「首その1が勝手に言いました」とか言うんだろ。",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, player_texture01[6], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+96+mpos[1] ], 4, text, count, 0 );
+				}
+				case( 7 ){
+					let text = [
+/* to be translated */						"でもまあ煩いしかわいそうだしなぁ、",
+						"NULL",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "front", false, [0,0,0], 1, count, player_texture01[6], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+96+mpos[1] ], 3, text, count, 0 );
+				}
+				case( 8 ){
+					let text = [
+/* to be translated */						"知り合いに頼んで、",
+/* to be translated */						"代わりになる特別な剣を用意してもらうか",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "front", false, [0,0,0], 1, count, player_texture01[6], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+96+mpos[1] ], 3, text, count, 0 );
+				}
+				case( 9 ){
+					let text = [
+/* to be translated */						"　　　本当か！？",
+						"NULL",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, player_texture01[6], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager_Reverse( [ CenX+96+mpos[0], CenY+32+mpos[1] ], 1, text, count, 0 );
+				}
+				case( 10 ){
+					let text = [
+/* to be translated */						"ああ、霊夢の有り難い力をたっぷり注いで貰ってな。",
+/* to be translated */						"これで怖い物無しだぜ（私がな）",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, player_texture01[10], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+96+mpos[1] ], 4, text, count, 0 );
+				}
+				case( 11 ){
+					let text = [
+/* to be translated */						"あんたレミィや下手な邪神より邪悪だよ",
+						"NULL",
+					];
+					CreateCharacterTexture( [ CenX-64+mpos[0], CenY+64+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, player_texture01[10], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 0.48, count, player_texture02[3], 512 );
+					CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [false,false], "back", false, [0,0,0], 1, count, enemy_texture01[8], 512 );
+					CreateBalloonManager( [ CenX-96+mpos[0], CenY+128+mpos[1] ], 3, text, count, 1 );
+				}
+				others{
+					SetAreaCommonData("Talk", "counter", 0 );
+					ObjEnemy_SetLife( CallID, 0 );
+					break;
+				}
+			}
+			
+			//　カウンタ加算
+			frame++;
+			if( ObjMove_GetSpeed(CallID) <= 0 ){ ctr++; }
+			else{ ctr = 0; }
+			
+			//　ｼｮｯﾄｷｰで会話進行
+			if( GetVirtualKeyState(VK_SHOT) == KEY_PUSH && ctr > 8 ){
+				count++;
+				frame = 0;
+				ctr = 0;
+				SetAreaCommonData("Talk", "counter", count );
+			}
+			
+			//　ショットキー長押しで会話早送り
+			if( GetVirtualKeyState(VK_USER1) == KEY_HOLD ){ timer++; }
+			else{ timer = 0; }
+			if( timer > 50 && ctr > 4 ){
+				count++;
+				frame = 0;
+				ctr = 0;
+				SetAreaCommonData("Talk", "counter", count );
+			}
+			
+			yield;
+		}
+		SetForbidPlayerShot( false );
+		SetForbidPlayerSpell( false );
+	}
+	

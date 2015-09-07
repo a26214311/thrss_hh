@@ -1,0 +1,324 @@
+
+task CutinSP2(ID,char_sn,getspell,playspell,BOOL_SPELLCARDATTACK_DISPLAY){
+	let cid1		= ObjText_Create;
+	let cid2		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let alpha		= 255;
+	let movea		= 0;
+	let move1		= 0;
+	let moveb		= 0;
+	let move2		= 0;
+	let movec		= 0;
+	let move3		= 0;
+	let sca1		= 2;
+	let scaA		= 2;
+	let cc			= 0;
+	let mm			= 0;
+	
+	ObjText_SetText(cid1, char_sn );
+	Obj_SetRenderPriorityI(cid1, 80 );
+	ObjText_SetFontType(cid1, "メイリオ" );
+	ObjText_SetFontSize(cid1, 26 );
+	ObjText_SetHorizontalAlignment(cid1, ALIGNMENT_RIGHT );
+	ObjText_SetMaxWidth(cid1, 512 );
+	ObjText_SetFontBold(cid1, false );
+	ObjText_SetFontBorderWidth(cid1, 2 );
+	ObjText_SetFontBorderType(cid1, BORDER_FULL );
+	ObjText_SetFontBorderColor(cid1, 24, 24, 24 );
+	
+	ObjPrim_SetTexture(cid2, path_front02 );
+	Obj_SetRenderPriorityI(cid2, 79 );
+	ObjRender_SetBlendType(cid2, BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect(cid2, 0, 320, 512, 448 );
+	ObjSprite2D_SetDestCenter(cid2);
+	ObjRender_SetAlpha(cid2, alpha );
+	
+	if( BOOL_SPELLCARDATTACK_DISPLAY ){
+		SpellCardAttackDisplay(ID);
+	}
+	
+	let gpos = [
+		[0,0],
+		[0,0],
+	];
+	
+	while( !Obj_IsDeleted(ID) ){
+		let EnmX		= ObjMove_GetX(ID);
+		let EnmY		= ObjMove_GetY(ID);
+		if(ObjRender_GetX(cid2)-80 <= GetPlayerX &&ObjRender_GetX(cid2)+150 >= GetPlayerX &&
+		   ObjRender_GetY(cid2)-50 <= GetPlayerY &&ObjRender_GetY(cid2)+50 >= GetPlayerY && move2 <= -190 ){ alpha = 92; }
+		if(ObjRender_GetX(cid2)-80 <= EnmX && ObjRender_GetX(cid2)+150 >= EnmX &&
+		   ObjRender_GetY(cid2)-50 <= EnmY && ObjRender_GetY(cid2)+50 >= EnmY && move2 <= -190 ){ alpha = 92; }
+		
+		move1 = 1 * sin( movea );
+		move2 = 190 * sin( moveb+90 );
+		move3 = 1 * sin( movec );
+		
+		gpos = [
+			[ ObjRender_GetX(cid1), ObjRender_GetY(cid1) ],
+			[ ObjRender_GetX(cid2), ObjRender_GetY(cid2) ],
+		];
+		
+		ObjRender_SetPosition(cid1, (MinX-400)+move3*270, MinY+190+move2 - 3, 0 );
+		ObjRender_SetPosition(cid2, MinX+move1*270, MinY+198+move2, 0 );
+		
+		ObjRender_SetScaleXYZ(cid1, 3 - move3*2, 3 - move3*2, 0 );
+		ObjRender_SetScaleXYZ(cid2, 3 - move1*2.5, 3 - move1*2.5, 0 );
+		
+		ObjRender_SetAlpha(cid1, move1*alpha );
+		ObjRender_SetAlpha(cid2, move1*alpha );
+		
+		if( alpha < 255 ){ alpha += 10; }
+		if( move1 < 1 ){ movea += 2; }
+		else{ cc++; }
+		if( move3 < 1 ){ movec += 5; }
+		if( cc > 8 && move2 > -190 ){
+			moveb += mm;
+			if( mm < 5 ){ mm += 0.2; }
+		}
+		
+		yield;
+	}
+	move1 = 0;
+	movea = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( movea );
+		
+		ObjRender_SetPosition(cid1, gpos[0][0] + move1*256, gpos[0][1], 0 );
+		ObjRender_SetPosition(cid2, gpos[1][0] + move1*256, gpos[1][1], 0 );
+		
+		movea += 5;
+		
+		yield;
+	}
+	Obj_Delete(cid1);
+	Obj_Delete(cid2);
+}
+
+task SpellCardAttackDisplay(ID){
+	let spn7		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let spn8		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let spn9		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let spn10		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let spn			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let path		= path_front02;
+	let alpha		= 0;
+	let mc			= 0;
+	let cc			= 0;
+	let frag		= false;
+	let pc			= 0;
+	let pc2			= 1;
+	let pc3			= 0;
+	let pc4			= 1;
+	let pc5			= 0;
+	let pc6			= 1;
+	let pc7			= 0;
+	let pc8			= 1;
+	let i			= 0;
+	let i2			= 1;
+	let i3			= 0;
+	let i4			= 1;
+	let i5			= 0;
+	let i6			= 1;
+	let i7			= 0;
+	let i8			= 1;
+	
+	loop( length(spn) ){
+		ObjPrim_SetTexture(spn[i], path );
+		Obj_SetRenderPriorityI(spn[i],31);
+		ObjRender_SetBlendType(spn[i],BLEND_ALPHA);
+		ObjRender_SetScaleXYZ(spn[i],1,1,1);
+		ObjRender_SetAngleXYZ(spn[i],0,0,-35);
+		ObjSprite2D_SetSourceRect(spn[i],0,496,512,512);
+		ObjSprite2D_SetDestCenter(spn[i]);
+		ObjRender_SetAlpha(spn[i],alpha);
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetPosition(spn[0],CenX,CenY,0);
+	ObjRender_SetPosition(spn[1],CenX,CenY-35,0);
+	ObjRender_SetPosition(spn[2],CenX,CenY+35,0);
+	ObjRender_SetPosition(spn[3],CenX,CenY-70,0);
+	ObjRender_SetPosition(spn[4],CenX,CenY+70,0);
+	ObjRender_SetPosition(spn[5],CenX,CenY-105,0);
+	ObjRender_SetPosition(spn[6],CenX,CenY+105,0);
+	ObjRender_SetPosition(spn[7],CenX,CenY-140,0);
+	ObjRender_SetPosition(spn[8],CenX,CenY+140,0);
+	ObjRender_SetPosition(spn[9],CenX,CenY-175,0);
+	ObjRender_SetPosition(spn[10],CenX,CenY+175,0);
+	
+	ObjRender_SetPosition(spn7,CenX+120,CenY+160,0);
+	ObjPrim_SetTexture(spn7, path );
+	Obj_SetRenderPriorityI(spn7,31);
+	ObjRender_SetBlendType(spn7,BLEND_ALPHA);
+	ObjRender_SetScaleXYZ(spn7,1,1,1);
+	ObjRender_SetAngleXYZ(spn7,0,0,0);
+	ObjRender_SetAlpha(spn7,alpha);
+	ObjPrim_SetPrimitiveType(spn7,PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetVertexCount(spn7,18);
+	loop(18){
+		ObjPrim_SetVertexPosition(spn7,i,120*sin(pc),120*cos(pc),0);
+		ObjPrim_SetVertexPosition(spn7,i2,100*sin(pc2),100*cos(pc2),0);
+		pc+=45;
+		pc2+=45;
+		i+=2;
+		i2+=2;
+	}
+	ObjPrim_SetVertexUVT(spn7,0,0,496);  ObjPrim_SetVertexUVT(spn7,7,256,512); ObjPrim_SetVertexUVT(spn7,14,256,496);
+	ObjPrim_SetVertexUVT(spn7,1,0,512);  ObjPrim_SetVertexUVT(spn7,8,0,496);   ObjPrim_SetVertexUVT(spn7,15,256,512);
+	ObjPrim_SetVertexUVT(spn7,2,256,496);ObjPrim_SetVertexUVT(spn7,9,0,512);   ObjPrim_SetVertexUVT(spn7,16,0,496);
+	ObjPrim_SetVertexUVT(spn7,3,256,512);ObjPrim_SetVertexUVT(spn7,10,256,496);ObjPrim_SetVertexUVT(spn7,17,0,512);
+	ObjPrim_SetVertexUVT(spn7,4,0,496);  ObjPrim_SetVertexUVT(spn7,11,256,512);ObjPrim_SetVertexUVT(spn7,18,256,496);
+	ObjPrim_SetVertexUVT(spn7,5,0,512);  ObjPrim_SetVertexUVT(spn7,12,0,496);
+	ObjPrim_SetVertexUVT(spn7,6,256,496);ObjPrim_SetVertexUVT(spn7,13,0,512);
+	
+	ObjRender_SetPosition(spn8,CenX-120,CenY-160,0);
+	ObjPrim_SetTexture(spn8, path );
+	Obj_SetRenderPriorityI(spn8,31);
+	ObjRender_SetBlendType(spn8,BLEND_ALPHA);
+	ObjRender_SetScaleXYZ(spn8,1,1,1);
+	ObjRender_SetAngleXYZ(spn8,0,0,0);
+	ObjRender_SetAlpha(spn8,alpha);
+	ObjPrim_SetPrimitiveType(spn8,PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetVertexCount(spn8,18);
+	loop(18){
+		ObjPrim_SetVertexPosition(spn8,i3,120*sin(pc3),120*cos(pc3),0);
+		ObjPrim_SetVertexPosition(spn8,i4,100*sin(pc4),100*cos(pc4),0);
+		pc3+=45;
+		pc4+=45;
+		i3+=2;
+		i4+=2;
+	}
+	ObjPrim_SetVertexUVT(spn8,0,0,496);  ObjPrim_SetVertexUVT(spn8,7,256,512); ObjPrim_SetVertexUVT(spn8,14,256,496);
+	ObjPrim_SetVertexUVT(spn8,1,0,512);  ObjPrim_SetVertexUVT(spn8,8,0,496);   ObjPrim_SetVertexUVT(spn8,15,256,512);
+	ObjPrim_SetVertexUVT(spn8,2,256,496);ObjPrim_SetVertexUVT(spn8,9,0,512);   ObjPrim_SetVertexUVT(spn8,16,0,496);
+	ObjPrim_SetVertexUVT(spn8,3,256,512);ObjPrim_SetVertexUVT(spn8,10,256,496);ObjPrim_SetVertexUVT(spn8,17,0,512);
+	ObjPrim_SetVertexUVT(spn8,4,0,496);  ObjPrim_SetVertexUVT(spn8,11,256,512);ObjPrim_SetVertexUVT(spn8,18,256,496);
+	ObjPrim_SetVertexUVT(spn8,5,0,512);  ObjPrim_SetVertexUVT(spn8,12,0,496);
+	ObjPrim_SetVertexUVT(spn8,6,256,496);ObjPrim_SetVertexUVT(spn8,13,0,512);
+	
+	//奇数回(pc2)が内円、偶数回(pc)が外円  
+	
+	ObjRender_SetPosition(spn9,CenX+120,CenY+160,0);
+	ObjPrim_SetTexture(spn9, path );
+	Obj_SetRenderPriorityI(spn9,31);
+	ObjRender_SetBlendType(spn9,BLEND_ALPHA);
+	ObjRender_SetScaleXYZ(spn9,1,1,1);
+	ObjRender_SetAngleXYZ(spn9,0,0,0);
+	ObjRender_SetAlpha(spn9,alpha);
+	ObjPrim_SetPrimitiveType(spn9,PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetVertexCount(spn9,18);
+	loop(18){
+		ObjPrim_SetVertexPosition(spn9,i5,140*sin(pc5),140*cos(pc5),0);
+		ObjPrim_SetVertexPosition(spn9,i6,120*sin(pc6),120*cos(pc6),0);
+		pc5+=45;
+		pc6+=45;
+		i5+=2;
+		i6+=2;
+	}
+	ObjPrim_SetVertexUVT(spn9,0,0,496);  ObjPrim_SetVertexUVT(spn9,7,256,512); ObjPrim_SetVertexUVT(spn9,14,256,496);
+	ObjPrim_SetVertexUVT(spn9,1,0,512);  ObjPrim_SetVertexUVT(spn9,8,0,496);   ObjPrim_SetVertexUVT(spn9,15,256,512);
+	ObjPrim_SetVertexUVT(spn9,2,256,496);ObjPrim_SetVertexUVT(spn9,9,0,512);   ObjPrim_SetVertexUVT(spn9,16,0,496);
+	ObjPrim_SetVertexUVT(spn9,3,256,512);ObjPrim_SetVertexUVT(spn9,10,256,496);ObjPrim_SetVertexUVT(spn9,17,0,512);
+	ObjPrim_SetVertexUVT(spn9,4,0,496);  ObjPrim_SetVertexUVT(spn9,11,256,512);ObjPrim_SetVertexUVT(spn9,18,256,496);
+	ObjPrim_SetVertexUVT(spn9,5,0,512);  ObjPrim_SetVertexUVT(spn9,12,0,496);
+	ObjPrim_SetVertexUVT(spn9,6,256,496);ObjPrim_SetVertexUVT(spn9,13,0,512);
+	
+	ObjRender_SetPosition(spn10,CenX+120,CenY+160,0);
+	ObjPrim_SetTexture(spn10, path );
+	Obj_SetRenderPriorityI(spn10,31);
+	ObjRender_SetBlendType(spn10,BLEND_ALPHA);
+	ObjRender_SetScaleXYZ(spn10,1,1,1);
+	ObjRender_SetAngleXYZ(spn10,0,0,0);
+	ObjRender_SetAlpha(spn10,alpha);
+	ObjPrim_SetPrimitiveType(spn10,PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetVertexCount(spn10,18);
+	loop(18){
+		ObjPrim_SetVertexPosition(spn10,i7,160*sin(pc7),160*cos(pc7),0);
+		ObjPrim_SetVertexPosition(spn10,i8,140*sin(pc8),140*cos(pc8),0);
+		pc7+=45;
+		pc8+=45;
+		i7+=2;
+		i8+=2;
+	}
+	ObjPrim_SetVertexUVT(spn10,0,0,496);  ObjPrim_SetVertexUVT(spn10,7,256,512); ObjPrim_SetVertexUVT(spn10,14,256,496);
+	ObjPrim_SetVertexUVT(spn10,1,0,512);  ObjPrim_SetVertexUVT(spn10,8,0,496);   ObjPrim_SetVertexUVT(spn10,15,256,512);
+	ObjPrim_SetVertexUVT(spn10,2,256,496);ObjPrim_SetVertexUVT(spn10,9,0,512);   ObjPrim_SetVertexUVT(spn10,16,0,496);
+	ObjPrim_SetVertexUVT(spn10,3,256,512);ObjPrim_SetVertexUVT(spn10,10,256,496);ObjPrim_SetVertexUVT(spn10,17,0,512);
+	ObjPrim_SetVertexUVT(spn10,4,0,496);  ObjPrim_SetVertexUVT(spn10,11,256,512);ObjPrim_SetVertexUVT(spn10,18,256,496);
+	ObjPrim_SetVertexUVT(spn10,5,0,512);  ObjPrim_SetVertexUVT(spn10,12,0,496);
+	ObjPrim_SetVertexUVT(spn10,6,256,496);ObjPrim_SetVertexUVT(spn10,13,0,512);
+	
+	i=0;
+	
+	while( !Obj_IsDeleted(ID) ){
+		if( cc > 100 ){ frag = true; }
+		ObjRender_SetAngleXYZ(spn7, 0, 0, cc/1*-1 );
+		ObjRender_SetAngleXYZ(spn8, 0, 0, cc/1 );
+		ObjRender_SetAngleXYZ(spn9, 0, 0, cc/1*1 );
+		ObjRender_SetAngleXYZ(spn10, 0, 0, cc/1*1 );
+		
+		if( !frag && alpha < 150 ){ alpha += 5; }
+		if( frag && alpha > 0 ){ alpha -= 15; }
+		
+		ObjSprite2D_SetSourceRect(spn[0], 0+mc, 496, 512+mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[1], 0-mc, 496, 512-mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[2], 0-mc, 496, 512-mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[3], 0+mc, 496, 512+mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[4], 0+mc, 496, 512+mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[5], 0-mc, 496, 512-mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[6], 0-mc, 496, 512-mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[7], 0+mc, 496, 512+mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[8], 0+mc, 496, 512+mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[9], 0-mc, 496, 512-mc, 512 );
+		ObjSprite2D_SetSourceRect(spn[10], 0-mc, 496, 512-mc, 512 );
+		
+		loop( length(spn) ){
+			ObjRender_SetAlpha(spn[i], alpha );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetAlpha(spn7, alpha );
+		ObjRender_SetAlpha(spn8, alpha );
+		ObjRender_SetAlpha(spn9, alpha );
+		ObjRender_SetAlpha(spn10, alpha );
+		
+		if( frag && alpha <= 0 ){
+			loop( length(spn) ){
+				Obj_Delete(spn[i]);
+				i++;
+			}
+			i = 0;
+			
+			Obj_Delete(spn7);
+			Obj_Delete(spn8);
+			Obj_Delete(spn9);
+			Obj_Delete(spn10);
+			break;
+		}
+		
+		cc++;
+		mc += 1.5;
+		yield;
+	}
+	Obj_Delete(spn7);
+	Obj_Delete(spn8);
+	Obj_Delete(spn9);
+	Obj_Delete(spn10);
+	loop( length(spn) ){
+		Obj_Delete(spn[i]);
+		i++;
+	}
+	i = 0;
+}

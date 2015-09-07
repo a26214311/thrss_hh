@@ -1,0 +1,426 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　埴輪「立体鬼道装置」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm06_setting.dnh"
+	#include "./lib_enm06_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 6, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "埴輪「立体鬼道装置」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "埴輪「ガグージンペンデュラム」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "埴輪「鬼道戦士フリーダム」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "埴輪「鬼道戦士フリーダム」";
+		}
+		
+		SpellCounter( GetDifficult, 6, 2 );
+		let sct = GetSpellCounter( GetDifficult, 6, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_06(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+
+		//　埴輪設置数
+		let fway	= 4;
+
+		//　埴輪の全方位弾
+		let rway = 16;
+		let rwide	= 5;
+		let rspeed	= [ 1.25, 0.6 ];
+
+		//　ボス攻撃
+		let roundway = 10;
+
+		//　発射間隔
+		let wtA		= 600;
+		let wtB		= 120;
+		
+		//　レーザー砲幅
+		let wdmax	= 16;
+		//　弾種
+		let shote	= [ BGB_YELLOW_08, ADD_BGW_RED_22 ];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			fway = 3;
+			rway = 12;
+			roundway = 6;
+			rspeed = [ 0.7 ];
+			wtA = 700;
+			wtB = 180;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			fway = 5;
+			wdmax = 32;
+			rspeed = [ 2, 1, 0.7 ];
+			roundway = 12;
+			wtA = 700;
+			wtB = 90;
+		}
+		case( "Lunatic" ){
+			fway = 1;
+			wdmax = 32;
+			rway = 24;
+			roundway = 20;
+			rspeed = [ 1 ];
+			wtA = 155;
+			wtB = 100;
+		}
+		case( "OverDrive" ){
+		}
+		
+		let type	= 0;
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		State;
+		SetShotA;
+		SetShotB;
+		task State{
+			while( !Obj_IsDeleted( ID ) ){
+				gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+
+		task SetShotA{
+			loop{
+				local{
+					let wide = 360;
+					let bx = CenX - wide / 2;
+					let v = wide / ( fway - 1 ) / 3;
+					if( fway==1 ){ bx = GetPlayerX; v = 0; }
+					let sy = MinY + 48;
+					loop( fway ){
+						let sx = bx + rand( -v, v );
+						CreateEnemy( [ sx, sy ] );
+						bx += wide / ( fway - 1 );
+					}
+				}
+				if( Wait( wtA ) ){ return; }
+				EnemyMove(enm, 2, 8 );
+			}
+		}
+
+		task SetShotB{
+			Wait( 90 );
+			loop{
+				let ag = GetAngleToPlayer( ID );
+				
+				loop( roundway ){
+					let spos = [
+						gpos[0] + 32 * cos( ag ),
+						gpos[1] + 32 * sin( ag ),
+					];
+					CreateShot01( spos, 0.8, ag, 0, 10, shote[1], 32 );
+					ag += 360 / roundway;
+				}
+				ObjSound_Play( CreateShotSE[2] );
+				if( Wait( wtB ) ){ return; }
+			}
+		}
+
+		task CreateEnemy( pos ){
+			ObjSound_Play( CreateShotSE[5] );
+			let ag = 90;
+			let fam = CreateEnemy_Haniwa( 1000, 0.4 );
+			ObjMove_SetPosition( fam, ObjMove_GetX( ID ), ObjMove_GetY( ID ) );
+			ObjMove_SetDestAtWeight( fam, pos[0], pos[1], 24, 6 );
+			ObjRender_SetAngleZ( fam, ag );
+			if( Wait( 90 ) ){ return; }
+			
+			ObjSound_Play( CreateShotSE[11] );
+			local{
+				let wd = 0;
+				let l = 150;
+				let del = 150;
+				let way = 4;
+				let rot = rand( 0, 360 );
+				loop( way ){
+					SetLaser( rot );
+					rot += 360 / way;
+				}
+				task SetLaser( rot ){
+					let sx = ObjMove_GetX( fam );
+					let sy = ObjMove_GetY( fam ) + 48;
+					let leng = 0;
+					let width = 12;
+					
+					let obj = CreateStraightLaser01( fam, [ sx, sy ], 90, leng, width, [ 255, 64, 64 ], true, 90, del );
+					//(CallID,gpos,angle,length_,width,color,bool_regist,delay,kill)
+					loop( del ){
+						sx = ObjMove_GetX( fam ) + wd * cos( rot );
+						sy = ObjMove_GetY( fam ) + wd/4 * sin( rot );
+						ObjMove_SetPosition( obj, sx, sy );
+						ObjLaser_SetLength( obj, leng );
+						rot += 3;
+						if( leng < 600 ){ leng += 5; }
+						if( wd < wdmax ){
+							wd += wdmax / l;
+						}
+						if( Wait( 1 ) ){ return; }
+					}
+				}
+				if( Wait( del+20 ) ){ return; }
+			}
+			
+			ObjSound_Play( CreateShotSE[6] );
+			let mwt = 100;
+			local{
+				let p = GetAngleToPlayer( fam );
+				let mx = ObjMove_GetX( fam );
+				let my = ObjMove_GetY( fam );
+				while( mx > MinX - 150 &&  mx < MaxX + 150 && my > MinY && my < MaxY - 16 ){
+					mx += 10 * cos( p );
+					my += 10 * sin( p );
+				}
+				let mpos = [ mx, my ];
+				let d = GetDistance( pos, mpos );
+				loop( 30 ){
+					let toAngle = GetGapAngle( pos, mpos );
+					let ret = toAngle - ag;
+					let dangle = 0.8;
+					if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ ag += dangle; }
+					else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ ag += -dangle; }
+					if( ag >= 180 ){ ag += -360; }
+					if( ag < -180 ){ ag += 360; }
+					ObjRender_SetAngleZ( fam, ag );
+					if( Wait( 1 ) ){ return; }
+				}
+				ObjMove_SetDestAtWeight( fam, mpos[0], mpos[1], 16, d / mwt );
+			}
+			
+			local{
+				let p = ag;
+				loop( rway ){
+					let way = 5;
+					let delay = 20;
+					let angle = p - rwide / 2;
+					loop( way ){
+						let sx = ObjMove_GetX( fam ) + 32 * cos( angle );
+						let sy = ObjMove_GetY( fam ) + 32 * sin( angle );
+						ascent( idx in 0..length( rspeed ) ){
+							let speed = rspeed[ idx ];
+							let sht = CreateShotA2( sx, sy, 0, angle, speed / 60, speed, shote[0], delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						}
+						angle += rwide / ( way - 1 );
+					}
+					p += 360 / rway;
+				}
+			}
+			
+			loop( mwt / 2 ){
+				let sx = ObjMove_GetX( fam ) + rand( -1, 1 ) * 3;
+				let sy = ObjMove_GetY( fam ) + rand( -1, 1 ) * 3;
+				let speed = 5;
+				let angle = ag + 180;
+				let shote = ADD_BGW_ORANGE_02;
+				let delay = 24;
+				let sht = CreateShotA2( sx, sy, -speed / 2, angle, speed / 50, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ObjSound_Play( CreateShotSE[1] );
+				if( Wait( 2 ) ){ return; }
+			}
+			if( Wait( 30 ) ){ return; }
+			SetAngle;
+			task SetAngle{
+				while( !Obj_IsDeleted( fam ) ){
+					let toAngle = GetAngleToPlayer( fam ) + 180;
+					let ret = toAngle - ag;
+					let dangle = 0.2;
+					if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ ag += dangle; }
+					else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ ag += -dangle; }
+					if( ag >= 180 ){ ag += -360; }
+					if( ag < -180 ){ ag += 360; }
+					ObjRender_SetAngleZ( fam, ag );
+					if( Wait( 1 ) ){ return; }
+				}
+			}
+
+			ObjSound_Play( CreateShotSE[11] );
+			let lwide = 450;
+			let wdp = -8;
+			local{
+				let del = 300;
+				SetLaser( -1 );
+				SetLaser( 1 );
+				loop( del + 20 ){
+					lwide += wdp;
+					wdp *= 0.9895;
+					if( Wait( 1 ) ){ return; }
+				}
+				task SetLaser( r ){
+					let angle = ag + lwide / 2 * r;
+					let v = 36;
+					let sx = ObjMove_GetX( fam );
+					let sy = ObjMove_GetY( fam );
+					let leng = 0;
+					let width = 24;
+					let obj = CreateStraightLaser01( fam, [ sx, sy ], 90, leng, width, [ 255, 64, 64 ], true, 90, del );
+					//(CallID,gpos,angle,length_,width,color,bool_regist,delay,kill)
+					loop( del ){
+						sx = ObjMove_GetX( fam ) + v * cos( ag + 90 * r );
+						sy = ObjMove_GetY( fam ) + v * sin( ag + 90 * r );
+						angle = ag + lwide / 2 * r;
+						ObjMove_SetPosition( obj, sx, sy );
+						ObjStLaser_SetAngle( obj, angle );
+						ObjLaser_SetLength( obj, leng );
+						if( leng < 800 ){ leng += 5; }
+						if( Wait( 1 ) ){ return; }
+					}
+				}
+			}
+			ObjSound_Play( CreateShotSE[7] );
+			Obj_Delete( fam );
+		}
+	}

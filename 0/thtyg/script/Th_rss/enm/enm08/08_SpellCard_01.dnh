@@ -1,0 +1,265 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　一式「這い寄る混沌の蛇」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 66;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 64, 96, 96 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 3 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "一式「這い寄る混沌の蛇」";
+		
+		SpellCounter( GetDifficult, 8, 3 );
+		let sct = GetSpellCounter( GetDifficult, 8, 3 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_08b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		
+		State;
+		
+		Wait( 160 );
+		SetEffect( enm, 6 );
+		let way = 4;
+		while( !Obj_IsDeleted( enm ) ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( Wait( 80 ) ){ return; }
+			let angle = GetAngleToPlayer( enm );
+			loop( floor( way ) ){
+				HormingLaser( 2, angle );
+				angle += 360 / way * r;
+			}
+			if( Wait( 300 ) ){ return; }
+			EnemyMove( enm, 2, 8 );
+			if( Wait( 100 ) ){ return; }
+			way += 0.5;
+			r = -r;
+		}
+
+		task HormingLaser( speed, angle ){
+			ObjSound_Play( CreateShotSE[13] );
+			let sx = gpos[0];
+			let sy = gpos[1];
+			let state = 0;
+			let count = 0;
+			let abase = angle;
+			let sbase = speed;
+			let gra = ADD_BGW_PURPLE_22;
+			let del = 36;
+			let size = 80;
+			loop{
+				loop( 1 ){
+					let toAngle = atan2( GetPlayerY - sy, GetPlayerX - sx );
+					
+					let dangle = absolute( 4 - speed ) / 2;
+					let dmax = 0;
+					if( state > 0 ){ dangle = dmax; }
+					let ret = toAngle - angle;
+					if( ( ret > 0 && ret <= 180 ) || ( ret < 0 && ret <= -180 ) ){ angle += dangle; }
+					else if( ( ret > 0 && ret > 180 ) || ( ret < 0 && ret > -180 ) ){ angle += -dangle; }
+					if( angle >= 180 ){ angle += -360; }
+					if( angle < -180 ){ angle += 360; }
+					
+					alternative( state )
+					case( 0 ){
+						speed = sbase + ( sbase / 1.5 ) * sin( abase + count * 3 );
+						if( count >  470 ){ state = 1; }
+					}
+					case( 1 ){
+						speed += 0.08;
+					}
+					
+					let leng = size * ( speed / 3 );
+					let width = size;
+					if( count % 2 ){
+						SetLaserEffect( sx, sy, angle, leng, width, gra, 0, del/2, 0 );
+					}else{
+						SetLaserEffect( sx, sy, angle, leng * 0.8, width * 0.8, gra, 0, del, 1 );
+					}
+					sx += speed * cos( angle );
+					sy += speed * sin( angle );
+
+					if( count % 4 == 0 ){
+						let ag = angle + round( rand( -1, 1 ) ) * 6;
+						let spd = 0.9;
+						let shote = BGW_PURPLE_13;
+						let delay = 10;
+						
+						let sht = CreateShotA2( sx, sy, 0, ag, spd / 160, spd, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						ObjSound_Play( CreateShotSE[ 1 ] );
+					}
+					
+					if( state == 1 && IsOut ){ break; }
+					count++;
+				}
+				if( state == 1 && IsOut ){ break; }
+				if( Wait( 1 ) ){ return; }
+				function IsOut{
+					let ans = false;
+					let v=64;
+					if( sx <= MinX - v ||
+					    sx >= MaxX + v ||
+					    sy <= MinY - v ||
+					    sy >= MaxY + v ){ ans = true; }
+					return ans;
+				}
+			}
+			
+			task SetLaserEffect( let sx, let sy, let angle, let leng, let width, let gra, let delay, let del, let type ){
+				let obj = CreateStraightLaserA1( sx, sy, angle, leng, width, del, gra, delay );
+				ObjStLaser_SetSource( obj, false );
+				ObjShot_SetIntersectionEnable( obj, false );
+				if( type ){
+					let color = 96;
+					ObjRender_SetColor( obj, color, color, color );
+					ObjRender_SetBlendType( obj, BLEND_SUBTRACT );
+					ObjShot_SetIntersectionEnable( obj, true );
+				}
+				let l = leng;
+				let w = width;
+				let count = 0;
+				while( !Obj_IsDeleted( obj ) ){
+					ObjLaser_SetLength( obj, leng );
+					ObjLaser_SetRenderWidth( obj, width );
+					leng -= l / del;
+					width -= w / del;
+					if( count > del / 3 ){
+						ObjShot_SetIntersectionEnable( obj, false );
+					}
+					if( count == del ){
+						Obj_Delete( obj );
+					}
+					count++;
+					yield;
+				}
+			}
+		}
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+	
+	

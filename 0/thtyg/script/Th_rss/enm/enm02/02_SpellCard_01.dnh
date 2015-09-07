@@ -1,0 +1,351 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage2　弩符「三本の雷矢」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm02_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 90, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 2, 3 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "弩符「三本の雷矢」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "符心「天満宮弓始神事の練習」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "逆矢「リバースライジングアロー」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "逆矢「リバースライジングアロー」";
+		}
+		
+		SpellCounter( GetDifficult, 2, 3 );
+		let sct = GetSpellCounter( GetDifficult, 2, 3 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_02(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 5, 3 ];
+		//　角度
+		let type	= 0;
+		//　弾画像
+		let shote	= BGW_YELLOW_20;
+
+		let wtA		= 128;
+		let wtB		= 24;
+
+		let wide	= 120;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 3, 2 ];
+			wtA		= 64;
+			wide = 0;
+		}
+		case( "Normal" ){
+			lp		= [ 5, 3 ];
+			wtA		= 64;
+		}
+		case( "Hard" ){
+			lp		= [ 7, 8 ];
+			shote	= BGW_AQUA_20;
+			wtA		= 128;
+		}
+		case( "Lunatic" ){
+			lp		= [ 9, 10 ];
+			shote	= BGW_BLUE_20;
+			wtA		= 96;
+		}
+		case( "OverDrive" ){
+			lp		= [ 9, 5 ];
+			shote	= BGW_BLUE_20;
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜めから初期化
+			if( count == 120 ){
+				angle = GetAngleToPlayer(ID) + 360;
+				Concentration01_Main(enm, power_rgb, 60 );
+				SetAreaCommonData("anime", "spa", true );
+			}
+			//　壁矢弾
+			if( count > 120 && count%8 == 0 ){
+				if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+					ascent( i in 0..lp[0] ){
+						let sht = CreateShotA2( gpos[0], gpos[1], 3, angle + i*(360/lp[0]), -0.04, 0.2, shote, 8 );
+						NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+					}
+				}
+				else{
+					ascent( i in 0..lp[0] ){
+						let sht = CreateShotA2( gpos[0], gpos[1], 3, angle + i*(360/lp[0]), -0.04, 0.6, shote, 8 );
+						NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+					}
+				}
+				if( type%2 == 0 ){ angle += 2; }
+				else{ angle -= 2; }
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			if( count > 220 ){
+				frame = 0;
+				count = 0;
+				angle = 0;
+				type++;
+			}
+			
+			//　自機狙いnway弾
+			if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+				if( frame%wtA == 0 && angle < 3 ){
+					let ag = GetAngleToPlayer(ID) - wide / 2;
+					ascent( i in 0..lp[1] ){
+						CreateArrow( gpos, 1, ag, 0.06, 10 );
+						CreateArrow( gpos, 1, ag - 2, 0.04, 10 );
+						CreateArrow( gpos, 1, ag + 2, 0.04, 10 );
+						ag += wide / ( lp[1] - 1 );
+					}
+					ObjSound_Play( CreateShotSE[0] );
+					angle++;
+					EnemyMove(enm, 2, 8 );
+					SetAreaCommonData("anime", "spa", false );
+				}
+			}
+			else{
+				if( frame%wtA == 0 && angle < 5 ){
+					ascent( i in 0..lp[1] ){
+						CreateArrow( gpos, 1, GetAngleToPlayer(ID) + i*(360/lp[1]), 0.06, 10 );
+					}
+					ObjSound_Play( CreateShotSE[0] );
+					angle++;
+					EnemyMove(enm, 2, 8 );
+				}
+			}
+			
+			//　Hard以上　自機狙いnway弾
+			if( frame%wtB == 0 && GetDifficult != "Easy" && GetDifficult != "Normal" ){
+				let ang		= rand(0,360);
+				let shote2	= [ BGW_YELLOW_26, BGW_ORANGE_26 ];
+				ascent( i in 0..(lp[0]*3) ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 3, ang + i*(360/(lp[0]*3)), -0.04, 2.2, shote2[ round(ang)%2 ], 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[2] );
+			}
+			
+			frame++;
+			if( angle >= 3 ){ count++; }
+			
+			yield;
+		}
+	}
+	
+	function CreateArrow( gpos, speed, angle, acc, mx ){
+		let sht = CreateLaserC( gpos[0], gpos[1], angle, 0, speed, acc, mx, [128,128,32], 0.08, 0.8, ADD_BGW_WHITE_30 );
+		
+		ArrowUpdate( sht, 0 );
+		
+		return sht;
+	}
+	
+	function CreateArrow_Reverse( gpos, speed, angle, acc, mx ){
+		let sht = CreateLaserC( gpos[0], gpos[1], angle, 0, speed, acc, mx, [32,128,128], 0.2, 1, ADD_BGW_WHITE_09 );
+		
+		ArrowUpdate( sht, 1 );
+		
+		return sht;
+	}
+	
+	task ArrowUpdate( objID, type ){
+		let frame = 0;
+		let count = 0;
+		let shote = [ BGB_YELLOW_12, BGB_ORANGE_12 ];
+		
+		if( type == 1 ){
+			shote = [ BGB_AQUA_12, BGB_BLUE_12 ];
+		}
+		
+		let gpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		let angle	= ObjMove_GetAngle(objID);
+		
+		while( !Obj_IsDeleted(objID) ){
+			gpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle	= ObjMove_GetAngle(objID);
+			
+			if( frame > 0 && frame%6 == 0 ){
+				let sht = CreateShotA2( gpos[0], gpos[1], 2, angle-180 + rand(-16,16), -0.1, 0.2, shote[ count%2 ], 8 );
+				NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+				if( GetDifficult == "Easy" || GetDifficult == "Normal" ){ ShotDelete( sht, 90 ); }
+				else{ ShotDelete( sht, 60 ); }
+				ObjSound_Play( CreateShotSE[1] );
+				count++;
+			}
+			
+			frame++;
+			
+			yield;
+		}
+		if( GetDifficult == "Hard" || GetDifficult == "Lunatic" || GetDifficult == "OverDrive" ){
+			if( type == 0 && !Obj_IsDeleted( enm ) ){
+				gpos = [
+					gpos[0] + 32 * cos( angle+180 ),
+					gpos[1] + 32 * sin( angle+180 ),
+				];
+				CreateStraightLaser01( enm, gpos, angle+180, 700, 12, [32,192,192], true, 60, 120 );
+				CreateArrow_Reverse( gpos, 1, angle+180, 0.06, 10 );
+				ObjSound_Play( CreateShotSE[0] );
+			}
+		}
+	}
+	
+	task ShotDelete( ObjID, long ){
+		Obj_SetValue( ObjID, "Item_Off", true );
+		loop( long ){ yield; }
+		ObjShot_ToItem( ObjID );
+	}
+	

@@ -1,0 +1,397 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　QED「式の密室殺人」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	#include "./lib_enm08_family.dnh"
+	
+	let enm;
+	let dummy;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 74;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+
+		dummy = ObjEnemy_Create( OBJ_ENEMY );
+		ObjEnemy_SetDamageRate( dummy, 0, 0 );
+		ObjEnemy_Regist( dummy );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 64, 96, 96 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 11 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+//		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+//		RedMagicCircle( 1, 0 );
+		Aura( dummy, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+
+		SetDummy;
+		task SetDummy{
+			loop{
+				ObjMove_SetPosition( dummy, ObjMove_GetX( enm ), ObjMove_GetY( enm ) );
+				if( GetAreaCommonData( "anime", "alpha", 255 ) == 0 ){ break; }
+				yield;
+			}
+			Obj_Delete( dummy );
+		}
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "QED「式の密室殺人」";
+		
+		SpellCounter( GetDifficult, 8, 11 );
+		let sct = GetSpellCounter( GetDifficult, 8, 11 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_08b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		let b_rad = 64;
+		State;
+		Wait( 160 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait( 100 );
+		CreateWaveEffect( enm, [255,255,255], 32 );
+		SetAreaCommonData("anime", "alpha", 0 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY, 8, 2 );
+		ObjSound_Play( CreateShotSE[7] );
+		SetBorder;
+		Wait( 90 );
+		MainShot;
+		local{
+			FamilierA( [ MinX, MinY ], 1.5, 45, 0 );
+			FamilierA( [ MaxX, MaxY ], 1.5, 225, 0 );
+		}
+		Wait( 500 );
+		Concentration03_Main( enm, power_rgb, 0 );
+		Wait( 100 );
+		local{
+			FamilierA( [ MinX, MaxY ], 1.75, -45, 1 );
+			FamilierA( [ MaxX, MinY ], 1.75, 135, 1 );
+		}
+		Wait( 500 );
+		Concentration03_Main( enm, power_rgb, 0 );
+		Wait( 100 );
+		local{
+			FamilierA( [ MinX, MinY ], 2, 45, 2 );
+			FamilierA( [ MaxX, MaxY ], 2, 225, 2 );
+		}
+		Wait( 500 );
+		Concentration03_Main( enm, power_rgb, 0 );
+		Wait( 100 );
+		local{
+			FamilierA( [ MinX, MaxY ], 2.25, -45, 3 );
+			FamilierA( [ MaxX, MinY ], 2.25, 135, 3 );
+		}
+		Wait( 500 );
+		Concentration03_Main( enm, power_rgb, 0 );
+		Wait( 100 );
+		local{
+			FamilierA( [ MinX, MinY ], 2.5, 45, 4 );
+			FamilierA( [ MaxX, MaxY ], 2.5, 225, 4 );
+		}
+		Wait( 650 );
+		Concentration03_Main( enm, power_rgb, 0 );
+		Wait( 100 );
+		local{
+			FamilierA( [ MinX, MaxY ], 2.4, -45, 6 );
+			FamilierA( [ MaxX, MinY ], 2.4, 135, 6 );
+			FamilierA( [ MinX, MinY ], 2.4, 45, 6 );
+			FamilierA( [ MaxX, MaxY ], 2.4, 225, 6 );
+		}
+		task MainShot{
+			let shote = BGW_PURPLE_16;
+			SetShot( MinX, MinY, 90 );
+			SetShot( MinX, MaxY, 0 );
+			SetShot( MaxX, MaxY, 270 );
+			SetShot( MaxX, MinY, 180 );
+			if( !Obj_IsDeleted( enm ) ){ MainShot; }
+
+			function SetShot( let sx, let sy, let ag ){
+				if( Obj_IsDeleted( enm ) ){ return; }
+				let lp = 22;
+				let mpos = [ CenX, CenY ];
+				let w = 4;
+				let v = 448;
+				let rd = 0;
+				if( ag == 0 || ag == 180 ){ v = 384; }
+				let spd = v / lp;
+				let count = 0;
+				loop( lp ){
+					let spos = [ sx, sy ];
+					let sv = 120;
+					if( count % ( lp/2 ) < lp/4 ){ sv = 200; }
+					let speed = GetDistance( spos, mpos ) / sv;
+					let p = GetGapAngle( spos, mpos ) + round( rand( -1, 1 ) ) * rd;
+					let angle = p;
+					CreateShot01( spos, 0, angle, speed / 60, speed, shote, 24 );
+					sx += spd * cos( ag );
+					sy += spd * sin( ag );
+					ObjSound_Play( CreateShotSE[ 1 ] );
+					count++;
+					if( Wait( w ) ){ return; }
+				}
+			}
+		}
+		
+
+		task SetBorder{
+			let sx = MinX;
+			let sy = MinY;
+			let shote = ADD_BGW_WHITE_27;
+			let delay = 21400;
+			let color = [ 64, 64, 64 ];
+			Set( sx, sy-100, 0, ( MaxX - MinX ) / b_rad, 90 );
+			Set( sx-100, sy, 90, ( MaxY - MinY ) / b_rad, 0 );
+			task Set( let sx, let sy, let ag, let lp, let angle ){
+				loop( lp + 1 ){
+					let sht = CreateStraightLaserA1( sx, sy, angle, 640, 80, delay, shote, delay );
+					ObjStLaser_SetSource( sht, false );
+					ObjShot_SetAutoDelete( sht, false );
+					ObjSound_Play( CreateShotSE[13] );
+					sx += b_rad * cos( ag );
+					sy += b_rad * sin( ag );
+					Wait( 6 );
+				}
+			}
+		}
+
+		task FamilierA( pos, speed, angle, col ){
+			ObjSound_Play( CreateShotSE[ 7 ] );
+			let state = 0;
+			let c = [ 0, 6, 3, 1, 5, 2, 4, 7 ];
+			let obj = CreateEnemy_Sikigami( 80, col, true, false );
+			ObjMove_SetPosition( obj, pos[0], pos[1] );
+			State;
+			Move;
+			Mass;
+			if( Wait( 600 ) ){ return; }
+			loop( 3 ){
+				CreateWaveEffect( obj, [255,255,255], 20 );
+				if( Wait( 30 ) ){ return; }
+			}
+			if( !Obj_IsDeleted( obj ) ){
+				ObjSound_Play( CreateShotSE[ 3 ] );
+				let shote = BGW_RED_27 + c[ col ];
+				let way = 24;
+				let rd = 4;
+				let speed = [ 2, 1 ];
+				let angle = GetAngleToPlayer( obj );
+				loop( way ){
+					let v = 24;
+					let spos = [ pos[0] + v * cos( angle ), pos[1] + v * sin( angle ) ];
+					ascent( a in 0..length( speed ) ){
+						CreateShot01( spos, 0, angle + round(rand(-1,1))*rd, speed[a] / 120, speed[a], shote, 16 );
+					}
+					angle += 360 / way;
+				}
+			}
+			Obj_Delete( obj );
+
+			task Move{
+				let sbase = speed;
+				let count = 0;
+				while( !Obj_IsDeleted( obj ) ){
+					let bangle = angle;
+					if( count %2 ){
+						if( pos[0] < MinX && ( angle > 90 || angle < -90 ) ){
+							pos[0] = MinX;
+							angle = 180 - angle;
+							count++;
+						}
+						if( pos[0] > MaxX && ( angle < 90 || angle > -90 ) ){
+							pos[0] = MaxX;
+							angle = 180 - angle;
+							count++;
+						}
+						if( pos[1] > MaxY && angle > 0 ){
+							pos[1] = MaxY;
+							angle = -angle;
+							count++;
+						}
+						if( pos[1] < MinY && angle < 0 ){
+							pos[1] = MinY;
+							angle = -angle;
+							count++;
+						}
+					}else{
+						if( pos[0] < MinX || pos[0] > MaxX || pos[1] > MaxY || pos[1] < MinY ){
+							angle = GetAngleToPlayer( obj );
+							count++;
+						}
+					}
+					
+					if( bangle == angle ){
+						speed = sbase + sbase/2 * sin( count * 2 );
+					}
+					
+					if( angle >= 180 ){ angle -= 360; }
+					if( angle < -180 ){ angle += 360; }
+					ObjMove_SetX( obj, pos[0] + speed * cos( angle ) );
+					ObjMove_SetY( obj, pos[1] + speed * sin( angle ) );
+					ObjMove_SetAngle( obj, angle );
+
+					yield;
+				}
+			}
+
+			task Mass{
+				let ms = [ -1, -1 ];
+				while( !Obj_IsDeleted( obj ) ){
+					let msx = floor( pos[0] / b_rad );
+					let msy = floor( pos[1] / b_rad );
+					if( ms[0] != msx || ms[1] != msy ){
+						Set( msx * b_rad + b_rad/2, msy * b_rad + b_rad/2 );
+						ObjSound_Play( CreateShotSE[13] );
+						ms = [ msx, msy ];
+					}
+					yield;
+				}
+
+				task Set( bx, by ){
+					let vx = [ -b_rad/2, b_rad/2, b_rad/2, -b_rad/2 ];
+					let vy = [ -b_rad/2, -b_rad/2, b_rad/2, b_rad/2 ];
+					let color = [ 255, 255, 255 ];
+					let delay = 60;
+					let del = 60;
+					let ag = 0;
+					ascent( idx in 0..4 ){
+						let spos = [ bx + vx[idx], by + vy[idx] ];
+						let obj = CreateSwordLaser( spos, ag, b_rad, 32, del, color, delay );
+						SetLaser( obj, ag );
+						ag += 90;
+						task SetLaser( let obj, let angle ){
+							if( Wait( delay ) ){ return; }
+							loop( del ){
+								angle += 90 / del;
+								ObjStLaser_SetAngle( obj, angle );
+								if( Wait( 1 ) ){ return; }
+							}
+						}
+					}
+				}
+			}
+
+			task State{
+				while( !Obj_IsDeleted( obj ) ){
+					pos = [ ObjMove_GetX( obj ), ObjMove_GetY( obj ) ];
+					yield;
+				}
+			}
+		}
+
+		
+
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+	
+	

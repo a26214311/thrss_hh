@@ -1,0 +1,389 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage3　氷壁「フリーズナブルチャージャー」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm03_setting.dnh"
+	#include "./lib_IceShot.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,64,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 3, 3 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "氷壁「フリーズナブルチャージャー」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "氷盾「イイーキルスビット」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "氷盾「ウォールオブイージス」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "氷盾「ウォールオブイージス」";
+		}
+		
+		SpellCounter( GetDifficult, 3, 3 );
+		let sct = GetSpellCounter( GetDifficult, 3, 3 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_03_R(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　レーザータイプ
+		let type	= 0;
+		//　レーザーカラー
+		let rgb_array = [
+			[64,64,255],	//　青
+			[64,128,255],	//　深い水
+			[64,192,255],	//　淡い青
+			[64,255,255],	//　水
+			[128,64,255],	//　青紫
+			[192,64,255],	//　青紫
+		];
+
+		let wt = 300;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 11, 5 ];
+		}
+		case( "Normal" ){
+			lp		= [ 15, 5 ];
+		}
+		case( "Hard" ){
+			lp		= [ 17, 5 ];
+		}
+		case( "Lunatic" ){
+			lp		= [ 17, 6 ];
+		}
+		case( "OverDrive" ){
+			lp		= [ 22, 3 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜め
+			if( count == wt ){
+				Concentration01_Main(enm, power_rgb, 60 );
+				count = 0;
+				frame = 0;
+				type++;
+			}
+			
+			if( frame == 0 ){
+				if( type%2 == 0 ){
+					CreateLaser( ID, gpos, 64, -0.2, [64,128,255], lp );
+				}
+				else{
+					CreateLaser( ID, gpos, 64, 0.2, [64,128,255], lp );
+				}
+				ObjSound_Play( CreateShotSE[11] );
+				SetAreaCommonData("anime", "spa", true );
+			}
+			
+			if( frame == 180 ){
+				SetAreaCommonData("anime", "spa", false );
+			}
+			
+			count++;
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task CreateLaser( CallID, pos, dis, spin, rgb, lp ){
+		let rang = rand(0,360);
+		let way = 5;
+		let rad = dis*3;
+		let agp = -spin;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way = 3;
+		}
+		case( "Hard", "Lunatic" ){
+			way = 1;
+			rad = dis * 2.5;
+			agp = -spin*2.5;
+		}
+		
+		
+		ascent( let i in 0..(lp[0]) ){
+			CreateSpinLaser( CallID, pos, dis, rang + i*(360/lp[0]), spin, rgb );
+		}
+		
+		ascent( i in 0..(lp[1]) ){
+			ascent( let j in 0..way ){
+				CreateSpinShot( CallID, pos, rad, rang + i*(360/lp[1]) - 16 + j*8, agp, 300 );
+			}
+		}
+	}
+	
+	task CreateSpinLaser( CallID, pos, dis, angle, spin, rgb ){
+		let del = 300;
+		alternative( GetDifficult )
+		case( "Hard" ){ del = 450; }
+		case( "Lunatic" ){ del = 580; }
+		let sht = CreateStraightLaser01( CallID, pos, angle, 640, 20, rgb, true, 100, del );
+		UpData( CallID, sht, dis, angle, spin );
+	}
+	
+	task UpData( CallID, objID, dis, angle, spin ){
+		let count = 0;
+		
+		while( !Obj_IsDeleted(objID) ){
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let l_len = ObjLaser_GetLength(objID);
+			ObjMove_SetPosition(objID, gpos[0] + dis * cos(angle), gpos[1] + dis * sin(angle) );
+			ObjStLaser_SetAngle(objID, angle );
+			let res = CollisionaCheck(objID,angle);
+			if( res < l_len * 1.1 ){
+				ObjLaser_SetLength(objID, res );
+				count = 0;
+			}
+			else{
+				if( l_len < 640 && count > 0 ){
+					ObjLaser_SetLength(objID, l_len + 8 );
+				}
+				count++;
+			}
+			
+			angle += spin;
+			
+			yield;
+		}
+	}
+	
+	
+	
+	
+	task CreateSpinShot( CallID, pos, dis, angle, spin, long ){
+		let sht = CreateShotA2( pos[0], pos[1], 0, angle, 0, 0, ADD_BGW_WHITE_03, 0 );
+		NotifyEventAll( EV_USER + 40, [ sht, 0 ] );
+		UpData2( CallID, sht, dis, angle, spin, long );
+	}
+	
+	task UpData2( CallID, objID, dis, angle, spin, long ){
+		let count = 0;
+		let move1 = 0;
+		let moveA = 0;
+		
+		ObjShot_SetAutoDelete(objID, false );
+		ObjShot_SetSpellResist(objID, true );
+		
+		while( !Obj_IsDeleted(objID) && count < long ){
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			
+			ObjMove_SetPosition(objID, gpos[0] + (move1*dis) * cos(angle), gpos[1] + (move1*dis) * sin(angle) );
+			ObjMove_SetAngle(objID, angle );
+			
+			angle += spin;
+			count++;
+			if( move1 < 1 ){ moveA += 0.5; }
+			move1 = 1 * sin( moveA );
+			
+			yield;
+		}
+		if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+			CreateStraightLaser01( CallID, [ObjMove_GetX(objID),ObjMove_GetY(objID)], angle, 512, 16, [64,255,255], true, 60, 150 );
+		}
+		else{
+			/*
+			ascent( let i in 0..3 ){
+				CreateStraightLaser01( CallID, [ObjMove_GetX(objID),ObjMove_GetY(objID)], angle + i*120, 640, 10, [64,255,255], true, 60, 120 );
+			}
+			*/
+			let dp = 0;
+			while( !Obj_IsDeleted(objID) && dis < 480 ){
+				let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				
+				ObjMove_SetPosition(objID, gpos[0] + dis * cos(angle), gpos[1] + dis * sin(angle) );
+				ObjMove_SetAngle(objID, angle );
+				
+				angle += spin;
+				dis += 0.5;
+				
+				yield;
+			}
+		}
+		ObjSound_Play( CreateShotSE[11] );
+		ShotDelete( objID, 0 );
+	}
+	
+	//　すべての弾との接触をチェック
+	//　返る値はレーザー軌道上の一番近くの弾との距離
+	function CollisionaCheck( objID, angle ){
+		let AllShot = GetShotIdInCircleA2( ObjMove_GetX(enm), ObjMove_GetY(enm), 512, TARGET_ENEMY );
+		let ans = 512;
+		ascent( let i in 0..( length(AllShot) ) ){
+			if( Obj_GetType(AllShot[i]) != OBJ_STRAIGHT_LASER ){
+				
+				let col = IsIntersected_Line_Circle(
+					ObjMove_GetX(objID),ObjMove_GetY(objID),
+					ObjMove_GetX(objID)+512*cos(angle),
+					ObjMove_GetY(objID)+512*sin(angle),
+					10,
+					ObjMove_GetX(AllShot[i]),ObjMove_GetY(AllShot[i]),
+					24 );
+				//*/
+		//		let col = IsIntersected_Obj_Obj(objID,AllShot[i]);
+				if( col ){
+					let dis = GetObjectDistance( objID, AllShot[i] );
+					if( ans > dis ){ ans = dis; }
+				}
+			}
+		}
+		return ans;
+	}
+	
+	task ShotDelete( ObjID, long ){
+		//　削除エフェクトだけ出るようにする
+		Obj_SetValue( ObjID, "Item_Off", true );
+		//　削除まで long フレーム待機
+		loop( long ){ yield; }
+		//　アイテムとして削除
+		ObjShot_ToItem( ObjID );
+	}

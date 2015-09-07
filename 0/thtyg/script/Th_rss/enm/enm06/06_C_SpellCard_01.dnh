@@ -1,0 +1,282 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　「草薙のソウルセーバー」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./../enm04/lib_enm04_setting.dnh"
+	#include "./../enm04/lib_enm04_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　エフェクト展開済みにしておく
+		SetEffect_Enm04( enm, 1 );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, true );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1500 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 6, 0 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm04a( enm, true, enemy_tex_path2 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "「草薙のソウルセーバー」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "「ソウルセーバーレゾナンス」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "「神器と共に在り続ける皇」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "「神器と共に在り続ける皇」";
+		}
+		
+		SpellCounter( GetDifficult, 6, 0 );
+		let sct = GetSpellCounter( GetDifficult, 6, 0 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 256, 192, [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_04(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let count	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		let shote	= [ BGW_RED_27, BGW_ORANGE_27 ];
+		let angle	= 0;
+		let type	= 0;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 14, 0 ];
+		}
+		case( "Normal" ){
+			lp		= [ 22, 0 ];
+		}
+		case( "Hard" ){
+			lp		= [ 30, 0 ];
+		}
+		case( "Lunatic" ){
+			lp		= [ 40, 0 ];
+			shote	= [ BGW_BLUE_27, BGW_AQUA_27 ];
+		}
+		case( "OverDrive" ){
+			lp		= [ 45, 0 ];
+			shote	= [ BGW_BLUE_27, BGW_AQUA_27 ];
+		}
+		
+		let rgb_array = [
+			[ 255, 128, 128 ],
+			[ 255, 192, 128 ],
+			[ 255, 255, 128 ],
+			[ 128, 255, 128 ],
+			[ 128, 255, 255 ],
+			[ 128, 128, 255 ],
+			[ 255, 128, 255 ],
+		];
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( count >= 10 && count < 90 && count%5 == 0 ){
+				let sca = 0.2;
+				if( type%2 == 0 ){
+					CreateBraidAttack_Kusanagi( [ MinX-256, CenY-64 - rand(0,32) ], 0 + rand(-32,8), sca, 30, lp[0], rgb_array[ angle%7 ] );
+				}
+				else{
+					CreateBraidAttack_Kusanagi( [ MaxX+256, CenY-64 - rand(0,32) ], 180 + rand(-8,32), sca, 30, lp[0], rgb_array[ angle%7 ] );
+				}
+				angle++;
+				SetAreaCommonData( "anime", "spa", true );
+			}
+			
+			if( count == 30 ){
+				if( type%2 == 0 ){
+					CreateBraidAttack( [ MinX-64, CenY-64 ], 0, 1, 90, 0 );
+				}
+				else{
+					CreateBraidAttack( [ MaxX+64, CenY-64 ], 180, 1, 90, 0 );
+				}
+			}
+			
+			if( count == 220 ){
+				let AllShot = GetShotIdInCircleA2( gpos[0], gpos[1], 512, TARGET_ENEMY );
+				
+				if( length(AllShot) > 0 ){
+					ascent( i in 0..( length(AllShot) ) ){
+						ShotChange( AllShot[i], shote[ i%2 ] );
+					}
+				}
+				
+				frame = -60;
+				count = -60;
+				angle = 0;
+				type++;
+				SetAreaCommonData( "anime", "spa", false );
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	
+	task ShotChange( ID, shote ){
+		let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let gang = ObjMove_GetAngle(ID);
+		
+		//　削除エフェクトだけ出るようにする
+		Obj_SetValue( ID, "Item_Off", true );
+		//　アイテムとして削除
+		ObjShot_ToItem( ID );
+		
+		let sht = CreateShotA2( gpos[0], gpos[1], 0, gang, rand(0,0.02), 10, shote, 16 );
+		NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+		
+		ShotDelete( sht, rand(60,240) );
+	}
+	
+	task ShotDelete( ID, long ){
+		
+		loop( long ){
+			if( Obj_IsDeleted(ID) ){ break; }
+			yield;
+		}
+		
+		//　削除エフェクトだけ出るようにする
+		Obj_SetValue( ID, "Item_Off", true );
+		//　アイテムとして削除
+		ObjShot_ToItem( ID );
+	}

@@ -1,0 +1,151 @@
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　使い魔
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　本体
+//　引数1:敵の体力
+//　引数2:0~7使い魔の色
+//　引数3:bool　ObjMove_SetAngleで値がセットされている時に、その方向に画像角度を傾けるかどうか
+//　引数4:bool　敵-自機弾間の判定の有無
+function CreateEnemy_Sikigami( enemy_life, c, FLAG_ANGLE, FLAG_INTERSECTION ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	let color = [ [ 255, 0, 0 ],
+				  [ 255, 100, 100 ],
+				  [ 255, 255, 0 ],
+				  [ 0, 255, 0 ],
+				  [ 100, 100, 255 ],
+				  [ 0, 0, 255 ],
+				  [ 255, 0, 255 ],
+				  [ 128, 128, 128 ]];
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Sikigami_Render( obj, color[c%length(color)], 0.6, FLAG_ANGLE );
+
+	State;
+	
+	return obj;
+
+	task State{
+		let d_rate = 0;
+		while( ObjEnemy_GetInfo( obj, INFO_LIFE ) > 0 ){
+			if( FLAG_INTERSECTION ){
+				ObjEnemy_SetDamageRate( obj, d_rate, 1 );
+				ObjEnemy_SetIntersectionCircleToShot( obj, ObjMove_GetX( obj ), ObjMove_GetY( obj ), 18 );
+				if( d_rate < 100 ){ d_rate += 0.5; }
+			}
+			yield;
+		}
+		if( Obj_IsDeleted( obj ) ){ return; }
+		Obj_Delete( obj );
+		if( FLAG_INTERSECTION ){
+			ObjEnemy_AddLife( enm, -30 );
+		}
+		ObjSound_Play( UtilitySE[7] );
+	}
+}
+
+//　使い魔描画
+task CreateEnemy_Sikigami_Render( CallID, color, scale_base, FLAG_ANGLE ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let gang	= ObjMove_GetAngle( CallID ) + 90;
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let animc	= 0;
+	let animX	= 0;
+	let animY	= 0;
+	
+	//　オブジェクト作成
+	ascent( let i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg8img/enm08_Fam.png" );
+		Obj_SetRenderPriorityI(ID[i], 52 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 128, 128 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ADD_ARGB );
+	
+	ObjSprite2D_SetSourceRect(ID[2], 0, 0, 128, 128 );
+	
+	let alpha = [ 128, 128, 255 ];
+	let scale = [ (scale_base+0.1), (scale_base+0.06), scale_base ];
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		if( FLAG_ANGLE ){
+			gang = ObjMove_GetAngle( CallID ) + 90;
+		}
+		else{
+			gang = 0;
+		}
+		
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count*8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(ID[i], 90 - move1*90, 180 - move1*180, gang );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+			
+			ObjSprite2D_SetSourceRect(ID[i], 0 + animX*128, 0 + animY*128, 128 + animX*128, 128 + animY*128 );
+			if( i == 0 ){
+				ObjRender_SetColor(ID[i], color[0], color[1], color[2] );
+			}
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-2,2), gpos[1] + rand(-2,2), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		if( move1 < 1 ){ moveA += 2; }
+		animc++;
+		if( animc > 0 && animc%8 == 0 ){ animX++; }
+		if( animX > 0 && animX%4 == 0 ){ animY++; }
+		
+		yield;
+	}
+	let data = [ gpos[0], gpos[1], 0 ];
+	NotifyEventAll( EV_USER + 35, data );
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count*8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], gang );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+			ObjSprite2D_SetSourceRect(ID[i], 0 + animX*128, 0 + animY*128, 128 + animX*128, 128 + animY*128 );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		moveA += 10;
+		animc++;
+		if( animc > 0 && animc%8 == 0 ){ animX++; }
+		if( animX > 0 && animX%4 == 0 ){ animY++; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+	if( !Obj_IsDeleted( CallID ) ){
+		Obj_Delete( CallID );
+	}
+}

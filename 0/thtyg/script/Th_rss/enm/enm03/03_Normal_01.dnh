@@ -1,0 +1,202 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage3　瑠璃通常01"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm03_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(128,128,128,128);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 90 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 190 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 3, 0 ];
+		//　ショット画像
+		let shote	= [ BGW_WHITE_16, BGW_BLUE_16 ];
+
+		//　ループタイミング
+		let l_wt	= 280;
+
+		//　リング半径
+		let rad		= 32;
+		
+		let type	= 0;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 6, 10 ];
+			rad		= 28;
+		}
+		case( "Normal" ){
+			lp		= [ 10, 10 ];
+		}
+		case( "Hard" ){
+			lp		= [ 14, 10 ];
+		}
+		case( "Lunatic" ){
+			lp		= [ 12, 10 ];
+			rad		= 56;
+			l_wt	= 220;
+		}
+		case( "OverDrive" ){
+			lp		= [ 16, 10 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( frame == l_wt - 100 ){
+				Concentration01_Main(ID, power_rgb, 60 );
+				EnemyMove(enm, 2, 8 );
+			}
+			
+			//　初期化
+			if( frame >= l_wt ){
+				count = 0;
+				frame = 0;
+				type++;
+			}
+			
+			//　ワインダー的なやつ
+			if( count%48 == 0 && frame < 180 ){
+				let rang = rand( 0, 360 );
+				ascent( i in 0..(lp[0]) ){
+					ascent( let j in 0..(lp[1]) ){
+						let spos = [
+							gpos[0] + rad * cos( j*(360/lp[1]) ),
+							gpos[1] + rad * sin( j*(360/lp[1]) ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], 2, rang + i*(360/lp[0]), 0, 10, shote[ type%2 ], 16 );
+						NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+					}
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	

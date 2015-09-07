@@ -1,0 +1,299 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　桃姫通常03"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm06_setting.dnh"
+	#include "./lib_enm06_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "EndSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let wtA		= 60;
+		let wtB		= 9;
+		let agp		= 3;
+
+		let r		= 1 - round( rand( 0, 1 ) ) * 2;
+		
+		//　way数
+		let way		= 20;
+		//　発射間隔
+		let lp		= [ 1, 2 ];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way		= 12;
+			lp		= [ 1 ];
+		}
+		case( "Normal" ){
+			lp		= [ 1, 2, 1 ];
+		}
+		case( "Hard" ){
+			way		= 24;
+			lp		= [ 2 ];
+		}
+		case( "Lunatic" ){
+			way		= 20;
+			lp		= [ 3, 2, 3, 4 ];
+		}
+		case( "OverDrive" ){
+			lp		= [ 1 ];
+		}
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+
+		State;
+		task State{
+			Conc;
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+			task Conc{
+				SetEffect_Enm06( ID );
+				Wait( 90 );
+				Concentration03_Main( enm, power_rgb, 60 );
+				SetAreaCommonData( "anime", "spa", true );
+				CreateFamily( ID, 100, 0.5, 360 );
+			}
+		}
+		let idx = 0;
+		loop{
+			let rang	= rand(0,360);
+			loop( lp[ idx%length(lp) ] ){
+				let shote	= [ BGW_RED_27, BGW_PURPLE_27 ];
+				ascent( i in 0..way ){
+					let ag = [ rang + i*(360/way), rang + i*(360/way) + (360/way)/2 ];
+					let spos = [
+						[ gpos[0] + 32 * cos( ag[0] ), gpos[1] + 32 * sin( ag[0] ) ],
+						[ gpos[0] + 32 * cos( ag[1] ), gpos[1] + 32 * sin( ag[1] ) ],
+					];
+					ascent( j in 0..2 ){
+						let sht = CreateShot01( spos[j], 4, ag[j], -0.04, 0+j*3, shote[ j ], 24 );
+						ShotSpeedChange( sht, 60, 0.01, 4 );
+					}
+				}
+				rang += agp * r;
+				ObjSound_Play( CreateShotSE[0] );
+				if( Wait(wtB) ){ return; }
+			}
+			r = -r;
+			idx++;
+			if( Wait(wtA) ){ return; }
+		}
+		
+		function Wait( time ){
+			loop( time ){
+				yield;
+				if( Obj_IsDeleted( ID ) ){ return true; }
+			}
+			return false;
+		}
+	}
+	
+	task CreateFamily( ID, life, scale, WaitTime ){
+		let fam = [
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+			CreateEnemy_Mirror( life, scale, [ 170, 170, 170 ], WaitTime ),
+		];
+		let r = 1;
+		ascent( let i in 0..( length(fam) ) ){
+			let spos = [
+				ObjMove_GetX(ID) + 160 * cos( 45/2 + i*(360/length(fam)) ),
+				ObjMove_GetY(ID) + 160 * sin( 45/2 + i*(360/length(fam)) ),
+			];
+			ObjMove_SetPosition( fam[i], spos[0], spos[1] );
+			FamilyMain( fam[i], ADD_BGW_BLUE_17, r );
+			r = -r;
+		}
+	}
+	
+	task ShotSpeedChange( ID, delay, acc, maxspeed ){
+		while( ObjMove_GetSpeed(ID) > 0 ){ yield; }
+		loop( delay ){ yield; }
+		ObjMove_SetAcceleration( ID, acc );
+		ObjMove_SetMaxSpeed( ID, maxspeed );
+	}
+	
+	task FamilyMain( ID, shote, r ){
+		let way = 2;
+		let speed = 0;
+		let acc = 0.02;
+		let mx = 1;
+		let wt = 16;
+		let agp = 36;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			wt = 40;
+			way = 1;
+			agp = 54;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			way = 5;
+			agp = 1;
+			mx = 0.55;
+		}
+		case( "Lunatic" ){
+			way = 6;
+			agp = 1.2;
+			mx = 0.55;
+		}
+		case( "OverDrive" ){
+		}
+		let frame = 0;
+		let p = 0;
+		
+		while( !Obj_IsDeleted(ID) ){
+			let gpos		= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			let EnemyLife	= ObjEnemy_GetInfo( ID, INFO_LIFE );
+			
+			if( EnemyLife <= 0 ){
+				if( frame > 0 && frame%wt == 0 ){
+					let dist = 32;
+					let angle = p;
+					loop( way ){
+						let spos = [
+							ObjMove_GetX(ID) + dist * cos( angle ),
+							ObjMove_GetY(ID) + dist * sin( angle ),
+						];
+						CreateShot01( spos, speed, angle, acc, mx, shote, 16 );
+						angle += 360 / way;
+					}
+					p += agp * r;
+					ObjSound_Play( CreateShotSE[1] );
+				}
+				frame++;
+			}
+			else{
+				if( frame >= 0 ){ r = -r; }
+				frame = 0;
+				p = GetAngleToPlayer(ID);
+			}
+			
+			yield;
+		}
+	}

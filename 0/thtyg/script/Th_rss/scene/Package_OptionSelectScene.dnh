@@ -1,0 +1,774 @@
+
+	let State		= 0;
+	let csd			= GetCurrentScriptDirectory();
+	let EndFrag		= false;
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	TBackground();
+	TOptionSelectScene();
+	
+	SetAreaCommonData("System","select",0);
+	SetAreaCommonData("System","select2",0);
+	
+	SetScriptResult("");
+}
+
+@MainLoop{ yield; }
+
+@Finalize{
+	PlaySEsP(csd~"../se/menucancel.ogg");
+}
+
+task PlaySEsP(se){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option","SE_Volume",100);
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid,se);
+	ObjSound_SetVolumeRate(sid,se_vol);
+	ObjSound_SetLoopEnable(sid,false);
+	ObjSound_Play(sid);
+	loop(180){ yield; }
+	Obj_Delete(sid);
+}
+
+task TBackground{
+	let objImage	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objText		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 		= GetCurrentScriptDirectory();
+	let eflg		= GetAreaCommonData("System", "title_end", false );
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let flg			= 0;
+	let ctr			= 0;
+	let i			= 0;
+	
+	//　背景
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" );
+	Obj_SetRenderPriorityI(objImage, 33 );
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 64, 64, 64 );
+	ObjRender_SetAlpha(objImage, alpha1*255 );
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.56, 0.56, 0 );
+	ObjSprite2D_SetSourceRect(objText, 512, 256, 1024, 512 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+
+	while( !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		
+		//　キャンセルキー
+		if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 1 ){
+			ctr = 0;
+			EndFrag = true;
+			break;
+		}
+		
+		if( ctr%4 == 0 ){
+			let rgb_array	= [
+				[255,255,255],	//　白
+				[64,255,255],	//　水
+				[64,255,128],	//　青緑
+				[64,128,255],	//　青
+			];
+			CreateIceCrystal( [rand(0,640),rand(0,480)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.7), rand(120,180), rand(64,96), rgb_array, 33 );
+		}
+		
+		ctr++;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( !eflg && alpha1 < 1 ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, 255 - alpha1*255 );
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete( objImage );
+	Obj_Delete( objText );
+	SetAreaCommonData("System", "select", 0 );
+	SetAreaCommonData("System", "select2", 0 );
+	CloseScript( GetOwnScriptID() );
+}
+
+task TOptionSelectScene{
+	/*　メモ
+		BGM音量
+		SE音量
+		キーコンフィグは弾幕風ph3に同梱されている、「config.exe」を起動して頂くことで行えます。
+		エフェクトカット
+			0	何も消えない
+			1	+敵周辺の歪みが消える
+			2	+舞う桜とか消える
+			3	+背景が消える
+	*/
+	let text	= [
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+	];
+	let par	= [
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+		ObjText_Create(),
+	];
+	let BGM		= GetAreaCommonData("Option", "BGM_Volume", 99999 );
+	let SE		= GetAreaCommonData("Option", "SE_Volume", 99999 );
+	let PSvol	= GetAreaCommonData("Option", "PlayerShot_Volume", 0 );
+	let SHvol	= GetAreaCommonData("Option", "ShotHit_Volume", 0 );
+	let PL		= GetAreaCommonData("Option", "Player", 8 );
+	let EC		= GetAreaCommonData("Option", "Effect_Cut", 3 );
+	let AUTO_B	= GetAreaCommonData("Option", "AutoBomb", 0 );
+	let S_Style	= GetAreaCommonData("Option", "StrongStyle", 0 );
+	let list	= [
+		"BGM Vol",
+		"SE Vol",
+		"PlayerShot SE",
+		"ShotHit SE",
+		"Player",
+		"Effect Cut",
+		"Auto Bomb",
+		"Strong Style"
+	];
+	let list2	= [ BGM, SE, PSvol, SHvol, PL, EC, AUTO_B, S_Style ];
+	let list3	= [
+		"ゲーム中で流れる音楽の音量を調節します",
+		"ゲーム中で流れる効果音の音量を調節します",
+		"自機のショット発射効果音を調節します[r]自機スペルカードの効果音はSE Volが反映されます",
+		"自機のショット着弾効果音を調節します[r]自機スペルカードの効果音はSE Volが反映されます",
+		"プレイヤーの初期の残機数を設定します",
+		"ゲーム中のエフェクトを削減して動作を軽くします[r]数値が高い程効果的です",
+		"自機が被弾した時、ボムを所持していれば自動的にボムを使用します[r]ONにする事によるペナルティは特にありません",
+		"デバッグ用[r]自機が常にパワーアップしている状態で遊ぶことが出来ます",
+	];
+	let stc		= 0;
+	let stc_col	= [
+		[255,64,64,64,64,64,64,64],
+		[64,255,64,64,64,64,64,64],
+		[64,64,255,64,64,64,64,64],
+		[64,64,64,255,64,64,64,64],
+		[64,64,64,64,255,64,64,64],
+		[64,64,64,64,64,255,64,64],
+		[64,64,64,64,64,64,255,64],
+		[64,64,64,64,64,64,64,255],
+	];
+	let ctr		= 0;
+	let ctr2	= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	
+	let debug_frag = false;
+	let i = 0;
+	
+	if( !debug_frag ){
+		text = [
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+		];
+		par = [
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+			ObjText_Create(),
+		];
+		list = [
+			"BGM Vol",
+			"SE Vol",
+			"PlayerShot SE",
+			"ShotHit SE",
+			"Player",
+			"Effect Cut",
+			"Auto Bomb",
+		];
+		list2 = [ BGM, SE, PSvol, SHvol, PL, EC, AUTO_B ];
+		list3 = [
+			"ゲーム中で流れる音楽の音量を調節します",
+			"ゲーム中で流れる効果音の音量を調節します",
+			"自機のショット発射効果音を調節します[r]自機スペルカードの効果音はSE Volが反映されます",
+			"自機のショット着弾効果音を調節します[r]自機スペルカードの効果音はSE Volが反映されます",
+			"プレイヤーの初期の残機数を設定します",
+			"ゲーム中のエフェクトを削減して動作を軽くします[r]数値が高い程効果的です",
+			"自機が被弾した時、ボムを所持していれば自動的にボムを使用します[r]ONにする事によるペナルティは特にありません[r]一部のモードでは発動に所持している全てのボムを消費します",
+		];
+	}
+	
+	ascent( i in 0..( length(text) ) ){
+		ObjRender_SetPosition(text[i], 40, 120+i*32, 0 );
+		ObjText_SetText(text[i], list[i] );
+		ObjText_SetFontType(text[i], "MS 明朝" );
+		ObjText_SetFontSize(text[i], 20 );
+		ObjText_SetFontBold(text[i], false );
+		ObjText_SetFontBorderType(text[i], BORDER_FULL );
+		ObjText_SetFontBorderColor(text[i],0, 0, 0 );
+		ObjText_SetFontBorderWidth(text[i], 2 );
+		Obj_SetRenderPriorityI(text[i], 34 );
+	}
+	
+	ascent( i in 0..( length(par) ) ){
+		ObjRender_SetPosition(par[i], 256, 120+i*32, 0 );
+		ObjText_SetText(par[i], IntToString(list2[i]) );
+		ObjText_SetFontType(par[i],"MS 明朝" );
+		ObjText_SetFontSize(par[i], 20 );
+		ObjText_SetFontBold(par[i], false );
+		ObjText_SetFontBorderType(par[i], BORDER_FULL );
+		ObjText_SetFontBorderColor(par[i],0, 0, 0 );
+		ObjText_SetFontBorderWidth(par[i], 2 );
+		Obj_SetRenderPriorityI(par[i], 34 );
+	}
+	
+	while( !EndFrag ){
+		BGM		= GetAreaCommonData("Option", "BGM_Volume", 99999 );
+		SE		= GetAreaCommonData("Option", "SE_Volume", 99999 );
+		PSvol	= GetAreaCommonData("Option", "PlayerShot_Volume", 99999 );
+		SHvol	= GetAreaCommonData("Option", "ShotHit_Volume", 99999 );
+		PL		= GetAreaCommonData("Option", "Player", 8 );
+		EC		= GetAreaCommonData("Option", "Effect_Cut", 3 );
+		AUTO_B	= GetAreaCommonData("Option", "AutoBomb", 0 );
+		S_Style	= GetAreaCommonData("Option", "StrongStyle", 0 );
+		
+		if( !debug_frag ){
+			list2 = [ BGM, SE, PSvol, SHvol, PL, EC, AUTO_B ];
+		}
+		else{
+			list2 = [ BGM, SE, PSvol, SHvol, PL, EC, AUTO_B, S_Style ];
+		}
+		
+		//　説明テキスト配置
+		if( ctr == 1 ){
+			DrawText( 20, 450-36, 255,255,255, stc, list3[stc], 16 );
+		}
+		
+		//　上下移動
+		if( GetVirtualKeyState(VK_UP) == KEY_PUSH ){
+			stc--;
+			if( stc < 0 ){ stc = length(list2)-1; }
+			ctr = 0;
+			SetAreaCommonData("System", "select", stc );
+			PlaySEsP( csd ~ "../se/menuselect.ogg" );
+		}
+		if( GetVirtualKeyState(VK_DOWN) == KEY_PUSH ){
+			stc++;
+			if( stc > length(list2)-1 ){ stc = 0; }
+			ctr = 0;
+			SetAreaCommonData("System","select",stc);
+			PlaySEsP( csd ~ "../se/menuselect.ogg" );
+		}
+		
+		//　ﾊﾟﾗﾒｰﾀ調整
+		if( GetVirtualKeyState(VK_RIGHT) == KEY_PUSH ){
+			alternative( stc )
+			case( 0 ){
+				if( BGM < 100 ){
+					SetAreaCommonData("Option", "BGM_Volume", BGM+5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 1 ){
+				if( SE < 100 ){
+					SetAreaCommonData("Option", "SE_Volume", SE+5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 2 ){
+				if( PSvol < 100 ){
+					SetAreaCommonData("Option", "PlayerShot_Volume", PSvol+5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 3 ){
+				if( SHvol < 100 ){
+					SetAreaCommonData("Option", "ShotHit_Volume", SHvol+5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 4 ){
+				if( PL < 4 ){
+					SetAreaCommonData("Option", "Player", PL+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 5 ){
+				if( EC < 4 ){
+					SetAreaCommonData("Option", "Effect_Cut", EC+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 6 ){
+				if( AUTO_B < 1 ){
+					SetAreaCommonData("Option", "AutoBomb", AUTO_B+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+				else{
+					SetAreaCommonData("Option", "AutoBomb", AUTO_B-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 7 ){
+				if( S_Style < 1 ){
+					SetAreaCommonData("Option", "StrongStyle", S_Style+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+				else{
+					SetAreaCommonData("Option", "StrongStyle", S_Style-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+		}
+		if( GetVirtualKeyState(VK_LEFT) == KEY_PUSH ){
+			alternative( stc )
+			case( 0 ){
+				if( BGM > 0 ){
+					SetAreaCommonData("Option", "BGM_Volume", BGM-5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 1 ){
+				if( SE > 0 ){
+					SetAreaCommonData("Option", "SE_Volume", SE-5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 2 ){
+				if( PSvol > 0 ){
+					SetAreaCommonData("Option", "PlayerShot_Volume", PSvol-5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 3 ){
+				if( SHvol > 0 ){
+					SetAreaCommonData("Option", "ShotHit_Volume", SHvol-5 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 4 ){
+				if( PL > 0 ){
+					SetAreaCommonData("Option", "Player", PL-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 5 ){
+				if( EC > 0 ){
+					SetAreaCommonData("Option", "Effect_Cut", EC-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 6 ){
+				if( AUTO_B > 0 ){
+					SetAreaCommonData("Option", "AutoBomb", AUTO_B-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+				else{
+					SetAreaCommonData("Option", "AutoBomb", AUTO_B+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+			case( 7 ){
+				if( S_Style > 0 ){
+					SetAreaCommonData("Option", "StrongStyle", S_Style-1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+				else{
+					SetAreaCommonData("Option", "StrongStyle", S_Style+1 );
+					SaveCommonDataAreaA1("Option");
+					PlaySEsP( csd ~ "../se/menuselect.ogg" );
+				}
+			}
+		}
+		//　長押しで増減させる
+		if( GetVirtualKeyState( VK_RIGHT ) == KEY_HOLD ){
+			if( ctr2 >= 30 && ctr2 %6 == 0 ){
+				alternative( stc )
+				case( 0 ){
+					if( BGM < 100 ){
+						SetAreaCommonData("Option", "BGM_Volume", BGM+5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 1 ){
+					if( SE < 100 ){
+						SetAreaCommonData("Option", "SE_Volume", SE+5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 2 ){
+					if( PSvol < 100 ){
+						SetAreaCommonData("Option", "PlayerShot_Volume", PSvol+5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 3 ){
+					if( SHvol < 100 ){
+						SetAreaCommonData("Option", "ShotHit_Volume", SHvol+5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 4 ){
+					if( PL < 8 ){
+						SetAreaCommonData("Option", "Player", PL+1 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 5 ){
+					if( EC < 4 ){
+						SetAreaCommonData("Option", "Effect_Cut", EC+1 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+			}
+			ctr2++;
+		}
+		else if( GetVirtualKeyState( VK_LEFT ) == KEY_HOLD ){
+			if( ctr2 >= 30 && ctr2 %6 == 0 ){
+				alternative( stc )
+				case( 0 ){
+					if( BGM > 0 ){
+						SetAreaCommonData("Option", "BGM_Volume", BGM-5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 1 ){
+					if( SE > 0 ){
+						SetAreaCommonData("Option", "SE_Volume", SE-5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 2 ){
+					if( PSvol > 0 ){
+						SetAreaCommonData("Option", "PlayerShot_Volume", PSvol-5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 3 ){
+					if( SHvol > 0 ){
+						SetAreaCommonData("Option", "ShotHit_Volume", SHvol-5 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 4 ){
+					if( PL > 0 ){
+						SetAreaCommonData("Option", "Player", PL-1 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+				case( 5 ){
+					if( EC > 0 ){
+						SetAreaCommonData("Option", "Effect_Cut", EC-1 );
+						SaveCommonDataAreaA1("Option");
+						PlaySEsP( csd ~ "../se/menuselect.ogg" );
+					}
+				}
+			}
+			ctr2++;
+		}
+		else{
+			ctr2 = 0;
+		}
+		
+		ascent( i in 0..(length(text)) ){
+			ObjText_SetText(par[i], IntToString(list2[i]) );
+			ObjText_SetFontColorTop(text[i], stc_col[i][stc], stc_col[i][stc], stc_col[i][stc] );
+			ObjText_SetFontColorBottom(text[i], stc_col[i][stc], stc_col[i][stc], stc_col[i][stc] );
+			ObjText_SetFontColorTop(par[i], stc_col[i][stc], stc_col[i][stc], stc_col[i][stc] );
+			ObjText_SetFontColorBottom(par[i], stc_col[i][stc], stc_col[i][stc], stc_col[i][stc] );
+		}
+		
+		if( AUTO_B == 0 ){
+			ObjText_SetText(par[6], "OFF" );
+		}
+		else{
+			ObjText_SetText(par[6], "ON" );
+		}
+		
+		if( debug_frag ){
+			if( S_Style == 0 ){
+				ObjText_SetText(par[7], "OFF" );
+			}
+			else{
+				ObjText_SetText(par[7], "ON" );
+			}
+		}
+		
+		ascent( i in 0..4 ){
+			let texts = "";
+			texts = texts ~ IntToString(list2[i]) ~ " %";
+			ObjText_SetText(par[i], texts );
+		}
+		
+		ctr++;
+		
+		yield;
+	}
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		ascent( i in 0..length(text) ){
+			ObjRender_SetAlpha(text[i], 255-alpha1*255 );
+			ObjRender_SetAlpha(par[i], 255-alpha1*255 );
+		}
+		alphaA += 5;
+		yield;
+	}
+	ascent( i in 0..length(text) ){
+		Obj_Delete(text[i]);
+		Obj_Delete(par[i]);
+	}
+}
+
+task DrawText(x,y,r,g,b,num,char_text,size){
+	let id				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let cc				= 0;
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	
+	ObjRender_SetPosition(id,x,y,0);
+	ObjText_SetText(id,char_text);
+	ObjText_SetFontType(id,"MS 明朝");
+	ObjText_SetFontSize(id,size);
+	ObjText_SetHorizontalAlignment(id,ALIGNMENT_LEFT);
+	ObjText_SetMaxWidth(id, 512 );
+	ObjText_SetFontBorderWidth(id,1);
+	ObjText_SetFontBorderType(id,BORDER_FULL);
+	ObjText_SetFontBorderColor(id,10,10,10);
+	ObjText_SetFontColorTop(id,r,g,b);
+	ObjText_SetFontColorBottom(id,r,g,b);
+	Obj_SetRenderPriorityI(id,34);
+	
+	while( !EndFrag ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		
+		if( stc!=slt||stc2!=slt2||State!=0 ){ break; }
+		
+		if(num == slt){
+			ObjText_SetFontColorTop(id,r,g,b);
+			ObjText_SetFontColorBottom(id, 128+64*sin(cc), 255, 255 );
+		}
+		else{
+			ObjText_SetFontColorTop(id, 128, 128, 128 );
+			ObjText_SetFontColorBottom(id, 64, 64, 64 );
+		}
+		cc += 4;
+		
+		yield;
+	}
+	while( State != 0 && alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(id, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　氷クリスタルっぽいもの
+task CreateIceCrystal( pos, speed, angle, scale, kill, alpha, rgb_array, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let r_type	= 2;
+	let count	= 0;
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "../img/effect/ice01b.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(obj, scale, scale, 0 );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, -32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, -32, 32, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 32, 32, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 64 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(obj, 2, 64, 64 );
+	ObjPrim_SetVertexUVT(obj, 3, 64, 128 );
+	
+	while( count < kill ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0], rgb_array[w][1], rgb_array[w][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(1,2)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				ObjPrim_SetVertexColor(obj, i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*alpha );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0]/1.4, rgb_array[w][1]/1.4, rgb_array[w][2]/1.4 );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(2,4)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　雪の結晶
+task CreateSnowflake(CallID,pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.4,1);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, csd ~ "../img/effect/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 33 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && frame < kill && !EndFrag ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

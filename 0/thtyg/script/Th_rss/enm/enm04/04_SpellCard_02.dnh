@@ -1,0 +1,361 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　魂火「シーカーシラヌイ」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm04_setting.dnh"
+	#include "./lib_enm04_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　エフェクト展開済みにしておく
+		SetEffect_Enm04( enm, 1 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 240 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　弾速等の関係で少し多めに
+			SetScriptResult( 1750 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 4, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm04a( enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "魂火「シーカーシラヌイ」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "不知火「尊皇焼夷弾」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "神火「景行竜灯」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "神火「景行竜灯」";
+		}
+		
+		SpellCounter( GetDifficult, 4, 2 );
+		let sct = GetSpellCounter( GetDifficult, 4, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 256, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_04(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　位相
+		let move_flag = false;
+		let md		= 1-round(rand(0,1))*2;
+		
+		//　way数
+		let roundway= 15;
+		//　速度
+		let speedA	= 1;
+		let speedB	= [ 0.9 ];
+		//　角度
+		let angle	= 0;
+		let agp		= 6;
+		let rd		= 1;
+		let av		= 5;
+		//　発射間隔
+		let wtA		= 16;
+		let wtB		= 120;
+		let loopcount = 300;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			roundway = 10;
+			wtA = 16;
+			agp = 0;
+			av = 3;
+			loopcount = 240;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			speedB = [ 1.2 ];
+			wtA = 10;
+			agp = 16;
+			av = 8;
+			loopcount = 180;
+		}
+		case( "Lunatic" ){
+			speedA = 2.4;
+			wtA = 6;
+			agp = 5;
+			rd = 2;
+			av = 4;
+			loopcount = 220;
+		}
+		case( "OverDrive" ){
+		}
+		
+		local{
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			CallEnemy( gpos );
+			
+			State;
+			Move;
+			SetShot;
+			task State{
+				while( !Obj_IsDeleted( ID ) ){
+					gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+					yield;
+				}
+			}
+			task Move{
+				loop{
+					if( Wait(loopcount) ){ return; }
+					Concentration03_Main(enm, power_rgb, 60 );
+					EnemyMove(enm, 2, 8 );
+					move_flag = true;
+				}
+			}
+			task SetShot{
+				Wait( 90 );
+				loop{
+					let angle = GetAngleToPlayer(ID);
+					let shote = BGW_WHITE_16;
+					let delay = 16;
+					loop( roundway ){
+						ascent( idx in 0..length( speedB ) ){
+							let sht = CreateShotA1( gpos[0], gpos[1], speedB[idx], angle, shote, delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						}
+						angle += 360 / roundway;
+					}
+					if( Wait(wtB) ){ return; }
+				}
+			}
+		}
+		
+		task CallEnemy( pos ){
+			let r = 1;
+			let obj = [
+				CreateEnemy_Chokurei( [255,128,32], 1.4, true ),
+				CreateEnemy_Chokurei( [255,128,32], 1.4, true ),
+			];
+			ObjMove_SetPosition(obj[0], CenX-128, pos[1] );
+			ObjMove_SetPosition(obj[1], CenX+128, pos[1] );
+			FamilyShotMain( obj[0], r, [ BGW_RED_27, BGW_ORANGE_27 ], 300 );
+			FamilyShotMain( obj[1], -r, [ BGW_ORANGE_27, BGW_RED_27 ], 300 );
+			ChokureiEffect( obj[0], [255,255,255], 8 );
+			ChokureiEffect( obj[1], [255,255,255], 8 );
+			ObjSound_Play( CreateShotSE[5] );
+		}
+		
+		task FamilyShotMain( CallID, r, shote, s_frame ){
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let frame	= 0;
+			let angle	= 0;
+			let type	= 0;
+			let rb		= r;
+			State;
+			Move;
+			SetShot;
+			task State{
+				while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+					gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+					frame++;
+					yield;
+				}
+			}
+			task Move{
+				while( !Obj_IsDeleted(ID) ){
+					if( move_flag && rb == md ){
+						ChokureiEffect( CallID, [255,255,255], 8 );
+						ObjMove_SetDestAtWeight(CallID, gpos[0], GetPlayerY(), 8, 4 );
+						ObjSound_Play( CreateShotSE[6] );
+						if( Wait(60) ){ return; }
+						ChokureiEffect( CallID, [255,255,255], 16 );
+						ObjSound_Play( CreateShotSE[7] );
+						move_flag = false;
+						md = -md;
+						r = -r;
+					}
+					yield;
+				}
+			}
+			task SetShot{
+				Wait( 60 );
+				ChokureiEffect( CallID, [255,255,255], 16 );
+				ObjSound_Play( CreateShotSE[7] );
+				loop{
+					if( !move_flag || rb != md ){
+						let way = 4;
+						let p = 90 + round(rand(-rd,rd)*av);
+						loop( way ){
+							let ag = p+angle;
+							let spos = [
+								gpos[0] + 32 * cos( ag ),
+								gpos[1] + 32 * sin( ag ),
+							];
+							let sht = CreateShotA2( spos[0], spos[1], speedA, ag+180, 0, 10, shote[ type%2 ], 32 );
+							NotifyEventAll( EV_USER + 40, [ sht, 32 ] );
+
+							p += 360 / way;
+						}
+						ObjSound_Play( CreateShotSE[1] );
+
+						angle += agp* r;
+						type++;
+					}
+					if( Wait(wtA) ){ return; }
+					
+
+				}
+				//　Hard以上追加弾
+				/*
+				if( count > 60 && count%256 == 0 && lp[1] > 0 ){
+					let ag = rand(0,360);
+					ascent( let i in 0..( lp[1] ) ){
+						let spos = [
+							gpos[0] + 64 * cos( ag+i*(360/lp[1]) ),
+							gpos[1] + 64 * sin( ag+i*(360/lp[1]) ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], 0, ag+i*(360/lp[1])+180, 0.01, 1.2, BGB_RED_12, 32 );
+						NotifyEventAll( EV_USER + 40, [ sht, 32 ] );
+					}
+					ObjSound_Play( CreateShotSE[0] );
+				}
+				//*/
+			}
+		}
+
+		function Wait(wt){
+			loop(wt){
+				yield;
+				if( Obj_IsDeleted(ID) ){ return true; }
+			}
+			return false;
+		}
+	}
+	
+
+	

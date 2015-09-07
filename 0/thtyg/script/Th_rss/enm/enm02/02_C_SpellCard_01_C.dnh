@@ -1,0 +1,322 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage2　菊符「一文陣」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm02_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 30;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 70, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb_C, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 240 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 2, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb_C[0], aura_rgb_C[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path_C[2] );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "菊符「一文陣」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "菊符「菊翼の陣」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "菊符「菊翼の陣」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "菊符「菊翼の陣」";
+		}
+		
+		SpellCounter( GetDifficult, 2, 2 );
+		let sct = GetSpellCounter( GetDifficult, 2, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path_C[2], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_02b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		let type	= 0;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 2, 0 ];
+		}
+		case( "Normal" ){
+			lp		= [ 4, 0 ];
+		}
+		case( "Hard" ){
+			lp		= [ 6, 8 ];
+		}
+		case( "Lunatic" ){
+			lp		= [ 8, 10 ];
+		}
+		case( "OverDrive" ){
+			lp		= [ 12, 6 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜めから初期化
+			if( frame == 220 ){
+				Concentration01_Main(enm, power_rgb_C, 60 );
+				frame = 0;
+				EnemyMove(enm, 2, 8 );
+				SetAreaCommonData("anime", "spa", false );
+			}
+			
+			//　菊弾
+			if( frame == 60 ){
+				let shote = [
+					[ BGW_YELLOW_02, BGB_YELLOW_08 ],
+					[ BGW_ORANGE_02, BGB_ORANGE_08 ],
+				];
+				ShotEnable( ID, gpos, lp[0], 90 + rand(-64,64), 3, shote[ type%2 ] );
+				ShotEnable( ID, gpos, lp[0], 90 + rand(-32,32), 3, shote[ type%2 ] );
+				ObjSound_Play( CreateShotSE[0] );
+				type++;
+				SetAreaCommonData("anime", "spa", true );
+			}
+			
+			//　Hard以上 nway 中玉
+			if( frame > 0 && frame%64 == 0 && GetDifficult != "Easy" && GetDifficult != "Normal" ){
+				let angle = rand(0,360);
+				ascent( i in 0..(lp[1]) ){
+					let ang = i*(360/lp[1]) + angle + (360/lp[1]/2);
+					let spos = [
+						gpos[0] + 8 * cos( ang ),
+						gpos[1] + 8 * sin( ang ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 1, ang, 0.01, 2, BGW_RED_02, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[2] );
+			}
+			
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task ShotEnable( CallID, pos, num, angle, speed, shote ){
+		ascent( let i in 0..(num) ){
+			if( Obj_IsDeleted(CallID) ){ break; }
+			
+			let spos = [
+				pos[0] + rand(-188,188),
+				pos[1] + rand(-96,96),
+			];
+			
+			let sht = CreateShot( spos, speed, angle, -0.1, 0, shote, 16 );
+			NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+			
+			ObjMove_AddPatternA2( sht, 120, NO_CHANGE, NO_CHANGE, rand(0.01,0.06), 0, 1.2 );
+			PlayShotSE( sht, 120, 1 );
+			
+			ascent( let j in 0..5 ){
+				let sht2 = CreateShotA2( spos[0], spos[1], 0, 90+j*72, 0.01, 2, BGW_RED_04, 16 );
+				NotifyEventAll( EV_USER + 40, [ sht2, 16 ] );
+			}
+			
+			ObjSound_Play( CreateShotSE[2] );
+			
+			loop( 4 ){
+				if( Obj_IsDeleted(CallID) ){ break; }
+				yield;
+			}
+		}
+	}
+	
+	function CreateShot( pos, speed, angle, acc, mx, shote_array, delay ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote_array[0], delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		
+		let rv = [
+			rand( -1, 1 ),
+			rand( -1, 1 ),
+		];
+		
+		if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+			ascent( let i in 0..10 ){
+				CreateShot_Circle( sht, 8, i*36, rv[0], shote_array[1], delay );
+				CreateShot_Circle( sht, 16, i*36 + 18, rv[1], shote_array[1], delay );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				ascent( let j in 0..4 ){
+					CreateShot_Circle( sht, 8 + j*8, angle + i*90, 0, shote_array[1], delay );
+				}
+			}
+		}
+		
+		return sht;
+	}
+	
+	task CreateShot_Circle( CallID, dis, angle, spin, shote, delay ){
+		let pos = [
+			ObjMove_GetX(CallID) + dis * cos( angle ),
+			ObjMove_GetY(CallID) + dis * sin( angle ),
+		];
+		let sht = CreateShotA2( pos[0], pos[1], 0, angle, 0, 0, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		
+		while( !Obj_IsDeleted(CallID) ){
+			angle += spin;
+			
+			pos = [
+				ObjMove_GetX(CallID) + dis * cos( angle ),
+				ObjMove_GetY(CallID) + dis * sin( angle ),
+			];
+			
+			ObjMove_SetPosition( sht, pos[0], pos[1] );
+			ObjMove_SetAngle( sht, angle );
+			
+			yield;
+		}
+		Obj_SetValue( sht, "Item_Off", true );
+		Obj_Delete( sht );
+	}
+	
+	//　n フレーム後に効果音鳴らす
+	task PlayShotSE( CallID, long, array_num ){
+		loop( long ){
+			if( Obj_IsDeleted(CallID) ){ break; }
+			yield;
+		}
+		ObjSound_Play( CreateShotSE[array_num] );
+	}

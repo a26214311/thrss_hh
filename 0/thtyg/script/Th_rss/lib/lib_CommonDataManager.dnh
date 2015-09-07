@@ -1,0 +1,274 @@
+
+
+//　主に共通データの処理
+//--------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------
+
+task InitializeCommonData(){
+	CreateCommonDataArea("System");
+	SetAreaCommonData("System", "title_place", 0 );		//　選択位置
+	SetAreaCommonData("System", "title_act", 0 );		//　0:ﾀｲﾄﾙ
+	SetAreaCommonData("System", "title_sector", -1 );	//　メインメニュー制御
+	SetAreaCommonData("System", "title_end", false );	//　ﾀｲﾄﾙ終了フラグ
+	SetAreaCommonData("System", "stflg", false );		//　スクリプト起動許可
+	SetAreaCommonData("System", "R_sector", 0 );		//　難易度選択等用
+	SetAreaCommonData("System", "P_sector", 0 );		//　自機選択等用
+	SetAreaCommonData("System", "S_sector", 0 );		//　スペカ選択等用
+	SetAreaCommonData("System", "selectP", 0 );			//　自機専用選択操作
+	SetAreaCommonData("System", "select", 0 );			//　共通選択操作
+	SetAreaCommonData("System", "select2", 0 );			//　共通選択操作2
+	SetAreaCommonData("System", "Difficulty", "NULL" );	//　難易度
+	SetAreaCommonData("System", "player_type", 0 );		//　どの自機か
+	SetAreaCommonData("System", "stg_ST", 0 );			//　どのステージか
+	SetAreaCommonData("System", "spell_ST", 0 );		//　どのスペカを起動するか
+	SetAreaCommonData("System", "StgWorldBreak", true );//　trueでstgシーン関係が消える
+	SetAreaCommonData("System", "ReplayPath", "" );		//　リプレイのパスを保存する
+	SetAreaCommonData("System", "PlayMode", "NULL" );	//　何をプレイ中か
+	SetAreaCommonData("System", "Continue", false );	//　ｺﾝﾃｨﾆｭｰ済みか
+	SetAreaCommonData("System", "Stage_Index", 1 );		//　ステージインデックス
+	SetAreaCommonData("System", "ClearSpellPractice", false );//　ｽﾍﾟﾌﾟﾗでスペルクリアしたか
+	
+	CreateCommonDataArea("Trance");
+	SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+	SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+	SetAreaCommonData("Trance"," BGM_Delete", false );	//　BGM削除
+	SetAreaCommonData("Trance"," BGM_Stop", false );	//　BGMストップ
+	SetAreaCommonData("Trance"," BGM_Play", -1 );		//　BGM再生ナンバー
+	SetAreaCommonData("Trance", "BGM_FadeOut", false );	//　BGMフェードアウト
+	SetAreaCommonData("Trance", "BGM_Delay", 0 );		//　BGMﾃﾞｨﾚｲ
+	SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+	SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	
+	CreateCommonDataArea("Time");
+	SetAreaCommonData("Time", "Breakc", 99 );	//　スペカ時間系
+	SetAreaCommonData("Time", "Breakc2", 99 );
+	SetAreaCommonData("Time", "Realc", 99 );
+	SetAreaCommonData("Time", "Realc2", 99 );
+	
+	//　ゲームのセーブデータ
+	LoadCommonDataAreaA2( "SaveData", GetCurrentScriptDirectory() ~ "./../data/Package_common_SaveData.dat" );
+	//　オプション
+	LoadCommonDataAreaA2( "Option", GetCurrentScriptDirectory() ~ "./../data/Package_common_Option.dat" );
+	//　スペルカードプレイ回数
+	LoadCommonDataAreaA2( "spell_counter", GetCurrentScriptDirectory() ~ "./../data/Package_common_spell_counter.dat" );
+	//　スコアボード
+	LoadCommonDataAreaA2( "Score", GetCurrentScriptDirectory() ~ "./../data/Package_common_Score.dat" );
+	
+	//　ODデータ領域自動追加
+	CreateDataBase_OverDrive();
+	
+//	AllClear();
+}
+
+task AllClear(){
+	AllClearSaveData();
+	CounterAll();
+}
+
+task AllDefault(){
+	DefaultSaveData();
+	CounterDefault();
+	//ScoreDefault();
+}
+
+//　おきのどくですが
+task DefaultSaveData(){
+	SetAreaCommonData("SaveData", "MusicFlg", 0 );//ゲーム中どの曲まで聴いたか 0〜16
+	SetAreaCommonData("SaveData", "StageFlg", 0 );//どの位進めたか 0〜2(面-1)
+	SetAreaCommonData("SaveData", "StageRankFlg", [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] );
+	SetAreaCommonData("SaveData", "Standby_ExtraStage", false );		//　EXを選択できるようになるフラグ（遊べる訳では無い）
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage", false );		//　PHを選択できるようになるフラグ（遊べる訳では無い）
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01A", false );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01B", false );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01C", false );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02A", false );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02B", false );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02C", false );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03A", false );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03B", false );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03C", false );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01A", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01B", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01C", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02A", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02B", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02C", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03A", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03B", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03C", false );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01A", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01B", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01C", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02A", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02B", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02C", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03A", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03B", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03C", false );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Standby_StagePractice", false );		//　ｽﾃﾟﾌﾟﾗ解放
+	SetAreaCommonData("SaveData", "Standby_SpellPractice", false );		//　ｽﾍﾟﾌﾟﾗ解放
+}
+
+//　全クリ
+task AllClearSaveData(){
+	SetAreaCommonData("SaveData", "MusicFlg", 19 );//ゲーム中どの曲まで聴いたか　0 ~ 19
+	SetAreaCommonData("SaveData", "StageFlg", 5 );//どの位進めたか 0〜2(面-1)
+	SetAreaCommonData("SaveData", "StageRankFlg", [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]] );
+	SetAreaCommonData("SaveData", "Standby_ExtraStage", true );			//　EXを選択できるようになるフラグ（遊べる訳では無い）
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage", true );		//　PHを選択できるようになるフラグ（遊べる訳では無い）
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01A", true );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01B", true );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL01C", true );	//　ｴｸｽﾄﾗ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02A", true );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02B", true );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL02C", true );	//　ｴｸｽﾄﾗ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03A", true );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03B", true );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_ExtraStage_PL03C", true );	//　ｴｸｽﾄﾗ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01A", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01B", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL01C", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　霊夢
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02A", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02B", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL02C", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　魔理沙
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03A", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03B", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Standby_PhantasmStage_PL03C", true );	//　ﾌｧﾝﾀｽﾞﾑ解放　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01A", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01B", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01C", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02A", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02B", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02C", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03A", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03B", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03C", true );		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	SetAreaCommonData("SaveData", "Standby_StagePractice", true );		//　ｽﾃﾟﾌﾟﾗ解放
+	SetAreaCommonData("SaveData", "Standby_SpellPractice", true );		//　ｽﾍﾟﾌﾟﾗ解放
+}
+
+//　おきのどくですがｽﾍﾟﾙﾌﾟﾗｸﾃｨｽ
+task CounterDefault(){
+	//　1 ~ 3
+	let stg1_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	let stg2_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	let stg3_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	//　4 ~ 6
+	let stg4_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	let stg5_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	let stg6_num	= [ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0 ];
+	//　EX PH OD
+	let stg7_num	= [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0 ];
+	let stg8_num	= [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0 ];
+	let stg9_num	= [ 0,0,0,0,0, 0,0,0,0,0, 0 ];
+	
+	CreateCommonDataArea("spell_counter");
+	//　総プレイ
+	SetAreaCommonData("spell_counter","play_stage1",stg1_num);
+	SetAreaCommonData("spell_counter","play_stage2",stg2_num);
+	SetAreaCommonData("spell_counter","play_stage3",stg3_num);
+	SetAreaCommonData("spell_counter","play_stage4",stg4_num);
+	SetAreaCommonData("spell_counter","play_stage5",stg5_num);
+	SetAreaCommonData("spell_counter","play_stage6",stg6_num);
+	SetAreaCommonData("spell_counter","play_stage7",stg7_num);
+	SetAreaCommonData("spell_counter","play_stage8",stg8_num);
+	SetAreaCommonData("spell_counter","play_stage9",stg9_num);
+	//　取得
+	SetAreaCommonData("spell_counter","get_stage1",stg1_num);
+	SetAreaCommonData("spell_counter","get_stage2",stg2_num);
+	SetAreaCommonData("spell_counter","get_stage3",stg3_num);
+	SetAreaCommonData("spell_counter","get_stage4",stg4_num);
+	SetAreaCommonData("spell_counter","get_stage5",stg5_num);
+	SetAreaCommonData("spell_counter","get_stage6",stg6_num);
+	SetAreaCommonData("spell_counter","get_stage7",stg7_num);
+	SetAreaCommonData("spell_counter","get_stage8",stg8_num);
+	SetAreaCommonData("spell_counter","get_stage9",stg9_num);
+	
+	SaveCommonDataAreaA1("spell_counter");
+}
+
+//　スペプラ全解放
+task CounterAll(){
+	//　1 ~ 3
+	let stg1_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	let stg2_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	let stg3_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	//　4 ~ 6
+	let stg4_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	let stg5_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	let stg6_num	= [ 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1 ];
+	//　EX PH OF
+	let stg7_num	= [ 1,1,1,1,1, 1,1,1,1,1, 1,1,1 ];
+	let stg8_num	= [ 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1 ];
+	let stg9_num	= [ 1,1,1,1,1, 1,1,1,1,1, 1 ];
+	
+	CreateCommonDataArea("spell_counter");
+	//　総プレイ
+	SetAreaCommonData("spell_counter","play_stage1",stg1_num);
+	SetAreaCommonData("spell_counter","play_stage2",stg2_num);
+	SetAreaCommonData("spell_counter","play_stage3",stg3_num);
+	SetAreaCommonData("spell_counter","play_stage4",stg4_num);
+	SetAreaCommonData("spell_counter","play_stage5",stg5_num);
+	SetAreaCommonData("spell_counter","play_stage6",stg6_num);
+	SetAreaCommonData("spell_counter","play_stage7",stg7_num);
+	SetAreaCommonData("spell_counter","play_stage8",stg8_num);
+	SetAreaCommonData("spell_counter","play_stage9",stg9_num);
+	//　取得
+	SetAreaCommonData("spell_counter","get_stage1",stg1_num);
+	SetAreaCommonData("spell_counter","get_stage2",stg2_num);
+	SetAreaCommonData("spell_counter","get_stage3",stg3_num);
+	SetAreaCommonData("spell_counter","get_stage4",stg4_num);
+	SetAreaCommonData("spell_counter","get_stage5",stg5_num);
+	SetAreaCommonData("spell_counter","get_stage6",stg6_num);
+	SetAreaCommonData("spell_counter","get_stage7",stg7_num);
+	SetAreaCommonData("spell_counter","get_stage8",stg8_num);
+	SetAreaCommonData("spell_counter","get_stage9",stg9_num);
+	
+	SaveCommonDataAreaA1("spell_counter");
+}
+
+//　未生成時、1度だけ生成する
+//　OD用データ領域追加
+task CreateDataBase_OverDrive(){
+	let IsCreate = GetAreaCommonData( "SaveData", "CreateOverDriveDataFlag", false );
+	if( !IsCreate ){
+		//　生成済みフラグON
+		SetAreaCommonData( "SaveData", "CreateOverDriveDataFlag", true );
+		
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01A", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　霊夢
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01B", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　霊夢
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01C", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　霊夢
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02A", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　魔理沙
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02B", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　魔理沙
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02C", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　魔理沙
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03A", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　布都
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03B", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　布都
+		SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03C", false );		//　ｵｰﾊﾞｰﾄﾞﾗｲﾌﾞｸﾘｱ　布都
+		
+		SaveCommonDataAreaA1( "SaveData" );
+		
+		//　上からOverDriveハイスコア、OverDriveプレイ回数、OverDrive進行度
+		let default_score = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+		ascent( i in 0..( length(default_score) ) ){
+			default_score[i] = 1000000 - i*100000;
+		}
+		SetAreaCommonData( "Score", "high_score_data_pl01_overdrive", default_score );
+		SetAreaCommonData( "Score", "high_score_data_pl02_overdrive", default_score );
+		SetAreaCommonData( "Score", "high_score_data_pl03_overdrive", default_score );
+		SetAreaCommonData( "Score", "high_score_data_pl01_overdrive2", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "high_score_data_pl02_overdrive2", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "high_score_data_pl03_overdrive2", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "GamePlayCount_pl01_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "GamePlayCount_pl02_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "GamePlayCount_pl03_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "StageNum_pl01_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "StageNum_pl02_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		SetAreaCommonData( "Score", "StageNum_pl03_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		//　自機のタイプ
+		SetAreaCommonData( "Score", "TypeData_pl01_overdrive", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+		SetAreaCommonData( "Score", "TypeData_pl02_overdrive", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+		SetAreaCommonData( "Score", "TypeData_pl03_overdrive", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+		
+		SaveCommonDataAreaA1( "Score" );
+	}
+}

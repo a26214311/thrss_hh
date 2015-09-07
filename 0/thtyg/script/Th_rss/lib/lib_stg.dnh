@@ -1,0 +1,244 @@
+
+
+
+
+//　主にステージのみで使うエフェクト
+//----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
+
+task StageTitleDisplay(long,path,rgb){
+	let sef		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					];
+	let i		= 0;
+	let sca		= 0.8;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	
+	loop( length(sef) ){
+		ObjPrim_SetTexture(sef[i], path );
+		Obj_SetRenderPriorityI(sef[i], 72 );
+		ObjRender_SetBlendType(sef[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(sef[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(sef[i], sca, sca, 0 );
+		ObjRender_SetAlpha(sef[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetPosition(sef[0], CenX, CenY-96, 0 );
+	ObjSprite2D_SetSourceRect(sef[0], 0, 0, 512, 128 );
+	ObjSprite2D_SetDestCenter(sef[0]);
+	ObjRender_SetPosition(sef[1], CenX, CenY-64, 0 );
+	ObjRender_SetScaleXYZ(sef[1], sca - 0.2, sca - 0.2, 0 );
+	ObjSprite2D_SetSourceRect(sef[1], 0, 128, 256, 128+64 );
+	ObjSprite2D_SetDestCenter(sef[1]);
+	ObjRender_SetPosition(sef[2], CenX, CenY-44, 0 );
+	ObjRender_SetScaleXYZ(sef[2], sca - 0.1, sca - 0.1, 0 );
+	ObjSprite2D_SetSourceRect(sef[2], 256, 128, 512, 128+64 );
+	ObjSprite2D_SetDestCenter(sef[2]);
+	ObjRender_SetPosition(sef[3], CenX, CenY-128, 0 );
+	ObjRender_SetScaleXYZ(sef[3], sca - 0.2, sca - 0.2, 0 );
+	ObjSprite2D_SetSourceRect(sef[3], 0, 128+64, 256, 256 );
+	ObjSprite2D_SetDestCenter(sef[3]);
+	ObjRender_SetPosition(sef[4], CenX, CenY-64-16, 0 );
+	ObjRender_SetScaleXYZ(sef[4], sca + 0.4, sca - 0.2, 0 );
+	Obj_SetRenderPriorityI(sef[4], 71 );
+	ObjSprite2D_SetSourceRect(sef[4], 256, 128+64, 512, 256 );
+	ObjSprite2D_SetDestCenter(sef[4]);
+	
+	StageTitlePolygonDisplay( [CenX+4,CenY-96+4], 6, 96, 70, [0,0.8], long, rgb, 0 );
+	StageTitlePolygonDisplay( [CenX-4,CenY-96-4], 5, 96, 70, [90,0.6], long, [192,192,192], 1 );
+	
+	while( move1 < 1 || move2 < 1 ){
+		if( move1 < 1 ){ move1 = 1 * sin( moveA ); }
+		if( move2 < 1 ){ move2 = 1 * sin( moveB ); }
+		
+		loop( length(sef) ){
+			ObjRender_SetAlpha(sef[i], move1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetScaleXYZ(sef[0], sca*2 - move2*sca, move2*sca, 0 );
+		ObjRender_SetScaleXYZ(sef[4], (sca+0.4)*2 - move1*(sca+0.4), move1*sca, 0 );
+		ObjRender_SetPosition(sef[0], CenX, CenY-96 - 64 + move2*64, 0 );
+		ObjRender_SetPosition(sef[1], CenX + 64-move2*64, CenY-64, 0 );
+		ObjRender_SetPosition(sef[2], CenX - 64+move2*64, CenY-44, 0 );
+		ObjRender_SetPosition(sef[3], CenX - 64+move2*64, CenY-128, 0 );
+		if( IsOverDrive ){
+			ObjRender_SetPosition(sef[3], -1000, -1000, 0 );
+		}
+		moveA += 2;
+		moveB += 1;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	move2 = 0;
+	moveB = 0;
+	
+	loop( long ){
+		ObjRender_SetPosition(sef[1], CenX - move2, CenY-64, 0 );
+		ObjRender_SetPosition(sef[2], CenX + move2, CenY-44, 0 );
+		ObjRender_SetPosition(sef[3], CenX + move2, CenY-128, 0 );
+		if( IsOverDrive ){
+			ObjRender_SetPosition(sef[3], -1000, -1000, 0 );
+		}
+		move2 += 0.1;
+		
+		yield;
+	}
+	while( move1 < 1 || move2 < 1 ){
+		if( move1 < 1 ){ move1 = 1 * sin( moveA ); }
+		
+		loop( length(sef) ){
+			ObjRender_SetAlpha(sef[i], 255 - move1*255 );
+				i++;
+		}
+		i = 0;
+		
+		ObjRender_SetScaleXYZ(sef[4], (sca+0.4), (sca-0.2) - move1*sca, 0 );
+		ObjRender_SetPosition(sef[1], CenX - move2, CenY-64, 0 );
+		ObjRender_SetPosition(sef[2], CenX + move2, CenY-44, 0 );
+		ObjRender_SetPosition(sef[3], CenX + move2, CenY-128, 0 );
+		if( IsOverDrive ){
+			ObjRender_SetPosition(sef[3], -1000, -1000, 0 );
+		}
+		moveA += 2;
+		move2 += 0.1 + moveB;
+		moveB += 0.02;
+		
+		yield;
+	}
+	loop( length(sef) ){
+		Obj_Delete(sef[i]);
+		i++;
+	}
+	i = 0;
+}
+
+
+task StageTitlePolygonDisplay(SET_POSITION, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, SET_LONG, SET_RGB, SET_TYPE ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let dis1		= 0;//　内円
+	let disA		= 0;
+	let dis2		= 0;//　外円
+	let disB		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 256/SET_POLYGON;
+	//　回転の早さ
+	let ang_plus	= SET_ANGLE_Z[1];
+	
+	ObjRender_SetPosition(id, SET_POSITION[0], SET_POSITION[1], 0 );
+	ObjPrim_SetTexture(id, csd ~ "./../img/stg/stg_t01b.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(id, 1, 1, 0 );
+	ObjRender_SetAngleXYZ(id, dis1*50, dis1*32, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( dis1 < 1 || dis2 < 1 ){
+		dis1 = 1 * sin( disA );
+		dis2 = 1 * sin( disB );
+		
+		if( SET_TYPE == 0 ){
+			ObjRender_SetPosition(id, SET_POSITION[0] + 64 - dis1*64, SET_POSITION[1], 0 );
+		}
+		else{
+			ObjRender_SetPosition(id, SET_POSITION[0] - 64 + dis1*64, SET_POSITION[1], 0 );
+		}
+		ObjRender_SetAngleXYZ(id, 50, 32, SET_ANGLE_Z[0] );
+		
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, dis1*(SET_DISTANCE+16) * cos(pc+ang), dis1*(SET_DISTANCE+16) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, dis2*SET_DISTANCE * cos(pc+ang), dis2*SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect, 32 );
+			ObjPrim_SetVertexColor(id, i, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			ObjPrim_SetVertexColor(id, i2, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ang += ang_plus;
+		
+		if( dis1 < 1 ){ disA += 1; }
+		if( dis2 < 1 ){ disB += 1; }
+		
+		yield;
+	}
+	loop( SET_LONG ){
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, dis1*(SET_DISTANCE+16) * cos(pc+ang), dis1*(SET_DISTANCE+16) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, dis2*SET_DISTANCE * cos(pc+ang), dis2*SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect, 32 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ang += ang_plus;
+		
+		yield;
+	}
+	dis1 = 0;
+	disA = 0;
+	while( dis1 < 1 ){
+		dis1 = 1 * sin( disA );
+		
+		ObjRender_SetAlpha(id, 255 - dis1*255 );
+		
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, (SET_DISTANCE+16) * cos(pc+ang), (SET_DISTANCE+16) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect, 32 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ang += ang_plus;
+		
+		disA += 1;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}

@@ -1,0 +1,54 @@
+
+
+//　ボススクリプト用
+//　ライブラリが多すぎる
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　BGN系
+#include "./../scene/ControlMusic.dnh"
+
+//　サウンドオブジェクト定義ライブラリ
+#include "./../lib/lib_AllSound.dnh"
+
+//　エフェクト系
+#include "./../lib/lib_cutin_ctr.dnh"
+#include "./../lib/lib_effect_ctr.dnh"
+#include "./../lib/lib_ExplosionBlur.dnh"
+
+//　敵スペカ背景ライブラリ
+#include "./../img/stg/01_enmback.dnh"
+#include "./../img/stg/02_enmback.dnh"
+#include "./../img/stg/03_enmback.dnh"
+#include "./../img/stg/04_enmback.dnh"
+#include "./../img/stg/05_enmback.dnh"
+#include "./../img/stg/06_enmback.dnh"
+#include "./../img/stg/07_enmback.dnh"
+#include "./../img/stg/08_enmback.dnh"
+
+//　敵テクスチャや挙動系
+#include "./../lib/lib_enm_ctr.dnh"
+
+//　核弾ライブラリ
+#include "./../lib/lib_NuClearShot.dnh"
+
+//　設置型レーザーライブラリ
+#include "./../lib/lib_laser.dnh"
+
+//　へにょりレーザーライブラリ　下は雷鼓の雷の奴
+#include "./../lib/lib_laser_3DLaser.dnh"
+#include "./../lib/lib_laser_Daifukkatu.dnh"
+#include "./../lib/lib_laser_soft.dnh"
+#include "./../lib/lib_laser_thunder.dnh"
+#include "./../lib/lib_laser_BeanSprouts.dnh"
+
+//　弾名称定義ライブラリ ALPHAとADD
+#include "./../lib/lib_bullet.dnh"
+#include "./../lib/lib_bullet_ADD.dnh"
+
+//　スペルカウンタ
+#include "./SpellCounter.dnh"
+
+
+//　難易度取得
+let GetDifficult	= GetAreaCommonData("System", "Difficulty", "Normal" );

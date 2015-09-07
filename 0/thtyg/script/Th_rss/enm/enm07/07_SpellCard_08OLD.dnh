@@ -1,0 +1,220 @@
+#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　八竜「天地崩壊の火」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let count		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 150, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 64, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		//　弾幕
+		if( count == 180 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		count++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			//SpellCounterGet( GetDifficult, 6, 1 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a( enm, true, enemy_tex_path );
+		//　敵位置初期化
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Extra" ){
+/* to be translated */			spell_text = "八竜「天地崩壊の火」";
+		}
+		others{
+/* to be translated */			spell_text = "八竜「天地崩壊の火」";
+		}
+		
+		//SpellCounter( GetDifficult, 6, 2 );
+		//let sct = GetSpellCounter( GetDifficult, 6, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[1], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		//SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		Concentration03_Main( ID, power_rgb, 60 );
+		Wait( 100 );
+		
+		let obj = CreateEnemy_Dragon( 1000, 300 );
+		ObjMove_SetPosition( obj, CenX, CenY-96 );
+		
+		Wait( 60 );
+		
+		let frame = 0;
+		while( !Obj_IsDeleted(ID) ){
+			let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			Concentration03_Main( obj, power_rgb, 60 );
+			Wait( 100 );
+			
+			Shot01( obj, 120 );
+			
+			Wait( 120 );
+			
+			CreateLaser02( obj, 12, [255,255,128], ADD_BGW_YELLOW_21, frame%2 );
+			
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task Shot01( ID, long ){
+		let gpos = [ ObjMove_GetX(ID) + 64, ObjMove_GetY(ID) ];
+		ascent( let i in 0..long ){
+			if( Obj_IsDeleted(enm) || ObjEnemy_GetInfo( ID, INFO_LIFE ) <= 0 ){ break; }
+			ascent( let j in 0..8 ){
+				let dist = 64 + 32 * sin( i*4 );
+				let ag = j*(360/8) + i*4;
+				let spos = [
+					gpos[0] + dist * cos( ag ),
+					gpos[1] + dist * sin( ag ),
+				];
+				let sht = CreateShot01( spos, 1, 0, 0.1, 10, BGW_RED_27, 8 );
+				ObjMove_SetAngle( sht, GetAngleToPlayer(sht) );
+			}
+			ObjSound_Play( CreateShotSE[0] );
+			yield;
+		}
+	}
+	
+	task CreateLaser02( ID, lp, color, shote, frag ){
+		ascent( let i in 0..lp ){
+			if( Obj_IsDeleted(enm) || ObjEnemy_GetInfo( ID, INFO_LIFE ) <= 0 ){ break; }
+			let spos;
+			let ag = 90+rand(-12,12);
+			
+			if( frag == 0 ){ spos = [ MinX + i*(384/(lp-1)), MinY-32 ]; }
+			else{ spos = [ MaxX - i*(384/(lp-1)), MinY-32 ]; }
+			
+			CreateSwordLaser( spos, ag, 600, 16, 90, color, 60 );
+			ObjSound_Play( CreateShotSE[13] );
+			
+			let slp = 48;
+			ascent( let j in 0..slp ){
+				CreateShot01( spos, 4, ag + j*(360/slp), -0.1, rand(0.6,1.2), shote, 32 );
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			
+			WorldShake_Single( 60, 4 );
+			
+			Wait( 2 );
+			
+			yield;
+		}
+	}

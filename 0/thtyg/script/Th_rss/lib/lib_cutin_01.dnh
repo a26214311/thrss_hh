@@ -1,0 +1,249 @@
+
+task SpellCardCutin(ID,type,x,y,sca,texture,rect3,rect4,vision){
+	let sid			= ObjSound_Create;
+	let cid			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let se_vol		= GetAreaCommonData("Option","SE_Volume",100);
+	let alpha		= 0;
+	let delete		= false;
+	let cc			= 0;
+	let movea		= 0;
+	let move1		= 0;
+	let moveb		= 0;
+	let move2		= 0;
+	let movep		= 0;
+	let scax		= 0;
+	let scay		= 0;
+	
+	let lay			= 32;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjPrim_SetTexture(cid, texture );
+	Obj_SetRenderPriorityI(cid, lay );
+	ObjRender_SetBlendType(cid, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(cid, sca[0], sca[1], 0 );
+	ObjSprite2D_SetSourceRect(cid, 0, 0, rect3, rect4 );
+	ObjSprite2D_SetDestCenter(cid);
+	
+	ObjSound_Load(sid, GetCurrentScriptDirectory ~ "../se/spellcard.ogg" );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	ObjSound_Play(sid);
+	
+	if( vision ){
+		CreateVision(3, 4, lay - 1, ID,type,x,y,sca,texture,rect3,rect4);
+	}
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		if( alpha <= 0 && delete ){ break; }
+		
+		alternative( type )
+		case( "KOUMAKYO" ){
+			ObjRender_SetPosition(cid, (CenX-move1)+x, (CenY-230)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 230 ){ movea += 2; }
+			move1 = 230 * sin( movea );
+			if( delete ){
+				scax += 0.06;
+				scay += 0.06;
+				ObjRender_SetScaleXYZ(cid, sca[0]+scax, sca[1]+scay, 0 );
+			}
+		}
+		case( "YOUYOUMU" ){
+			ObjRender_SetPosition(cid, (CenX-230)+x, (CenY-330+move1)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			move1 += 1.5;
+		}
+		case( "HUJINROKU" ){
+			ObjRender_SetPosition(cid, (CenX-move1*230)+x, (CenY-130-move2)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 1 ){ movea += 3; }
+			move1 = 1 * sin( movea );
+			if( move1 >= 1 ){ moveb += 0.3; }
+			if( cc > 90 ){
+				moveb += movep;
+				movep += 0.1;
+			}
+			move2 = moveb;
+		}
+		case( "TIREIDEN" ){
+			ObjRender_SetPosition(cid, (CenX-move1)+x, (CenY-310+move2/2)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 230 && move2 < 200 && cc < 100 ){
+				if( move1 < 200 ){ movea += 3; }
+				move1 = 200 * sin( movea );
+				if( move2 < 200 ){ moveb += 3; }
+				move2 = 200 * sin( moveb );
+			}
+			if( move1 >= 200 && cc < 100 ){ move1 += 0.5; }
+			if( move2 >= 200 && cc < 100 ){ move2 += 0.5; }
+			if( move1 >= 200 && cc > 100 ){ move1 += 10; }
+			if( move2 >= 200 && cc > 100 ){ move2 += 10; }
+		}
+		case( "TOUGENKYU" ){
+			ObjRender_SetPosition(cid, (CenX-move1*200)+x, (CenY-128-move2)+y, 0 );
+			ObjRender_SetScaleXYZ(cid, sca[0]*2 - move1*sca[0], sca[1]*2 - move1*sca[1], 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 1 ){ movea += 3; }
+			move1 = 1 * sin( movea );
+			if( move1 >= 1 ){ moveb += 0.3; }
+			if( cc > 90 ){
+				moveb += movep;
+				movep += 0.1;
+			}
+			move2 = moveb;
+		}
+		
+		ObjRender_SetAlpha(cid, alpha );
+		if( alpha < 255 && !delete ){
+			alternative( type )
+			case( "KOUMAKYO" ){ alpha += 15; }
+			case( "YOUYOUMU" ){ alpha += 15; }
+			case( "HUJINROKU" ){ alpha += 15; }
+			case( "TIREIDEN" ){ alpha += 15; }
+			case( "TOUGENKYU" ){ alpha += 15; }
+		}
+		if( alpha > 0 && delete ){
+			alternative( type )
+			case( "KOUMAKYO" ){ alpha -= 10; }
+			case( "YOUYOUMU" ){ alpha -= 10; }
+			case( "HUJINROKU" ){ alpha -= 10; }
+			case( "TIREIDEN" ){ alpha -= 10; }
+			case( "TOUGENKYU" ){ alpha -= 10; }
+		}
+		
+		cc++;
+		
+		yield;
+	}
+	Obj_Delete(sid);
+	Obj_Delete(cid);
+}
+
+task CreateVision(lp,wait,lay,ID,type,x,y,sca,texture,rect3,rect4){
+	let count	= 0;
+	
+	loop( lp ){
+		SpellCardCutin_Vision(ID,lay,type,x+count,y-count,sca,texture,rect3,rect4);
+		count += 16;
+		loop( wait ){ yield; }
+	}
+}
+
+task SpellCardCutin_Vision(ID,lay,type,x,y,sca,texture,rect3,rect4){
+	let cid			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let SE			= GetAreaCommonData("Option","SE_Volume",100);
+	let alpha		= 0;
+	let delete		= false;
+	let cc			= 0;
+	let movea		= 0;
+	let move1		= 0;
+	let moveb		= 0;
+	let move2		= 0;
+	let movep		= 0;
+	let scax		= 0;
+	let scay		= 0;
+
+	ObjPrim_SetTexture(cid, texture );
+	Obj_SetRenderPriorityI(cid, lay );
+	ObjRender_SetBlendType(cid, BLEND_ADD_ARGB );
+	ObjRender_SetScaleXYZ(cid, sca[0], sca[1], 0 );
+	ObjSprite2D_SetSourceRect(cid, 0, 0, rect3, rect4 );
+	ObjSprite2D_SetDestCenter(cid);
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		if( alpha <= 0 && delete ){ break; }
+		
+		alternative( type )
+		case( "KOUMAKYO" ){
+			ObjRender_SetPosition(cid, (CenX-move1)+x, (CenY-230)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 230 ){ movea += 2; }
+			move1 = 230 * sin( movea );
+			if( delete ){
+				scax += 0.06;
+				scay += 0.06;
+				ObjRender_SetScaleXYZ(cid, sca[0]+scax, sca[1]+scay, 0 );
+			}
+		}
+		case( "YOUYOUMU" ){
+			ObjRender_SetPosition(cid, (CenX-230)+x, (CenY-330+move1)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			move1 += 1.5;
+		}
+		case( "HUJINROKU" ){
+			ObjRender_SetPosition(cid, (CenX-move1*230)+x, (CenY-130-move2)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 1 ){ movea += 3; }
+			move1 = 1 * sin( movea );
+			if( move1 >= 1 ){ moveb += 0.3; }
+			if( cc > 90 ){
+				moveb += movep;
+				movep += 0.1;
+			}
+			move2 = moveb;
+		}
+		case( "TIREIDEN" ){
+			ObjRender_SetPosition(cid, (CenX-move1)+x, (CenY-310+move2/2)+y, 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 230 && move2 < 200 && cc < 100 ){
+				if( move1 < 200 ){ movea += 3; }
+				move1 = 200 * sin( movea );
+				if( move2 < 200 ){ moveb += 3; }
+				move2 = 200 * sin( moveb );
+			}
+			if( move1 >= 200 && cc < 100 ){ move1 += 0.5; }
+			if( move2 >= 200 && cc < 100 ){ move2 += 0.5; }
+			if( move1 >= 200 && cc > 100 ){ move1 += 10; }
+			if( move2 >= 200 && cc > 100 ){ move2 += 10; }
+		}
+		case( "TOUGENKYU" ){
+			ObjRender_SetPosition(cid, (CenX-move1*200)+x, (CenY-128-move2)+y, 0 );
+			ObjRender_SetScaleXYZ(cid, sca[0]*2 - move1*sca[0], sca[1]*2 - move1*sca[1], 0 );
+			
+			if( cc >= 100 ){ delete = true; }
+			if( move1 < 1 ){ movea += 3; }
+			move1 = 1 * sin( movea );
+			if( move1 >= 1 ){ moveb += 0.3; }
+			if( cc > 90 ){
+				moveb += movep;
+				movep += 0.1;
+			}
+			move2 = moveb;
+		}
+		
+		ObjRender_SetAlpha(cid, alpha );
+		if( alpha < 128 && !delete ){
+			alternative( type )
+			case( "KOUMAKYO" ){ alpha += 15; }
+			case( "YOUYOUMU" ){ alpha += 15; }
+			case( "HUJINROKU" ){ alpha += 15; }
+			case( "TIREIDEN" ){ alpha += 15; }
+			case( "TOUGENKYU" ){ alpha += 15; }
+		}
+		if( alpha > 0 && delete ){
+			alternative( type )
+			case( "KOUMAKYO" ){ alpha -= 10; }
+			case( "YOUYOUMU" ){ alpha -= 10; }
+			case( "HUJINROKU" ){ alpha -= 10; }
+			case( "TIREIDEN" ){ alpha -= 10; }
+			case( "TOUGENKYU" ){ alpha -= 10; }
+		}
+		
+		cc++;
+		
+		yield;
+	}
+	Obj_Delete(cid);
+}

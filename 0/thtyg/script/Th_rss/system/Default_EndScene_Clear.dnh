@@ -1,0 +1,447 @@
+
+/*
+#東方弾幕風[Package]
+#Title["ポーズ"]
+#Image[""]
+#Text[""]
+*/
+
+//　ｴﾝﾃﾞｨﾝｸﾞ系ﾌｧｲﾙ読み込み
+#include "./../system/Load_AllTexture.dnh"
+#include "./../scene/ControlMusic.dnh"
+#include "./../lib/lib_ED.dnh"
+
+//一時停止中スクリプト
+	let IsReplaySave	= false;
+	let selectIndex1	= 0;	//　選択位置
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	CreateCommonDataArea( "Stop" );
+	SetAreaCommonData( "Stop", "frag", true );
+	
+	TBackgroundD();
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	//ClosePackage();
+}
+
+task PlaySEsP( se ){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData( "Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid,se);
+	ObjSound_SetVolumeRate(sid,se_vol);
+	ObjSound_SetLoopEnable(sid,false);
+	ObjSound_Play(sid);
+}
+
+task TBackgroundD(){
+	let rank = GetAreaCommonData( "System", "Difficulty", "NULL" );
+	
+	//　EX PH 以外
+	if( rank != "Extra" && rank != "Phantasm" && rank != "OverDrive" ){
+		
+		//　ED SR 開始
+		BeginEnding();
+		
+		//　終了待機
+		while( GetAreaCommonData("Stop","frag",false) ){ yield; }
+		
+		//　2秒待機
+		loop( 120 ){ yield; }
+		
+		//　追加要素解放
+		SetRelease();
+		
+		//　30フレーム待機
+		loop( 30 ){ yield; }
+	}
+	
+	//　EXクリア時はPH解放
+	if( rank == "Extra" ){
+		SetAreaCommonData( "SaveData", "Standby_PhantasmStage", true );
+	}
+	
+	//　EX、PHのクリアフラグ
+	SetRelease_PHOD();
+	
+	//　終了メニュー
+	TBackground();
+	TMenu();
+}
+
+
+
+
+//　背景
+task TBackground(){
+	let csd 	= GetCurrentScriptDirectory();
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let i		= 0;
+	
+	//　背景のうnyanyあ
+	let objImage = ObjPrim_Create(OBJ_SPRITE_2D); //2Dスプライトオブジェクト生成
+	Obj_SetRenderPriorityI(objImage, 0 ); //描画優先度を設定
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" ); //テクスチャを設定
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 98, 98, 98 );
+	ObjRender_SetAlpha(objImage, alpha1 );
+	
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+}
+
+
+
+
+//　選択メニュー作成
+task TMenu(){
+	//メニュー配置
+	let mode		= GetAreaCommonData("System","PlayMode","NULL");
+	let clear		= GetAreaCommonData("System","ClearSpellPractice",false);
+	let continue	= GetAreaCommonData("System","Continue",false);
+	let cc			= 0;
+	let mx			= 320-32;
+	let my			= 240;
+	let texts		= [ "リプレイを保存する", "タイトルに戻る" ];
+	let listResult	= [ RESULT_SAVE_REPLAY, RESULT_END ];
+	
+	if( continue ){
+		texts		= [ "タイトルに戻る" ];
+		listResult	= [ RESULT_END ];
+	}
+	var countMenu	= length(texts);
+	
+	ascent( var iText in 0 .. countMenu ){
+		TMenuItem(iText, mx+32, my-32, texts[iText] );
+		my += 64;
+	}
+	
+	//　8フレーム待機
+	loop( 8 ){ yield; }
+	
+	//　キー状態がリセットされるまで待機
+	while( GetVirtualKeyState(VK_OK) != KEY_FREE ){ yield; }
+	
+	//　メニュー選択処理
+	let frameKeyHold = 0;	//　キー押しっぱなしフレーム数
+	
+	loop{
+		//　エフェクト
+		if( cc%2 == 0 ){
+			//CherryEffectP(rand(0,640),rand(0,480),0.4,0.4,rand(32,128),[98,0,98]);
+		}
+		
+		//　決定
+		if( GetVirtualKeyState(VK_OK) == KEY_PUSH ){
+			if( texts[ selectIndex1 ] == "リプレイを保存する" ){
+				PlaySEsP( csd ~ "../se/menudecide.ogg" );
+				CallReplaySaveScene();
+			}
+			else{
+				SetScriptResult( listResult[selectIndex1] );
+				SetAreaCommonData( "System", "ClearSpellPractice", false );
+				PlaySEsP( csd ~ "../se/menudecide.ogg" );
+				loop( 12 ){ yield; }
+				CloseScript( GetOwnScriptID() );
+				return;
+			}
+		}
+		
+		//　カーソル移動
+		if( GetVirtualKeyState(VK_UP) == KEY_PUSH ){
+			selectIndex1--;
+			PlaySEsP(csd~"../se/menuselect.wav");
+		}
+		else if( GetVirtualKeyState(VK_DOWN) == KEY_PUSH ){
+			selectIndex1++;
+			PlaySEsP(csd~"../se/menuselect.wav");
+		}
+		else if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+			frameKeyHold++;
+			if( frameKeyHold == 30 || (frameKeyHold > 30 && (frameKeyHold % 10 == 0 ))){
+				selectIndex1--;
+				PlaySEsP(csd~"../se/menuselect.wav");
+			}
+		}
+		else if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+			frameKeyHold++;
+			if( frameKeyHold == 30 || (frameKeyHold > 30 && (frameKeyHold % 10 == 0 ))){
+				selectIndex1++;
+				PlaySEsP(csd~"../se/menuselect.wav");
+			}
+		}
+		else{
+			frameKeyHold = 0;
+		}
+		
+		//　selectIndex1のループ
+		if( selectIndex1 < 0 ){
+			selectIndex1 = countMenu - 1;
+		}
+		else{
+			selectIndex1 %= countMenu;
+		}
+		
+		cc++;
+		
+		yield;
+	}
+}
+
+//　EXとかスペプラ解放
+function SetRelease(){
+	//　ノーコンの時
+	if( !GetAreaCommonData("System","Continue",false) ){
+		
+		//　EXを選択できるようになるフラグ
+		SetAreaCommonData( "SaveData", "Standby_ExtraStage", true );
+		
+		//　自機分岐してEX解放
+		alternative( GetPlayerID )
+		case( "SRR_PL01A" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01A", true ); }
+		case( "SRR_PL01B" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01B", true ); }
+		case( "SRR_PL01C" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01C", true ); }
+		case( "SRR_PL02A" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02A", true ); }
+		case( "SRR_PL02B" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02B", true ); }
+		case( "SRR_PL02C" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02C", true ); }
+		case( "SRR_PL03A" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03A", true ); }
+		case( "SRR_PL03B" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03B", true ); }
+		case( "SRR_PL03C" ){ SetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03C", true ); }
+		
+	}
+	
+	//　ｽﾃﾌﾟﾗ解放
+	SetAreaCommonData( "SaveData", "Standby_StagePractice", true );
+	
+	//　ｽﾍﾟﾌﾟﾗ解放
+	SetAreaCommonData( "SaveData", "Standby_SpellPractice", true );
+	
+	SaveCommonDataAreaA1( "SaveData" );
+}
+
+//　PH OD 解放
+function SetRelease_PHOD(){
+	let rank = GetAreaCommonData( "System", "Difficulty", "NULL" );
+	//　EXの時
+	if( rank == "Extra" ){
+		//　PH解放フラグ兼、EXクリアフラグ
+		alternative( GetPlayerID )
+		case( "SRR_PL01A" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01A", true ); }
+		case( "SRR_PL01B" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01B", true ); }
+		case( "SRR_PL01C" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01C", true ); }
+		case( "SRR_PL02A" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02A", true ); }
+		case( "SRR_PL02B" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02B", true ); }
+		case( "SRR_PL02C" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02C", true ); }
+		case( "SRR_PL03A" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03A", true ); }
+		case( "SRR_PL03B" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03B", true ); }
+		case( "SRR_PL03C" ){ SetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03C", true ); }
+	}
+	else if( rank == "Phantasm" ){
+		//　PHクリアフラグ
+		alternative( GetPlayerID )
+		case( "SRR_PL01A" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01A", true ); }
+		case( "SRR_PL01B" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01B", true ); }
+		case( "SRR_PL01C" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01C", true ); }
+		case( "SRR_PL02A" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02A", true ); }
+		case( "SRR_PL02B" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02B", true ); }
+		case( "SRR_PL02C" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02C", true ); }
+		case( "SRR_PL03A" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03A", true ); }
+		case( "SRR_PL03B" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03B", true ); }
+		case( "SRR_PL03C" ){ SetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03C", true ); }
+	}else if( rank == "OverDrive" ){
+		alternative( GetPlayerID )
+		case( "SRR_PL01A" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01A", true ); }
+		case( "SRR_PL01B" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01B", true ); }
+		case( "SRR_PL01C" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01C", true ); }
+		case( "SRR_PL02A" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02A", true ); }
+		case( "SRR_PL02B" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02B", true ); }
+		case( "SRR_PL02C" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02C", true ); }
+		case( "SRR_PL03A" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03A", true ); }
+		case( "SRR_PL03B" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03B", true ); }
+		case( "SRR_PL03C" ){ SetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03C", true ); }
+	}
+	SaveCommonDataAreaA1( "SaveData" );
+}
+
+
+//　リプレイセーブシーン
+function CallReplaySaveScene(){
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "./Default_ReplaySaveScene.dnh";
+	let idScript	= LoadScript(pathScript);
+	let cc			= 0;
+	
+	IsReplaySave = true;
+	
+	StartScript(idScript);
+	
+	while( !IsCloseScript(idScript) ){
+		if( cc%2 == 0 ){
+		}
+		cc++;
+		yield;
+	}
+	
+	IsReplaySave = false;
+}
+
+
+
+
+//　メニュー作成関数
+task TMenuItem( Index, mx, my, text ){
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let move	= 32;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let move3	= 0;
+	let moveC	= 0;
+	let count	= 0;
+	
+	function CreateTextObject( mx, my, text ){
+		let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let sca		= 0.5;
+		let sca2	= 0.54;
+		
+		ObjRender_SetPosition(obj, mx, my, 0 );
+		ObjPrim_SetTexture(obj, csd ~ "./../img/front/pause.png" );
+		ObjRender_SetBlendType(obj, BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(obj, sca, sca, 0 );
+		ObjRender_SetColor(obj, 64, 64, 64 );
+		Obj_SetRenderPriorityI(obj, 34 );
+		
+		alternative( text )
+		case( "一時停止" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 0, 1024, 128 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "満身創痍" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 128, 1024, 256 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再開" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 0, 512, 128 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再生終了" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 256, 1024, 384 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "タイトルに戻る" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 128, 512, 256 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再挑戦" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 512, 512, 640 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "最初から始める" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 256, 512, 384 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "リプレイを保存する" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 384, 512, 512 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "本当に？" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 768, 1024, 896 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "はい" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 640, 512, 768 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "いいえ" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 768, 512, 896 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "鉄杵成針" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 384, 1024, 512 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		return obj;
+	}
+	
+	let objText		= CreateTextObject( mx, my, text );
+	let objSelect	= CreateTextObject( mx, my, text );
+	
+	let selectIndex = 0;
+	
+	loop{
+		selectIndex = selectIndex1;
+		
+		alpha1 = 255 * sin( alphaA );
+		move3 = 1 * sin( moveC );
+		
+		//　選択中は横に移動
+		if( Index == selectIndex ){
+			move2 = 0;
+			moveB = 0;
+			move1 = move * sin( moveA );
+			ObjRender_SetPosition(objText, mx+255/2-alpha1/2+move1, my, 0 );
+			ObjRender_SetPosition(objSelect, mx+255/2-alpha1/2+move1, my, 0 );
+			if( move1 < move ){ moveA += 15; }
+		}
+		else{
+			move1 = 0;
+			moveA = 0;
+			move2 = move * sin( moveB );
+			ObjRender_SetPosition(objText, mx+255/2-alpha1/2+move-move2, my, 0 );
+			ObjRender_SetPosition(objSelect, mx+255/2-alpha1/2+move-move2,my, 0 );
+			if( move2 < move ){ moveB += 15; }
+		}
+		
+		if( IsReplaySave ){
+			ObjRender_SetAlpha(objText, 255 - move3*255 );
+			ObjRender_SetAlpha(objSelect, 255 - move3*255 );
+			if( move3 < 1 ){ moveC += 15; }
+		}
+		else{
+			ObjRender_SetAlpha(objText, alpha1 );
+			ObjRender_SetAlpha(objSelect, alpha1 );
+			moveC = 0;
+		}
+		
+		Obj_SetVisible(objSelect, Index == selectIndex );
+		ObjRender_SetColor(objSelect, 255, 128, 128 );
+		
+		count += 8;
+		if( alpha1 < 255 ){ alphaA += 10; }
+		
+		yield;
+	}
+	Obj_Delete( objText );
+	Obj_Delete( objSelect );
+}

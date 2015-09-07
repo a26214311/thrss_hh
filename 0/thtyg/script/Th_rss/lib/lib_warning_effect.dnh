@@ -1,0 +1,291 @@
+let enm;
+
+#include "./../lib/lib_AllSound.dnh"
+#include "./lib_ExplosionBlur.dnh"
+#include "./lib_effect_ctr.dnh"
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　Warning用のエフェクト　timer3秒位がよい
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+//　pos[ x, y ] 配列で座標指定
+//　timer 演出の長さ(フレーム)
+task SetWarningEffect( pos, timer ){
+	let se		= PlayWarningSE( GetCurrentScriptDirectory() ~ "./../se/caution.ogg" );
+	let lay		= 39;	//　描画レイヤー
+	
+	ObjSound_Play( se );
+	
+	CreateWarningEffect01( pos, timer, lay );
+	CreateWarningEffect04( pos, timer, 1, lay );
+	CreateWarningEffect04( pos, timer, 0.8, lay );
+	CreateWarningEffect02( pos, timer, lay );
+	CreateWarningEffect03( [ pos[0], pos[1] - 52 ], timer, 10, lay );
+	CreateWarningEffect03( [ pos[0], pos[1] + 52 ], timer, -10, lay );
+	ExplotionBlur( [ 0, 96, 96 ] );
+	
+	loop( timer ){ yield; }
+	
+	Obj_Delete( se );
+}
+
+//　SE　再生時間が長めの効果音だと変な感じになるので一応
+function PlayWarningSE( se_path ){
+	let se		= ObjSound_Create();
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　後ろのやつ
+task CreateWarningEffect01( spos, timer, lay ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let alpha	= 192;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition( ID, spos[0], spos[1], 0 );
+	ObjPrim_SetTexture( ID, effect_tex[9] );
+	ObjRender_SetBlendType( ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI( ID, lay );
+	ObjRender_SetColor( ID, 255, 255, 255 );
+	ObjSprite2D_SetSourceRect( ID, 0, 0, 512, 256 );
+	ObjSprite2D_SetDestRect( ID, -192, -128, 192, 128 );
+	
+	//　イン
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( ID, 1, move1, 0 );
+		ObjRender_SetAlpha( ID, move1*alpha );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	//　待機時間
+	loop( timer ){
+		yield;
+	}
+	//　アウト
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( ID, 1, 1 + move1, 0 );
+		ObjRender_SetAlpha( ID, alpha - move1*alpha );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　強大妖力接近
+task CreateWarningEffect02( spos, timer, lay ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let blend	= [ BLEND_ADD_ARGB, BLEND_SUBTRACT ];
+	let scale	= [ 1.04, 1 ];
+	let alpha	= [ 192, 255 ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ascent( let i in 0..length(ID) ){
+		ObjRender_SetPosition( ID[i], spos[0], spos[1], 0 );
+		ObjPrim_SetTexture( ID[i], effect_tex[8] );
+		ObjRender_SetBlendType( ID[i], blend[i] );
+		Obj_SetRenderPriorityI( ID[i], lay );
+		ObjSprite2D_SetSourceRect( ID[i], 0, 0, 512, 128 );
+		ObjSprite2D_SetDestRect( ID[i], -192, -64, 192, 64 );
+	}
+	
+	//　イン
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		let dp = [ rand(-2,2), rand(-2,2) ];
+		ObjRender_SetPosition( ID[0], spos[0] + dp[0], spos[1] + dp[1], 0 );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetScaleXYZ( ID[i], scale[i]*4 - move1*scale[i]*3, move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], move1*alpha[i] );
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	//　待機時間
+	loop( timer ){
+		let dp = [ rand(-2,2), rand(-2,2) ];
+		ObjRender_SetPosition( ID[0], spos[0] + dp[0], spos[1] + dp[1], 0 );
+		
+		yield;
+	}
+	//　アウト
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		let dp = [ rand(-2,2), rand(-2,2) ];
+		ObjRender_SetPosition( ID[0], spos[0] + dp[0], spos[1] + dp[1], 0 );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetScaleXYZ( ID[i], scale[i] + move1*scale[i]*3, scale[i] - move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], alpha[i] - move1*alpha[i] );
+		}
+		
+		moveA += 5;
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　Waring!!
+//　spd　スクロールさせる速度
+task CreateWarningEffect03( spos, timer, spd, lay ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let blend	= [ BLEND_SUBTRACT, BLEND_ADD_ARGB ];
+	let scale	= [ 0.5, 0.4 ];
+	let alpha	= [ 128, 192 ];
+	let move1	= 0;
+	let moveA	= 0;
+	let scr		= 0;
+	
+	ascent( let i in 0..length(ID) ){
+		ObjRender_SetPosition( ID[i], spos[0], spos[1], 0 );
+		ObjPrim_SetTexture( ID[i], effect_tex[7] );
+		ObjRender_SetBlendType( ID[i], blend[i] );
+		Obj_SetRenderPriorityI( ID[i], lay );
+		ObjSprite2D_SetSourceRect( ID[i], 0, 0, 1024, 64 );
+		ObjSprite2D_SetDestRect( ID[i], -512, -32, 512, 32 );
+	}
+	
+	//　イン
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetScaleXYZ( ID[i], scale[i]*4 - move1*scale[i]*3, move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], move1*alpha[i] );
+			ObjSprite2D_SetSourceRect( ID[i], 0 + scr*spd, 0, 1024 + scr*spd, 64 );
+		}
+		
+		moveA += 10;
+		scr++;
+		
+		yield;
+	}
+	//　待機時間
+	loop( timer ){
+		ascent( i in 0..length(ID) ){
+			ObjSprite2D_SetSourceRect( ID[i], 0 + scr*spd, 0, 1024 + scr*spd, 64 );
+		}
+		
+		scr++;
+		
+		yield;
+	}
+	//　アウト
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetScaleXYZ( ID[i], scale[i] + move1*scale[i]*3, scale[i] - move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], alpha[i] - move1*alpha[i] );
+			ObjSprite2D_SetSourceRect( ID[i], 0 + scr*spd, 0, 1024 + scr*spd, 64 );
+		}
+		
+		moveA += 10;
+		scr++;
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　おまけの装飾
+//　蝶のparticleもココ
+//　spd　開店させる速度
+task CreateWarningEffect04( spos, timer, spd, lay ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let scale	= 0.8;
+	let alpha	= 128;
+	let rang	= rand( 0, 360 );
+	let move1	= 0;
+	let moveA	= 0;
+	let spin	= 0;
+	
+	ObjRender_SetPosition( ID, spos[0], spos[1], 0 );
+	ObjPrim_SetTexture( ID, effect_tex[10] );
+	ObjRender_SetBlendType( ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI( ID, lay );
+	ObjSprite2D_SetSourceRect( ID, 0, 0, 512, 512 );
+	ObjSprite2D_SetDestRect( ID, -256, -256, 256, 256 );
+	
+	//　イン
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( ID, scale*2 - move1*scale, scale*2 - move1*scale, 0 );
+		ObjRender_SetAlpha( ID, move1*alpha );
+		ObjRender_SetAngleZ( ID, rang + spin*spd );
+		
+		moveA += 10;
+		spin++;
+		
+		yield;
+	}
+	//　待機時間
+	loop( timer ){
+		ObjRender_SetAngleZ( ID, rang + spin*spd );
+		
+		if( spin%6 == 0 ){
+			ButterflyPower( GetPlayerObjectID(), [ spos[0] + rand(-256,256), spos[1] + 64 ], rand(0.2,0.4),
+								rand(64,192), 270+rand(-16,16), 0, [128,192,192] );
+		}
+		
+		spin++;
+		
+		yield;
+	}
+	//　アウト
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( ID, scale - move1*scale, scale - move1*scale, 0 );
+		ObjRender_SetAlpha( ID, alpha - move1*alpha );
+		ObjRender_SetAngleZ( ID, rang + spin*spd );
+		
+		moveA += 10;
+		spin++;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}

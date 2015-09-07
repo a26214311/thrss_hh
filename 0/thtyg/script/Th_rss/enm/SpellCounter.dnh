@@ -1,0 +1,255 @@
+
+
+
+function GetSpellCounter( GetDifficult, stage, num ){
+	let play_spell;
+	let get_spell;
+	
+	alternative( stage )
+	case( 1 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage1",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage1",0);
+	}
+	case( 2 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage2",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage2",0);
+	}
+	case( 3 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage3",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage3",0);
+	}
+	case( 4 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage4",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage4",0);
+	}
+	case( 5 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage5",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage5",0);
+	}
+	case( 6 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage6",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage6",0);
+	}
+	case( 7 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage7",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage7",0);
+	}
+	case( 8 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage8",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage8",0);
+	}
+	case( 9 ){
+		play_spell	= GetAreaCommonData("spell_counter","play_stage9",0);
+		get_spell	= GetAreaCommonData("spell_counter","get_stage9",0);
+	}
+	
+	let count = [ 0, 0 ];
+	
+	alternative( GetDifficult )
+	case( "Easy" ){
+		count[0] = play_spell[ num*4 ];
+		count[1] = get_spell[ num*4 ];
+	}
+	case( "Normal" ){
+		count[0] = play_spell[ num*4+1 ];
+		count[1] = get_spell[ num*4+1 ];
+	}
+	case( "Hard" ){
+		count[0] = play_spell[ num*4+2 ];
+		count[1] = get_spell[ num*4+2 ];
+	}
+	case( "Lunatic" ){
+		count[0] = play_spell[ num*4+3 ];
+		count[1] = get_spell[ num*4+3 ];
+	}
+	case( "Extra", "Phantasm", "OverDrive" ){
+		count[0] = play_spell[ num ];
+		count[1] = get_spell[ num ];
+	}
+	
+	return count;
+}
+
+//　総プレイ回数
+task SpellCounter( GetDifficult, stage, num ){
+	alternative( GetDifficult )
+	case( "Easy" ){
+		SpellCounter_Main( stage, num*4 );
+	}
+	case( "Normal" ){
+		SpellCounter_Main( stage, num*4+1 );
+	}
+	case( "Hard" ){
+		SpellCounter_Main( stage, num*4+2 );
+	}
+	case( "Lunatic" ){
+		SpellCounter_Main( stage, num*4+3 );
+	}
+	case( "OverDrive" ){
+		SpellCounter_Main( stage, num );
+	}
+	case( "Extra", "Phantasm", "OverFlow" ){
+		SpellCounter_Main( stage, num );
+	}
+}
+
+//　取得回数
+task SpellCounterGet( GetDifficult, stage, num ){
+	alternative( GetDifficult )
+	case( "Easy" ){
+		SpellCounterGet_Main( stage, num*4 );
+	}
+	case( "Normal" ){
+		SpellCounterGet_Main( stage, num*4+1 );
+	}
+	case( "Hard" ){
+		SpellCounterGet_Main( stage, num*4+2 );
+	}
+	case( "Lunatic" ){
+		SpellCounterGet_Main( stage, num*4+3 );
+	}
+	case( "OverDrive" ){
+		SpellCounterGet_Main( stage, num );
+	}
+	case( "Extra", "Phantasm", "OverFlow" ){
+		SpellCounterGet_Main( stage, num );
+	}
+}
+
+task SpellCounter_Main( stg, num ){
+	if( !IsReplay ){
+		let play_spell;
+		
+		alternative( stg )
+		case( 1 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage1",0);
+		}
+		case( 2 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage2",0);
+		}
+		case( 3 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage3",0);
+		}
+		case( 4 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage4",0);
+		}
+		case( 5 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage5",0);
+		}
+		case( 6 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage6",0);
+		}
+		case( 7 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage7",0);
+		}
+		case( 8 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage8",0);
+		}
+		case( 9 ){
+			play_spell	= GetAreaCommonData("spell_counter","play_stage9",0);
+		}
+		
+		/*----指定されたスペルカードの番地にプレイ回数をカウント----*/
+		play_spell[num] = play_spell[num] + 1;
+		
+		/*----代入してセーブ----*/
+		alternative( stg )
+		case( 1 ){
+			SetAreaCommonData("spell_counter","play_stage1",play_spell);
+		}
+		case( 2 ){
+			SetAreaCommonData("spell_counter","play_stage2",play_spell);
+		}
+		case( 3 ){
+			SetAreaCommonData("spell_counter","play_stage3",play_spell);
+		}
+		case( 4 ){
+			SetAreaCommonData("spell_counter","play_stage4",play_spell);
+		}
+		case( 5 ){
+			SetAreaCommonData("spell_counter","play_stage5",play_spell);
+		}
+		case( 6 ){
+			SetAreaCommonData("spell_counter","play_stage6",play_spell);
+		}
+		case( 7 ){
+			SetAreaCommonData("spell_counter","play_stage7",play_spell);
+		}
+		case( 8 ){
+			SetAreaCommonData("spell_counter","play_stage8",play_spell);
+		}
+		case( 9 ){
+			SetAreaCommonData("spell_counter","play_stage9",play_spell);
+		}
+		SaveCommonDataAreaA1("spell_counter");
+	}
+}
+
+task SpellCounterGet_Main( stg, num ){
+	if( !IsReplay ){
+		let play_spell;
+		
+		alternative( stg )
+		case( 1 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage1",0);
+		}
+		case( 2 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage2",0);
+		}
+		case( 3 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage3",0);
+		}
+		case( 4 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage4",0);
+		}
+		case( 5 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage5",0);
+		}
+		case( 6 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage6",0);
+		}
+		case( 7 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage7",0);
+		}
+		case( 8 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage8",0);
+		}
+		case( 9 ){
+			play_spell	= GetAreaCommonData("spell_counter","get_stage9",0);
+		}
+		
+		/*----指定されたスペルカードの番地にプレイ回数をカウント----*/
+		play_spell[num] = play_spell[num] + 1;
+		
+		/*----代入してセーブ----*/
+		alternative( stg )
+		case( 1 ){
+			SetAreaCommonData("spell_counter","get_stage1",play_spell);
+		}
+		case( 2 ){
+			SetAreaCommonData("spell_counter","get_stage2",play_spell);
+		}
+		case( 3 ){
+			SetAreaCommonData("spell_counter","get_stage3",play_spell);
+		}
+		case( 4 ){
+			SetAreaCommonData("spell_counter","get_stage4",play_spell);
+		}
+		case( 5 ){
+			SetAreaCommonData("spell_counter","get_stage5",play_spell);
+		}
+		case( 6 ){
+			SetAreaCommonData("spell_counter","get_stage6",play_spell);
+		}
+		case( 7 ){
+			SetAreaCommonData("spell_counter","get_stage7",play_spell);
+		}
+		case( 8 ){
+			SetAreaCommonData("spell_counter","get_stage8",play_spell);
+		}
+		case( 9 ){
+			SetAreaCommonData("spell_counter","get_stage9",play_spell);
+		}
+		SaveCommonDataAreaA1("spell_counter");
+	}
+}

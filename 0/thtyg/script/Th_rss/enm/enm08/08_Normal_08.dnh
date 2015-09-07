@@ -1,0 +1,158 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　静通常08"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	#include "./lib_enm08_family.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 55;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 96, 96, 96 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	task MainThread{
+		let r = 1 - 2 * round( rand( 0, 1 ) );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+		Wait( 150 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		if( Wait( 60 ) ){ return; }
+		let p = rand( 0, 360 );
+		while( !Obj_IsDeleted(enm) ){
+			let rad = 200;
+			loop( 28 ){
+				Pattern1( p, rad );
+				ObjSound_Play( CreateShotSE[1] );
+				p += 5.5 * r;
+				rad -= 4;
+				if( Wait( 7 ) ){ return; }
+			}
+			
+			EnemyMove( enm, 2, 8 );
+			
+			if( Wait( 110 ) ){ return; }
+			r = -r;
+		}
+	}
+
+	task Pattern1( p, radius ){
+		let sx = ObjMove_GetX( enm );
+		let sy = ObjMove_GetY( enm );
+		let way = 6;
+		let col = 0;
+		let angle = p;
+		loop( way ){
+			Set( radius, angle, col );
+			angle += 360 / way;
+			col++;
+		}
+		task Set( radius, p, col ){
+			let bx = sx + radius * cos( p );
+			let by = sy + radius * sin( p );
+			let ag = p + 120;
+			let way = 9;
+			let shote = BGW_RED_12 + col % 8;
+			let delay = 16;
+			let leng = 0;
+			loop( way ){
+				let tx = bx + leng * cos( ag );
+				let ty = by + leng * sin( ag );
+				let speed = GetDistance( [ sx, sy ], [ tx, ty ] ) / 70;
+				let angle = GetGapAngle( [ sx, sy ], [ tx, ty ] );
+				CreateShot01( [ sx, sy ], speed * 3, angle, -speed / 10, speed, shote, delay );
+				leng += radius / ( way - 1 );
+			}
+		}
+	}
+	

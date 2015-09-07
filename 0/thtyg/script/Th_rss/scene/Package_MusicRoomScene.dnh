@@ -1,0 +1,722 @@
+
+
+//　ミュージックルーム
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+
+
+	let Eflg	= false;
+	let Cflg	= false;
+	let csd		= GetCurrentScriptDirectory();
+	
+	//　プレイヤーズスコアの曲No
+	let PLAYERS_SCORE = 19;
+	
+	//　使用する効果音
+	let se = [
+		PlaySEsP( csd ~ "./../se/menuselect.ogg" ),
+		PlaySEsP( csd ~ "./../se/menuselect.ogg" ),
+	];
+	
+	#include "./../system/Load_AllTexture.dnh"
+	#include "./ControlMusic.dnh"
+	#include "./../lib/lib_LoadingEffect.dnh"		//　少女祈祷中
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	TBackground();
+	MusicRoomMain();
+	
+	SetAreaCommonData("System","select",0);
+	SetAreaCommonData("System","select2",0);
+	
+	SetScriptResult("");
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	PlaySEsP_Exit( csd ~ "./../se/menucancel.ogg" );
+	Obj_DeleteArray( se );
+}
+
+
+//　渡された配列の中に入っているオブジェクトを全て削除
+task Obj_DeleteArray( obj_array ){
+	ascent( let i in 0..( length(obj_array) ) ){
+		Obj_Delete( obj_array[i] );
+	}
+}
+
+//　このスクリプト中でアクティブなサウンドオブジェクト
+function PlaySEsP(path){
+	let sobj	= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sobj, path );
+	ObjSound_SetVolumeRate(sobj, se_vol );
+	ObjSound_SetLoopEnable(sobj, false );
+	
+	return sobj;
+}
+
+//　出る時用
+task PlaySEsP_Exit(path){
+	let sobj	= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sobj, path );
+	ObjSound_SetVolumeRate(sobj, se_vol );
+	ObjSound_SetLoopEnable(sobj, false );
+	ObjSound_Play(sobj);
+	loop( 180 ){ yield; }
+	Obj_Delete(sobj);
+}
+
+//　前に流れていたBGMが削除されるまで待機し、その後に再生する
+task CallMusic( int_play, int_delay ){
+	DeleteMusic();
+	PlayMusic_Title( int_play, true, int_delay );
+}
+
+task TBackground{
+	let objImage	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objText		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 		= GetCurrentScriptDirectory();
+	let eflg		= GetAreaCommonData("System", "title_end", false );
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let flg			= 0;
+	let ctr			= 0;
+	let i			= 0;
+	
+	//　背景
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" );
+	Obj_SetRenderPriorityI(objImage, 33 );
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 64, 64, 64 );
+	ObjRender_SetAlpha(objImage, alpha1*255 );
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.56, 0.56, 0 );
+	ObjSprite2D_SetSourceRect(objText, 0, 256, 512, 512 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+
+	while( !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		
+		//　キャンセルキー
+		if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 1 ){
+			ctr = 0;
+			Eflg = true;
+			break;
+		}
+		
+		if( ctr%4 == 0 ){
+			let rgb_array	= [
+				[255,255,255],	//　白
+				[64,255,255],	//　水
+				[64,255,128],	//　青緑
+				[64,128,255],	//　青
+			];
+			CreateIceCrystal( [rand(0,640),rand(0,480)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.7), rand(120,180), rand(64,96), rgb_array, 33 );
+		}
+		
+		ctr++;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( !eflg && alpha1 < 1 ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, 255 - alpha1*255 );
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete( objImage );
+	Obj_Delete( objText );
+	SetAreaCommonData("System", "select", 0 );
+	SetAreaCommonData("System", "select2", 0 );
+	CloseScript( GetOwnScriptID() );
+}
+
+task MusicRoomMain(){
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let stc		= 0;
+	let ctr		= 0;
+	let ctr2	= 0;
+	let ctr3	= 0;
+	let i		= 0;
+	let pos		= [64,98];
+	let ListMax	= 10;
+	
+	#include "./MusicName.dnh"
+	
+	let chara_mus_tex = [
+		player_tex[0],
+		player_tex[14],
+		chara_tex[0],
+		chara_tex[6],
+		chara_tex[9],
+		chara_tex[14],
+		chara_tex[14],
+		chara_tex[32],
+		chara_tex[39],
+		chara_tex[22],
+		chara_tex[31],
+		chara_tex[41],
+		chara_tex[47],
+		"No.14 兵どもが夢の跡",
+		"No.15 海の千尋よさようなら 〜 Shiokaze Dream",
+		chara_tex[53],
+		chara_tex[61],
+		chara_tex[64],
+		chara_tex[67],
+	];
+	
+	while( !eflg && !Eflg ){
+		let slt			= GetAreaCommonData("System","select",0);
+		let slt2		= GetAreaCommonData("System","select2",0);
+		
+		eflg = GetAreaCommonData("System", "title_end", false );
+		
+		if( ctr == 1 ){
+			ascent( i in 0..( ListMax ) ){
+				//　曲名
+				if( stc < 10 ){
+					DrawText(pos[0], pos[1] + i*18, [255,255,128], i, munpath[ i ], 16 );
+				}
+				else{
+					if( i > 8 ){ break; }
+					DrawText(pos[0], pos[1] + i*18, [255,255,128], 10+i, munpath[ 10+i ], 16 );
+				}
+			}
+			//　コメント
+			DrawText2(pos[0]-48, pos[1]+210-16, [255,255,255], stc, mucpath[stc], 16 );
+			
+			//　作曲者表示
+			if( stc == 12 ){
+				//　わたしだ
+				DrawText3(pos[0]-29, pos[1]+230-16, [255,255,255], stc, "作曲:ido,Wanwan", 15 );
+			}
+			else{
+				//　わんわんさん
+				DrawText3(pos[0]-29, pos[1]+230-16, [255,255,255], stc, "作曲:Wanwan", 15 );
+			}
+			
+			//　キャラの絵
+			DrawTexture( [320+160,240], 0.8, chara_mus_tex[stc], stc, [0,32,64] );
+		}
+		
+		//　再生
+		if( GetVirtualKeyState(VK_SHOT) == KEY_PUSH && ctr3 > 1 ){
+			Cflg = true;
+			CallMusic( stc, 0 );
+			ctr3 = -120;
+			LoadingDefault_timer( 540, 440, 120 );
+		}
+		ctr3++;
+		
+		//　曲目選択
+		if( GetVirtualKeyState(VK_UP) == KEY_PUSH && ctr > 2 && stc > 0 ){
+			ctr = 0;
+			Cflg = false;
+			stc--;
+			SetAreaCommonData("System", "select", stc );
+			ObjSound_Play( se[0] );
+		}
+		if( GetVirtualKeyState(VK_DOWN) == KEY_PUSH && ctr > 2 && stc < length(munpath)-1 ){
+			ctr = 0;
+			Cflg = false;
+			stc++;
+			SetAreaCommonData("System", "select", stc );
+			ObjSound_Play( se[0] );
+		}
+		//　長押し
+		if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+			if( ctr2 >= 30 && ctr2 %4 == 0 && ctr > 2 && stc > 0 ){
+				ctr = 0;
+				Cflg = false;
+				stc--;
+				SetAreaCommonData("System","select",stc);
+				ObjSound_Play( se[0] );
+			}
+			ctr2++;
+		}
+		else if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+			if( ctr2 >= 30 && ctr2 %4 == 0 && ctr > 2 && stc < length(munpath)-1 ){
+				ctr = 0;
+				Cflg = false;
+				stc++;
+				SetAreaCommonData("System", "select", stc );
+				ObjSound_Play( se[0] );
+			}
+			ctr2++;
+		}
+		else{
+			ctr2 = 0;
+		}
+		
+		ctr++;
+		
+		yield;
+	}
+}
+
+
+
+
+
+
+
+
+//　ユーティリティ
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+
+task DrawText(x,y,rgb_h,num,char_text,size){
+	let obj				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let cc				= 0;
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	let flg				= GetAreaCommonData("SaveData","MusicFlg",1);
+	
+	ObjRender_SetPosition(obj,x,y,0);
+	//　既に聴いた音楽 or プレイヤーズスコアの時
+	if( flg >= num || num == PLAYERS_SCORE ){
+		ObjText_SetText(obj, char_text );
+	}
+	else{
+		ObjText_SetText(obj, "？？？？？？？？" );
+	}
+	ObjText_SetFontType(obj, "ＭＳ ゴシック" );
+	ObjText_SetFontSize(obj, size );
+	ObjText_SetHorizontalAlignment(obj, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(obj, 512 );
+	ObjText_SetFontBorderWidth(obj, 1 );
+	ObjText_SetFontBorderType(obj, BORDER_FULL );
+	ObjText_SetFontBorderColor(obj, 4, 4, 4 );
+	ObjText_SetFontColorTop(obj, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjText_SetFontColorBottom(obj, rgb_h[0], rgb_h[1], rgb_h[2] );
+	Obj_SetRenderPriorityI(obj, 35 );
+	
+	while( !Eflg && !eflg ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( stc != slt ){ break; }
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		if( num == slt ){
+			ObjRender_SetPosition(obj, x - alpha1*8, y, 0 );
+		}
+		else{
+			ObjText_SetFontColorTop(obj, 98, 98, 98 );
+			ObjText_SetFontColorBottom(obj, 98, 98, 98 );
+		}
+		
+		cc += 4;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && Eflg && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task DrawText2(x,y,rgb_h,num,char_text,size){
+	let obj				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	let flg				= GetAreaCommonData("SaveData","MusicFlg",1);
+	
+	ObjRender_SetPosition(obj,x,y,0);
+	//　既に聴いた音楽 or プレイヤーズスコアの時
+	if( flg>=num || num == PLAYERS_SCORE ){
+		ObjText_SetText(obj,char_text);
+		ObjText_SetFontColorTop(obj,rgb_h[0],rgb_h[1],rgb_h[2]);
+		ObjText_SetFontColorBottom(obj,rgb_h[0],rgb_h[1],rgb_h[2]);
+	}
+	else{
+		ObjText_SetText(obj,"♪？？？？？？？？　[r]　[r]　この曲はまだゲーム中で聴いていません。　[r]　[r]　※決定キーで再生します");
+		ObjText_SetFontColorTop(obj,255,128,128);
+		ObjText_SetFontColorBottom(obj,255,128,128);
+	}
+	ObjText_SetFontType(obj,"ＭＳ ゴシック");
+	ObjText_SetFontSize(obj,size);
+	ObjText_SetHorizontalAlignment(obj,ALIGNMENT_LEFT);
+	ObjText_SetMaxWidth(obj,1024);
+	ObjText_SetFontBorderWidth(obj,1);
+	ObjText_SetFontBorderType(obj,BORDER_FULL);
+	ObjText_SetFontBorderColor(obj,4,4,4);
+	Obj_SetRenderPriorityI(obj,35);
+	ObjRender_SetAlpha(obj,255-alpha1);
+	
+	while( !Eflg && !eflg ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Cflg ){
+			ObjText_SetText(obj, char_text );
+			ObjText_SetFontColorTop(obj, 255, 255, 255 );
+			ObjText_SetFontColorBottom(obj, 255, 255, 255 );
+		}
+		
+		if( stc != slt ){ break; }
+		
+		yield;
+	}
+	while( alpha1 < 1 && Eflg && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task DrawText3(x,y,rgb_h,num,char_text,size){
+	let obj				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	let flg				= GetAreaCommonData("SaveData","MusicFlg",1);
+	
+	ObjRender_SetPosition(obj,x,y,0);
+	//　既に聴いた音楽 or プレイヤーズスコアの時
+	if( flg >= num || num == PLAYERS_SCORE ){
+		ObjText_SetText(obj,char_text);
+		ObjText_SetFontColorTop(obj,rgb_h[0],rgb_h[1],rgb_h[2]);
+		ObjText_SetFontColorBottom(obj,rgb_h[0],rgb_h[1],rgb_h[2]);
+	}
+	else{
+		ObjText_SetText(obj,"作曲:Unknown");
+		ObjText_SetFontColorTop(obj,255,128,128);
+		ObjText_SetFontColorBottom(obj,255,128,128);
+	}
+	ObjText_SetFontType(obj,"ＭＳ ゴシック");
+	ObjText_SetFontSize(obj,size);
+	ObjText_SetHorizontalAlignment(obj,ALIGNMENT_LEFT);
+	ObjText_SetMaxWidth(obj,450);
+	ObjText_SetFontBorderWidth(obj,1);
+	ObjText_SetFontBorderType(obj,BORDER_FULL);
+	ObjText_SetFontBorderColor(obj,4,4,4);
+	Obj_SetRenderPriorityI(obj,35);
+	ObjRender_SetAlpha(obj,255-alpha1);
+	
+	while( !Eflg && !eflg ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Cflg ){
+			ObjText_SetText(obj,char_text);
+			ObjText_SetFontColorTop(obj,255,255,255);
+			ObjText_SetFontColorBottom(obj,255,255,255);
+		}
+		
+		if( stc != slt ){ break; }
+		
+		yield;
+	}
+	while( alpha1 < 1 && Eflg && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, 1 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+//　キャラ表示
+task DrawTexture( pos, sca, texture, num, color ){
+	let obj				= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let eflg			= GetAreaCommonData( "System",  "title_end", false );
+	let stc				= GetAreaCommonData( "System", "select", 0 );
+	let stc2			= GetAreaCommonData( "System", "select2", 0 );
+	let slt				= GetAreaCommonData( "System", "select", 0 );
+	let slt2			= GetAreaCommonData( "System", "select2", 0 );
+	let flg				= GetAreaCommonData( "SaveData", "MusicFlg", 1 );
+	let i				= 0;
+	
+	let scale = [ sca+0.1, sca ];
+	ascent( i in 0..length(obj) ){
+		ObjRender_SetPosition( obj[i], pos[0], pos[1], 0 );
+		ObjPrim_SetTexture( obj[i], texture );
+		ObjRender_SetBlendType( obj[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI( obj[i], 34 );
+		ObjRender_SetScaleXYZ( obj[i], scale[i], scale[i], 0 );
+		ObjSprite2D_SetSourceRect( obj[i], 0, 0, 512, 512 );
+		ObjSprite2D_SetDestCenter( obj[i] );
+	}
+	
+	ObjRender_SetColor(obj[0], color[0], color[1], color[2] );
+	ObjRender_SetColor(obj[1], 128, 128, 128 );
+	
+	//　既に聴いた音楽 or プレイヤーズスコアの時
+	if( flg >= num || num == PLAYERS_SCORE ){
+		ObjRender_SetAlpha(obj[0], 255 );
+		ObjRender_SetAlpha(obj[1], 255 );
+	}
+	else{
+		ObjRender_SetAlpha(obj[0], 0 );
+		ObjRender_SetAlpha(obj[1], 0 );
+	}
+	
+	while( alpha1 < 1 && !Eflg && flg >= num && !eflg ){
+		eflg	= GetAreaCommonData( "System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj[0], alpha1*255 );
+		ObjRender_SetAlpha(obj[1], alpha1*255 );
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( !Eflg && !eflg ){
+		slt		= GetAreaCommonData( "System", "select", 0 );
+		slt2	= GetAreaCommonData( "System", "select2", 0 );
+		eflg	= GetAreaCommonData( "System", "title_end", false );
+		
+		if( stc != slt ){ break; }
+		
+		yield;
+	}
+	while( alpha1 < 1 && Eflg && flg >= num && !eflg ){
+		eflg	= GetAreaCommonData( "System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetAlpha( obj[0], 255 - alpha1*255 );
+		ObjRender_SetAlpha( obj[1], 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	ascent( i in 0..length(obj) ){
+		Obj_Delete( obj[i] );
+	}
+}
+
+
+
+
+//　氷クリスタルっぽいもの
+task CreateIceCrystal( pos, speed, angle, scale, kill, alpha, rgb_array, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let r_type	= 2;
+	let count	= 0;
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "../img/effect/ice01b.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(obj, scale, scale, 0 );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, -32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, -32, 32, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 32, 32, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 64 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(obj, 2, 64, 64 );
+	ObjPrim_SetVertexUVT(obj, 3, 64, 128 );
+	
+	while( count < kill ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0], rgb_array[w][1], rgb_array[w][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(1,2)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				ObjPrim_SetVertexColor(obj, i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*alpha );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0]/1.4, rgb_array[w][1]/1.4, rgb_array[w][2]/1.4 );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(2,4)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　雪の結晶
+task CreateSnowflake(CallID,pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.4,1);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, csd ~ "../img/effect/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 33 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && frame < kill && !eflg ){
+		eflg = GetAreaCommonData("System", "title_end", false );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 && !eflg ){
+		eflg = GetAreaCommonData("System", "title_end", false );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

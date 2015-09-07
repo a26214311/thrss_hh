@@ -1,0 +1,160 @@
+
+//　連携削除ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+task SetDrawTimer(ID,delay,effect,type,fade_in){
+	let id		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let uv			= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i			= 0;
+	let r			= 255;
+	let g			= 255;
+	let b			= 255;
+	let sca			= 0.73;
+	let move1		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let count		= 0;
+	let timer_se	= [GetCurrentScriptDirectory ~ "../se/timer1.ogg",
+						GetCurrentScriptDirectory ~ "../se/timer2.ogg"];
+						
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	loop( length(id) ){
+		ObjPrim_SetTexture(id[i], path_front01 );
+		Obj_SetRenderPriorityI(id[i], 72 );
+		ObjRender_SetBlendType(id[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(id[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(id[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(id[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(id[i]);
+		ObjRender_SetColor(id[i], 32, 255, 255 );
+		ObjRender_SetAlpha(id[i], alpha1*255 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetScaleXYZ(id[4], sca-0.1, sca-0.1, 0 );
+	ObjRender_SetScaleXYZ(id[5], sca-0.1, sca-0.1, 0 );
+	
+	ObjSound_SetVolumeRate( se, se_vol );
+	ObjSound_SetLoopEnable( se, false );
+	ObjSound_SetSoundDivision( se, SOUND_SE );
+	
+	while( !Obj_IsDeleted(ID) ){
+		let gogx		= ObjRender_GetX(id[0]);
+		let gogy		= ObjRender_GetY(id[0]);
+		let GetTimerF	= ObjEnemyBossScene_GetInfo( GetEnemyBossSceneObjectID(), INFO_TIMERF );
+		let GetTimer	= GetTimerF / 60;
+		let fps1		= truncate(GetTimer%10);
+		let fps2		= truncate((GetTimer%100)/10);
+		let fps3		= truncate((GetTimer%1000)/100);
+		let fps4		= truncate((GetTimer*100%100)/10);
+		let fps5		= truncate((GetTimer*1000%100)/10);
+		
+		alternative( GetTimer )
+		case( 1, 2, 3, 4, 5 ){ 
+			ObjSound_Load( se, timer_se[1] );
+			ObjSound_SetVolumeRate( se, se_vol );
+			ObjSound_Play( se );
+		}
+		case( 6, 7, 8, 9, 10 ){ 
+			ObjSound_Load( se, timer_se[0] );
+			ObjSound_SetVolumeRate( se, se_vol );
+			ObjSound_Play( se );
+		}
+		
+		if( effect ){
+			move2 = 1 * sin( moveB );
+		}
+		else{
+			move2 = 1;
+		}
+		
+		if( fade_in ){
+			alpha1 = 1 * sin( alphaA );
+		}
+		else{
+			alpha1 = 1;
+		}
+		
+		if( type == "BeginSpellCard" ){
+			ObjRender_SetPosition(id[0], CenX, MinY+8 + move2*32, 0 );	//　一番左の数値座標
+		}
+		else if( type == "EndSpellCard" ){
+			ObjRender_SetPosition(id[0], CenX, MinY+8 + 32 - move2*32, 0 );	//　一番左の数値座標
+		}
+		
+		ObjRender_SetPosition(id[1], gogx-10, gogy, 0 );
+		ObjRender_SetPosition(id[2], gogx-20, gogy, 0 );
+		ObjRender_SetPosition(id[3], gogx+8, gogy+5, 0 );
+		ObjRender_SetPosition(id[4], gogx+15, gogy+1, 0 );
+		ObjRender_SetPosition(id[5], gogx+23, gogy+1, 0 );
+		
+		ObjSprite2D_SetSourceRect(id[0], 0 + 24*uv[fps1], 488, 24 + 24*uv[fps1], 512 );
+		ObjSprite2D_SetSourceRect(id[1], 0 + 24*uv[fps2], 488, 24 + 24*uv[fps2], 512 );
+		ObjSprite2D_SetSourceRect(id[2], 0 + 24*uv[fps3], 488, 24 + 24*uv[fps3], 512 );
+		ObjSprite2D_SetSourceRect(id[3], 0 + 24*uv[13], 488, 24 + 24*uv[13], 512 );
+		ObjSprite2D_SetSourceRect(id[4], 0 + 24*uv[fps4], 488, 24 + 24*uv[fps4], 512 );
+		ObjSprite2D_SetSourceRect(id[5], 0 + 24*uv[fps5], 488, 24 + 24*uv[fps5], 512 );
+		
+		loop( length(id) ){
+			ObjRender_SetAlpha(id[i], alpha1*255 );
+			i++;
+		}
+		i = 0;
+		
+		if( GetTimer < 10 ){
+			ObjRender_SetAlpha(id[1], 0 );
+			ObjRender_SetAlpha(id[2], 0 );
+			
+			ObjRender_SetScaleXYZ(id[0], sca + 0.1 * sin(move1), sca + 0.1 * sin(move1), 0 );
+			ObjRender_SetScaleXYZ(id[3], sca + 0.1 * sin(move1), sca + 0.1 * sin(move1), 0 );
+			ObjRender_SetScaleXYZ(id[4], sca-0.1 + 0.1 * sin(move1), sca-0.1 + 0.1 * sin(move1), 0 );
+			ObjRender_SetScaleXYZ(id[5], sca-0.1 + 0.1 * sin(move1), sca-0.1 + 0.1 * sin(move1), 0 );
+			
+			move1 += 32;
+			
+			r = 255;
+			g = 64;
+			b = 64;
+		}
+		else if( GetTimer < 100 ){
+			ObjRender_SetAlpha(id[1], alpha1*255 );
+			ObjRender_SetAlpha(id[2], 0 );
+			r = 255;
+			g = 255;
+			b = 255;
+		}
+		else{
+			ObjRender_SetAlpha(id[1], alpha1*255 );
+			ObjRender_SetAlpha(id[2], alpha1*255 );
+			r = 200;
+			g = 200;
+			b = 255;
+		}
+		
+		loop( length(id) ){
+			ObjRender_SetColor(id[i], r, g, b );
+			i++;
+		}
+		i = 0;
+		
+		if( move2 < 1 && count > delay ){ moveB += 2; }
+		if( alpha1 < 1 && count > delay ){ alphaA += 2; }
+		count++;
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	Obj_Delete( se );
+}

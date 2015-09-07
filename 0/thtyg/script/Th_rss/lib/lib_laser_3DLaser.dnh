@@ -1,0 +1,379 @@
+
+
+//　3Dレーザー
+//　太さは20↑を指定するといいよ
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　3Dレーザー　ID返るので状況に応じて動きセット
+function Create3DLaser01( CallID, gpos, angle, length_, width, hsv_array2, delay, kill ){
+	let obj		= ObjShot_Create(OBJ_STRAIGHT_LASER);
+	
+	ObjMove_SetPosition(obj, gpos[0], gpos[1] );
+	ObjStLaser_SetSource(obj, false );
+	ObjStLaser_SetAngle(obj, angle );
+	ObjLaser_SetRenderWidth(obj, 0 );
+	ObjLaser_SetLength(obj, length_ );
+	ObjShot_SetSpellResist(obj, true );
+	ObjShot_SetDelay(obj, delay );
+	ObjShot_SetAutoDelete(obj, false );
+	ObjShot_SetGraphic(obj, ADD_BGW_WHITE_03 );
+	Obj_SetVisible(obj, false );
+	ObjShot_Regist(obj);
+	
+	Create3DLaser01_LaserMain( CallID, width, hsv_array2, delay, kill, obj );
+	Create3DLaser01_LaserLine( CallID, width, hsv_array2, delay, kill, obj );
+	
+	return obj;
+}
+
+//　発射魔法陣的なやつ
+task Create3DLaser01_LaserMain( CallID, width, color, delay, kill, ID ){
+	let obj			= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let timer		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= [0,0];
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	
+	let gpos			= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let gang			= ObjStLaser_GetAngle(ID);
+	let SET_POLYGON		= 16;
+	let SET_DISTANCE	= [
+		[ width+20, width+40 ],
+		[ width-10, width+10 ],
+	];
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 0;
+	
+	ascent( j in 0..2 ){
+		ObjPrim_SetTexture(obj[j], GetCurrentScriptDirectory() ~ "./../img/stg/stg_t01b.png" );
+		Obj_SetRenderPriorityI(obj[j], 32 );
+		ObjRender_SetBlendType(obj[j], BLEND_ADD_ARGB );
+		ObjPrim_SetPrimitiveType(obj[j], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(obj[j], ten );
+		ObjSprite3D_SetBillboard(obj[j], true );
+	}
+	
+	while( timer < kill && !Obj_IsDeleted(CallID) ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		gang	= ObjStLaser_GetAngle(ID) - 90;
+		move1	= 1 * sin( moveA );
+		
+		let rgb_array = Create3DLaser01_HSVtoRGB( color[0][0], color[0][1], color[0][2] );
+		
+		ObjRender_SetPosition(obj[0], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[1], gpos[0], gpos[1], 0 );
+		
+		loop( ten/2 ){
+			ascent( j in 0..2 ){
+				ObjPrim_SetVertexPosition(obj[j], i, move1*SET_DISTANCE[j][0] * cos(pc+ang[j]), -32, move1*SET_DISTANCE[j][0] * sin(pc+ang[j]) );
+				ObjPrim_SetVertexPosition(obj[j], i2, move1*SET_DISTANCE[j][1] * cos(pc+ang[j]), 0, move1*SET_DISTANCE[j][1] * sin(pc+ang[j]) );
+				ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 );
+				ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 32 );
+				ObjPrim_SetVertexAlpha(obj[j], i, 0 );
+				ObjPrim_SetVertexAlpha(obj[j], i2, move1*255 );
+				ObjPrim_SetVertexColor(obj[j], i, 255, 255, 255 );
+				ObjPrim_SetVertexColor(obj[j], i2, rgb_array[0], rgb_array[1], rgb_array[2] );
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 64;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ObjRender_SetAngleXYZ(obj[0], 48*cos(gang), 48*sin(gang), gang );
+		ObjRender_SetAngleXYZ(obj[1], 48*cos(gang), 48*sin(gang), gang );
+		
+		ang[0] = move1*-180 - timer/3;
+		ang[1] = move1*180 + timer/3;
+		
+		timer++;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	while( move1 > 0 && !Obj_IsDeleted(CallID) ){
+		move1	= 1 * sin( moveA );
+		
+		let rgb_array = Create3DLaser01_HSVtoRGB( color[0][0], color[0][1], color[0][2] );
+		
+		ObjRender_SetPosition(obj[0], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[1], gpos[0], gpos[1], 0 );
+		
+		loop( ten/2 ){
+			ascent( j in 0..2 ){
+				ObjPrim_SetVertexPosition(obj[j], i, move1*SET_DISTANCE[j][0] * cos(pc+ang[j]), -32, move1*SET_DISTANCE[j][0] * sin(pc+ang[j]) );
+				ObjPrim_SetVertexPosition(obj[j], i2, move1*SET_DISTANCE[j][1] * cos(pc+ang[j]), 0, move1*SET_DISTANCE[j][1] * sin(pc+ang[j]) );
+				ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 );
+				ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 32 );
+				ObjPrim_SetVertexAlpha(obj[j], i, 0 );
+				ObjPrim_SetVertexAlpha(obj[j], i2, move1*255 );
+				ObjPrim_SetVertexColor(obj[j], i, 255, 255, 255 );
+				ObjPrim_SetVertexColor(obj[j], i2, rgb_array[0], rgb_array[1], rgb_array[2] );
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 64;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ObjRender_SetAngleXYZ(obj[0], 48*cos(gang), 48*sin(gang), gang );
+		ObjRender_SetAngleXYZ(obj[1], 48*cos(gang), 48*sin(gang), gang );
+		
+		ang[0] = move1*-180 - timer/3;
+		ang[1] = move1*180 + timer/3;
+		
+		timer++;
+		moveA += 1;
+		
+		yield;
+	}
+	ascent( i in 0..( length(obj) ) ){
+		Obj_Delete(obj[i]);
+	}
+}
+
+//　レーザー描画本体
+task Create3DLaser01_LaserLine( CallID, width, color, delay, kill, ID ){
+	let obj			= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let timer		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let ang			= [180,180,180,180];
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	
+	let path = [
+		GetCurrentScriptDirectory() ~ "./../img/effect/laser_3d_01a.png",
+		GetCurrentScriptDirectory() ~ "./../img/effect/laser_3d_01a.png",
+		GetCurrentScriptDirectory() ~ "./../img/effect/laser_3d_01b.png",
+		GetCurrentScriptDirectory() ~ "./../img/effect/laser_3d_01b.png",
+	];
+	let lay = [ 33, 33, 41, 41 ];
+	
+	let gpos			= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let gang			= ObjStLaser_GetAngle(ID);
+	let glen			= ObjLaser_GetLength(ID);
+	let SET_POLYGON		= 4;
+	let SET_DISTANCE	= [
+		[ width-20, width-8 ],
+		[ width-8, width+20 ],
+		[ width-20, width-8 ],
+		[ width-8, width+24 ],
+	];
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 0;
+	
+	ascent( j in 0..( length(obj) ) ){
+		ObjPrim_SetTexture(obj[j], path[j] );
+		Obj_SetRenderPriorityI(obj[j], lay[j] );
+		ObjRender_SetBlendType(obj[j], BLEND_ALPHA );
+		ObjPrim_SetPrimitiveType(obj[j], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(obj[j], ten );
+		ObjSprite3D_SetBillboard(obj[j], true );
+	}
+	
+	while( timer < kill && !Obj_IsDeleted(CallID) ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		gang	= ObjStLaser_GetAngle(ID) - 90;
+		glen	= ObjLaser_GetLength(ID);
+		move1	= 1 * sin( moveA );
+		move2	= 1 * sin( moveB );
+		
+		let rgb_array = Create3DLaser01_HSVtoRGB( color[1][0], color[1][1], color[1][2] );
+		
+		ObjRender_SetPosition(obj[0], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[1], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[2], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[3], gpos[0], gpos[1], 0 );
+		
+		ObjLaser_SetIntersectionWidth(ID, move1*width );
+		
+		loop( ten/2 ){
+			ascent( j in 0..( length(obj) ) ){
+				let sdis = [
+					[ (move1*SET_DISTANCE[j][0]+2) * cos(pc+ang[j]), (move1*SET_DISTANCE[j][0]+2) * sin(pc+ang[j]) ],
+					[ (move1*SET_DISTANCE[j][1]+2) * cos(pc+ang[j]), (move1*SET_DISTANCE[j][1]+2) * sin(pc+ang[j]) ],
+					[ (move1*SET_DISTANCE[j][0]+2) * cos(pc+ang[j]), (move1*SET_DISTANCE[j][0]+2) * sin(pc+ang[j]) ],
+					[ (move1*SET_DISTANCE[j][1]+2) * cos(pc+ang[j]), (move1*SET_DISTANCE[j][1]+2) * sin(pc+ang[j]) ],
+				];
+				if( j == 0 || j == 2 ){
+					ObjPrim_SetVertexPosition(obj[j], i, sdis[0][0], -32 - j*32, sdis[0][1] );
+					ObjPrim_SetVertexPosition(obj[j], i2, sdis[1][0], move2*64, sdis[1][1] );
+					ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 - timer*64 );
+					ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 512 - timer*64 );
+					ObjPrim_SetVertexAlpha(obj[j], i, 0 );
+					ObjPrim_SetVertexAlpha(obj[j], i2, 255 );
+				}
+				else{
+					ObjPrim_SetVertexPosition(obj[j], i, sdis[0][0], move2*64, sdis[0][0] );
+					ObjPrim_SetVertexPosition(obj[j], i2, sdis[1][0], move2*glen, sdis[1][1] );
+					ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 - timer*64 );
+					ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 1024 - timer*64 );
+					ObjPrim_SetVertexAlpha(obj[j], i, 255 );
+					ObjPrim_SetVertexAlpha(obj[j], i2, 255 );
+				}
+				if( j == 0 || j == 1 ){
+					ObjPrim_SetVertexColor(obj[j], i, rgb_array[0], rgb_array[1], rgb_array[2] );
+					ObjPrim_SetVertexColor(obj[j], i2, rgb_array[0], rgb_array[1], rgb_array[2] );
+				}
+				else{
+					ObjPrim_SetVertexColor(obj[j], i, 255, 255, 255 );
+					ObjPrim_SetVertexColor(obj[j], i2, 255, 255, 255 );
+				}
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 512/(SET_POLYGON/2);
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ObjRender_SetAngleXYZ(obj[0], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[1], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[2], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[3], 0, 0, gang );
+		
+		timer++;
+		if( move1 < 1 && timer > delay ){ moveA += 2; }
+		if( move2 < 1 ){ moveB += 2; }
+		
+		yield;
+	}
+	while( move1 > 0 && !Obj_IsDeleted(CallID) ){
+		move1	= 1 * sin( moveA );
+		
+		let rgb_array = Create3DLaser01_HSVtoRGB( color[1][0], color[1][1], color[1][2] );
+		
+		ObjRender_SetPosition(obj[0], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[1], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[2], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(obj[3], gpos[0], gpos[1], 0 );
+		
+		ObjLaser_SetIntersectionWidth(ID, move1*width );
+		
+		loop( ten/2 ){
+			ascent( j in 0..( length(obj) ) ){
+				let sdis = [
+					[ move1*SET_DISTANCE[j][0] * cos(pc+ang[j]), move1*SET_DISTANCE[j][0] * sin(pc+ang[j]) ],
+					[ move1*SET_DISTANCE[j][1] * cos(pc+ang[j]), move1*SET_DISTANCE[j][1] * sin(pc+ang[j]) ],
+					[ move1*SET_DISTANCE[j][0] * cos(pc+ang[j]), move1*SET_DISTANCE[j][0] * sin(pc+ang[j]) ],
+					[ move1*SET_DISTANCE[j][1] * cos(pc+ang[j]), move1*SET_DISTANCE[j][1] * sin(pc+ang[j]) ],
+				];
+				if( j == 0 || j == 2 ){
+					ObjPrim_SetVertexPosition(obj[j], i, sdis[0][0], -32 - j*32, sdis[0][1] );
+					ObjPrim_SetVertexPosition(obj[j], i2, sdis[1][0], move2*64, sdis[1][1] );
+					ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 - timer*64 );
+					ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 512 - timer*64 );
+					ObjPrim_SetVertexAlpha(obj[j], i, 0 );
+					ObjPrim_SetVertexAlpha(obj[j], i2, 255 );
+				}
+				else{
+					ObjPrim_SetVertexPosition(obj[j], i, sdis[0][0], move2*64, sdis[0][0] );
+					ObjPrim_SetVertexPosition(obj[j], i2, sdis[1][0], move2*glen, sdis[1][1] );
+					ObjPrim_SetVertexUVT(obj[j], i, 0 + _rect, 0 - timer*64 );
+					ObjPrim_SetVertexUVT(obj[j], i2, 0 + _rect, 1024 - timer*64 );
+					ObjPrim_SetVertexAlpha(obj[j], i, 255 );
+					ObjPrim_SetVertexAlpha(obj[j], i2, 255 );
+				}
+				if( j == 0 || j == 1 ){
+					ObjPrim_SetVertexColor(obj[j], i, rgb_array[0], rgb_array[1], rgb_array[2] );
+					ObjPrim_SetVertexColor(obj[j], i2, rgb_array[0], rgb_array[1], rgb_array[2] );
+				}
+				else{
+					ObjPrim_SetVertexColor(obj[j], i, 255, 255, 255 );
+					ObjPrim_SetVertexColor(obj[j], i2, 255, 255, 255 );
+				}
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 512/(SET_POLYGON/2);
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		ObjRender_SetAngleXYZ(obj[0], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[1], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[2], 0, 0, gang );
+		ObjRender_SetAngleXYZ(obj[3], 0, 0, gang );
+		
+		timer++;
+		moveA += 1;
+		
+		yield;
+	}
+	ascent( i in 0..( length(obj) ) ){
+		Obj_Delete(obj[i]);
+	}
+	Obj_Delete(ID);
+}
+
+
+//　h:色相 多分255位で一周してる
+//　s:彩度 上限 255
+//　v:明度 上限 255
+//　要素数 3 の配列で RGB が返る
+function Create3DLaser01_HSVtoRGB( h, s, v ){
+	let f;
+	let i;
+	let p;
+	let q;
+	let t;
+	let rgb = [0,0,0];
+	
+	i = floor(h / 60) % 6;
+	f = (h / 60) - floor(h / 60);
+	p = round( v * (1 - (s / 255) ) );
+	q = round( v * (1 - (s / 255) * f) );
+	t = round( v * (1 - (s / 255) * (1 - f) ) );
+	
+	alternative(i)
+	case(0){ rgb[0] = v; rgb[1] = t; rgb[2] = p; }
+	case(1){ rgb[0] = q; rgb[1] = v; rgb[2] = p; }
+	case(2){ rgb[0] = p; rgb[1] = v; rgb[2] = t; }
+	case(3){ rgb[0] = p; rgb[1] = q; rgb[2] = v; }
+	case(4){ rgb[0] = t; rgb[1] = p; rgb[2] = v; }
+	case(5){ rgb[0] = v; rgb[1] = p; rgb[2] = q; }
+	
+	return rgb;
+}

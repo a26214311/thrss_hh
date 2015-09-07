@@ -1,0 +1,197 @@
+
+/*このファイルにある関数
+
+	//　残機表示
+	RemainingPlayer(pos,lay);
+	
+	//　ボム表示
+	RemainingBomb(pos,lay);
+	
+	座標調整とレイヤー指定
+*/
+
+task Remaining_Player(pos,lay){
+	let sef			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5];
+	let i			= 0;
+	let gpos		= [ObjRender_GetX(sef[0]),ObjRender_GetY(sef[0])];
+	let swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	//　画像スケール
+	let sca			= 1;
+	
+	ObjRender_SetPosition(sef[0], MaxX+108+32 + pos[0], CenY-129+16 + pos[1], 0 );
+	loop( length(sef) - 1 ){
+		ObjRender_SetPosition(sef[1+i], gpos[0] + 13 * (1+i), gpos[1], 0 );
+		i++;
+	}
+	i=0;
+	
+	loop( length(sef) ){
+		ObjPrim_SetTexture(sef[i], path_front01 );
+		Obj_SetRenderPriorityI(sef[i], lay );
+		ObjRender_SetBlendType(sef[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(sef[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(sef[i], 384 + 16*uv[0], 0, 400 + 16*uv[0], 16 );
+		ObjSprite2D_SetDestCenter(sef[i]);
+		i++;
+	}
+	i=0;
+	
+	while( !swb ){
+		let frgmt	= GetAreaCommonData("Trance", "player_fragment", 0 );
+		let nel		= GetAreaCommonData("Trance", "next_life", 99 );
+		let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		gpos		= [ObjRender_GetX(sef[0]),ObjRender_GetY(sef[0])];
+		
+		//　かけら必要数 / (かけら表示パターン数-1)
+		let fragmentCT	= ( length(uv) - 1 ) / nel;
+		let fragment	= truncate( frgmt * fragmentCT );
+		
+		if( fragment >= 5 ){ fragment = 4; }
+		
+		ObjRender_SetPosition(sef[0], MaxX+108+32 + pos[0], CenY-129+16 + pos[1], 0 );
+		loop( length(sef) - 1 ){
+			ObjRender_SetPosition(sef[1+i], gpos[0] + 13 * (1+i), gpos[1], 0 );
+			i++;
+		}
+		i=0;
+		
+		//　ゲームオーバー時は配列の添え字が-1になる（多分）ので注意
+		if( GetPlayerLife() > 0 ){
+			if( GetPlayerLife() < 8 ){
+				//　残機表示
+				loop( GetPlayerLife() ){
+					ObjSprite2D_SetSourceRect(sef[ i ], 384 + 16*uv[5], 0, 400 + 16*uv[5], 16 );
+					i++;
+				}
+				i = 0;
+				
+				//　かけらに該当する残機
+				ObjSprite2D_SetSourceRect(sef[ GetPlayerLife() ], 384 + 16*uv[ fragment ], 0, 400 + 16*uv[ fragment ], 16 );
+				
+				//　残機なし表示
+				loop( length(sef) - GetPlayerLife() - 1 ){
+					ObjSprite2D_SetSourceRect(sef[ GetPlayerLife() + 1 + i ], 384 + 16*uv[0], 0, 400 + 16*uv[0], 16 );
+					i++;
+				}
+				i = 0;
+			}
+			else{
+				//　逆に持てる量をオーバーした時は、8個全部表示して放置
+				//　残機表示
+				loop( 8 ){
+					ObjSprite2D_SetSourceRect(sef[ i ], 384 + 16*uv[5], 0, 400 + 16*uv[5], 16 );
+					i++;
+				}
+				i = 0;
+			}
+		}
+		else{
+			//　かけらに該当する残機
+			ObjSprite2D_SetSourceRect(sef[ 0 ], 384 + 16*uv[ fragment ], 0, 400 + 16*uv[ fragment ], 16 );
+			
+			//　かけら以外表示する必要ない筈なので、残りを残機なし表示
+			loop( length(sef) - 1 ){
+				ObjSprite2D_SetSourceRect(sef[ 1 + i ], 384 + 16*uv[0], 0, 400 + 16*uv[0], 16 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		yield;
+	}
+}
+
+task Remaining_Bomb(pos,lay){
+	let sef			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5];
+	let i			= 0;
+	let gpos		= [ObjRender_GetX(sef[0]),ObjRender_GetY(sef[0])];
+	let swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	//　画像スケール
+	let sca			= 1;
+	
+	ObjRender_SetPosition(sef[0], MaxX+108+32 + pos[0], CenY-129+53 + pos[1], 0 );
+	loop( length(sef) - 1 ){
+		ObjRender_SetPosition(sef[1+i], gpos[0] + 13 * (1+i), gpos[1], 0 );
+		i++;
+	}
+	i=0;
+	
+	loop( length(sef) ){
+		ObjPrim_SetTexture(sef[i], path_front01 );
+		Obj_SetRenderPriorityI(sef[i], lay );
+		ObjRender_SetBlendType(sef[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(sef[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(sef[i], 384 + 16*uv[0], 16, 400 + 16*uv[0], 32 );
+		ObjSprite2D_SetDestCenter(sef[i]);
+		i++;
+	}
+	i=0;
+	
+	while( !swb ){
+		let frgmt	= GetAreaCommonData("Trance", "bomb_fragment", 0 );
+		let neb		= GetAreaCommonData("Trance", "next_bomb", 99 );
+		let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+		gpos		= [ObjRender_GetX(sef[0]),ObjRender_GetY(sef[0])];
+		
+		//　かけら必要数 / (かけら表示パターン数-1)
+		let fragmentCT	= ( length(uv) - 1 ) / neb;
+		let fragment	= truncate( frgmt * fragmentCT );
+		
+		if( fragment >= 5 ){ fragment = 4; }
+		
+		ObjRender_SetPosition(sef[0], MaxX+108+32 + pos[0], CenY-129+53 + pos[1], 0 );
+		loop( length(sef) - 1 ){
+			ObjRender_SetPosition(sef[1+i], gpos[0] + 13 * (1+i), gpos[1], 0 );
+			i++;
+		}
+		i=0;
+		
+		if( GetPlayerSpell() < 8 ){
+			//　ボム表示
+			loop( GetPlayerSpell() ){
+				ObjSprite2D_SetSourceRect(sef[ i ], 384 + 16*uv[5], 16, 400 + 16*uv[5], 32 );
+				i++;
+			}
+			i = 0;
+			
+			//　かけらに該当する残機
+			ObjSprite2D_SetSourceRect(sef[ GetPlayerSpell() ], 384 + 16*uv[ fragment ], 16, 400 + 16*uv[ fragment ], 32 );
+			
+			//　ボムなし表示
+			loop( length(sef) - GetPlayerSpell() - 1 ){
+				ObjSprite2D_SetSourceRect(sef[ GetPlayerSpell() + 1 + i ], 384 + 16*uv[0], 16, 400 + 16*uv[0], 32 );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			//　持てる量をオーバーした時は、8個全部表示して放置
+			//　ボム表示
+			loop( 8 ){
+				ObjSprite2D_SetSourceRect(sef[ i ], 384 + 16*uv[5], 16, 400 + 16*uv[5], 32 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		yield;
+	}
+}

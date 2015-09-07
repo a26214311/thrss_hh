@@ -1,0 +1,448 @@
+
+
+	//　聖徳レーザー用変数
+	let SyotokuLaserFrag = false;
+
+
+task PlayerOption(){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let ID_sub	= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let path	= csd ~ "./img/eff/option01.png";
+	let i		= 0;
+	let sca		= 0.46;
+	let sca1	= 0;
+	let scaA	= 0;
+	let cc		= 0;
+	let dis_d	= 0;
+	let disD	= [32,32];
+	let dis		= [8,24];
+	let dis1	= 0;
+	let disA	= 0;
+	let slowF	= false;
+	let frame	= 0;
+	let count	= 0;
+	let shotF	= false;
+	let animc	= 0;
+	let anim1	= 0;
+	
+	let plang	= 0;
+	let posD	= [GetPlayerX + dis_d * cos( plang ), GetPlayerY + dis_d * sin( plang ) ];
+	let pos		= [
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 0 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 0 ) ],
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 180 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 180 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( -45 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( -45 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( 225 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( 225 ) ],
+					];
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[i][0], pos[i][1], 0 );
+		ObjPrim_SetTexture(ID[i], path );
+		Obj_SetRenderPriorityI(ID[i], 31 );
+		ObjRender_SetBlendType(ID[i], BLEND_SUBTRACT );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, rand(0,360) );
+		ObjRender_SetScaleXYZ(ID[i], sca1, sca1, 0 );
+		ObjRender_SetAlpha(ID[i], 255 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 96, 32, 128 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	loop( length(ID_sub) ){
+		ObjRender_SetPosition(ID_sub[i], pos[i][0], pos[i][1], 0 );
+		ObjPrim_SetTexture(ID_sub[i], path );
+		Obj_SetRenderPriorityI(ID_sub[i], 31 );
+		ObjRender_SetBlendType(ID_sub[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(ID_sub[i], 0, 0, rand(0,360) );
+		ObjRender_SetScaleXYZ(ID_sub[i], sca1, sca1, 0 );
+		ObjSprite2D_SetSourceRect(ID_sub[i], 0, 64, 32, 96 );
+		ObjSprite2D_SetDestCenter(ID_sub[i]);
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted( GetPlayerObjectID ) ){
+		posD	= [GetPlayerX + dis_d * cos( plang ), GetPlayerY + dis_d * sin( plang ) ];
+		pos		= [
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 0 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 0 ) ],
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 180 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 180 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( 32 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( 32 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( 148 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( 148 ) ],
+					];
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], pos[i][0], pos[i][1], 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca1*sca*1.4 + 0.04 * sin(cc*16), sca1*sca*1.4 + 0.04 * sin(cc*16), 0 );
+			ObjRender_SetPosition(ID_sub[i], pos[i][0], pos[i][1], 0 );
+			ObjRender_SetScaleXYZ(ID_sub[i], sca1*sca + 0.04 * sin(cc*16), sca1*sca + 0.04 * sin(cc*16), 0 );
+			
+			if( cc > 0 && cc%6 == 0 ){
+				ObjRender_SetAngleXYZ(ID[i], 0, 0, rand(0,360) );
+				ObjRender_SetAngleXYZ(ID_sub[i], 0, 0, rand(0,360) );
+			}
+			
+			if( cc%8 == 0 && GetPlayerState == STATE_NORMAL ){
+				Option_Eff( ID[i], path );
+			}
+			
+			//　テクスチャ不可視化
+			if( GetPlayerState == STATE_HIT || GetPlayerState == STATE_DOWN || GetPlayerState == STATE_END ){
+				ObjRender_SetColor(ID[i], 0, 0, 0 );
+				ObjRender_SetAlpha(ID_sub[i], 0 );
+			}
+			else{
+				ObjRender_SetColor(ID[i], 255, 255, 255 );
+				ObjRender_SetAlpha(ID_sub[i], 255 );
+			}
+			
+			i++;
+		}
+		i = 0;
+		
+		//　低速フラグ
+		if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ){ slowF = true; }
+		
+		//　移動中ならオプション遅れて追従
+		if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ||
+			GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ||
+			GetVirtualKeyState(VK_UP) == KEY_HOLD ||
+			GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+			plang	= GetKeyAngle();
+			if( dis_d < 4 ){
+				dis_d += 0.5;
+			}
+		}
+		else if( dis_d > 0 ){
+			dis_d -= 0.5;
+		}
+		
+		//　ショットフラグ
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD ){
+			shotF = true;
+			count = 0;
+		}
+		else if( shotF ){
+			if( count > 32 ){
+				shotF = false;
+			}
+			count++;
+		}
+		
+		//------------------------------------------------------------------------
+		//------------------------------------------------------------------------
+		//　聖徳レーザー
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD && !SyotokuLaserFrag ){
+			SyotokuLaserFrag = true;
+			PowerCharge();
+		}
+		//------------------------------------------------------------------------
+		//------------------------------------------------------------------------
+		
+		let gpos = [GetPlayerX(),GetPlayerY()];
+		let GetEnemy = GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+		let GetAngleToEnemy	= 270;
+		let GetOptToEnemy	= [270,270,270,270];
+		if( length(GetEnemy) > 0 ){
+			GetAngleToEnemy		= atan2( GetEnemy[0][1] - gpos[1], GetEnemy[0][0] - gpos[0] );
+			if( GetAngleToEnemy > -90-24 && GetAngleToEnemy < -90+24 ){
+			}
+			else{
+				GetAngleToEnemy = 270;
+			}
+			
+			loop( length(ID) ){
+				GetOptToEnemy[i]	= atan2( GetEnemy[0][1] - pos[i][1], GetEnemy[0][0] - pos[i][0] );
+				if( GetOptToEnemy[i] > -90-24 && GetOptToEnemy[i] < -90+24 ){
+				}
+				else{
+					GetOptToEnemy[i] = 270;
+				}
+				i++;
+			}
+			i = 0;
+		}
+		
+		//　ショットメイン
+		if( shotF && GetPlayerState == STATE_NORMAL && IsPermitPlayerShot() ){
+			
+			//--------エクストラショット----------------------------------------------------------------
+			if( frame > 0 && frame%2 == 0 && IsEvolution ){
+				let ex_a = 255;
+				let spd = 32;
+				CreatePLExtraShot01_FUTO([GetPlayerX-8,GetPlayerY-8], 32, 270, 0, 100, PL03_ShotPower_CommonEX, 1, 128 );
+				CreatePLExtraShot01_FUTO([GetPlayerX+8,GetPlayerY-8], 32, 270, 0, 100, PL03_ShotPower_CommonEX, 1, 128 );
+				HyperAura( [32,255,255] );
+				ObjSound_Play( Player_SE[0] );
+			}
+			//------------------------------------------------------------------------
+			
+			if( !slowF ){
+				//　高速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame %4 == 0 && !IsEvolution ){
+					CreatePLShot01_FUTO([GetPlayerX-8,GetPlayerY-8], 25, 270, 0, 100, PL03_ShotPower_Common, 1, [255,255,255] );
+					CreatePLShot01_FUTO([GetPlayerX+8,GetPlayerY-8], 25, 270, 0, 100, PL03_ShotPower_Common, 1, [255,255,255] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------布都通常っぽい矢----------------------------------------------------------------
+				if( frame > 0 && frame %8 == 0 && !IsEvolution ){
+					CreatePLShot02_FUTO([pos[0][0],pos[0][1]], 10, 270+8, -0.4, 0, PL03_ShotPower_Arrow01, 1, [255,255,255], 60 );
+					CreatePLShot02_FUTO([pos[1][0],pos[1][1]], 10, 270-8, -0.4, 0, PL03_ShotPower_Arrow01, 1, [255,255,255], 60 );
+					CreatePLShot02_FUTO([pos[2][0],pos[2][1]], 10, 270+16, -0.4, 0, PL03_ShotPower_Arrow01, 1, [255,255,255], 60 );
+					CreatePLShot02_FUTO([pos[3][0],pos[3][1]], 10, 270-16, -0.4, 0, PL03_ShotPower_Arrow01, 1, [255,255,255], 60 );
+					ObjSound_Play( Player_SE[1] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------ガゴウジアロー----------------------------------------------------------------
+				if( frame > 0 && frame %4 == 0 && !IsEvolution ){
+					loop( length(ID) ){
+						CreatePLShot03_FUTO([pos[i][0],pos[i][1]], 30, 270, 1, 100, PL03_ShotPower_G_Arrow01, 1, [255,255,255] );
+						CreatePLShot03_FUTO([pos[i][0],pos[i][1]], 30, 270, 1, 100, PL03_ShotPower_G_Arrow01, 1, [255,255,255] );
+						i++;
+					}
+					i = 0;
+				}
+				//------------------------------------------------------------------------
+				
+			}
+			else{
+				//　低速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame %3 == 0 && !IsEvolution ){
+					CreatePLShot01_FUTO([GetPlayerX-8,GetPlayerY-8], 30, 270, 0, 100, PL03_ShotPower_Common, 1, [192,255,255] );
+					CreatePLShot01_FUTO([GetPlayerX+8,GetPlayerY-8], 30, 270, 0, 100, PL03_ShotPower_Common, 1, [192,255,255] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------布都通常っぽい矢----------------------------------------------------------------
+				if( frame > 0 && frame %8 == 0 && !IsEvolution ){
+					loop( length(ID) ){
+						CreatePLShot02_FUTO([pos[i][0],pos[i][1]], 10, 270, -0.4, 0, PL03_ShotPower_Arrow02, 1, [255,128,255], 30 );
+						i++;
+					}
+					i = 0;
+					ObjSound_Play( Player_SE[1] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------ガゴウジアロー----------------------------------------------------------------
+				if( frame > 0 && frame %4 == 0 && !IsEvolution ){
+					loop( length(ID) ){
+						CreatePLShot03_FUTO([pos[i][0],pos[i][1]], 30, GetOptToEnemy[i], 1, 100, PL03_ShotPower_G_Arrow02, 1, [255,255,255] );
+						CreatePLShot03_FUTO([pos[i][0],pos[i][1]], 30, GetAngleToEnemy, 1, 100, PL03_ShotPower_G_Arrow02, 1, [255,255,255] );
+						i++;
+					}
+					i = 0;
+				}
+				//------------------------------------------------------------------------
+				
+			}
+			frame++;
+		}
+		else{
+			frame = 0;
+		}
+		
+		cc += 2;
+		animc++;
+		if( animc > 0 && animc%3 == 0 ){
+			anim1++;
+			if( anim1 > 7 ){ anim1 = 0; }
+		}
+		if( sca1 < 1 ){ scaA += 2; }
+		sca1 = 1 * sin( scaA );
+		if( slowF ){
+			loop( length(ID_sub) ){
+				ObjSprite2D_SetSourceRect(ID_sub[i], 0 + 32*anim1, 64, 32 + 32*anim1, 96 );
+				i++;
+			}
+			i = 0;
+			if( dis1 > 0 ){ disA += 15; }
+			else{
+				slowF = false;
+				dis1 = 0;
+				disA = 0;
+			}
+			dis1 = 1 * sin(disA);
+		}
+		else{
+			loop( length(ID_sub) ){
+				ObjSprite2D_SetSourceRect(ID_sub[i], 0 + 32*anim1, 64, 32 + 32*anim1, 96 );
+				i++;
+			}
+			i = 0;
+			if( dis1 < 1 ){ disA += 15; }
+			dis1 = 1 * sin(disA);
+		}
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		Obj_Delete(ID_sub[i]);
+		i++;
+	}
+	i = 0;
+}
+
+
+//　移動方向で角度変化
+function GetKeyAngle(){
+	let frag	= [false,false,false,false];
+	let angle	= 0;
+	
+	if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ){
+		frag[0] = true;
+	}
+	if( GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ){
+		frag[1] = true;
+	}
+	if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+		frag[2] = true;
+	}
+	if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+		frag[3] = true;
+	}
+	
+	if( frag[0] ){
+		angle = 0;
+	}
+	if( frag[1] ){
+		angle = 180;
+	}
+	if( frag[2] ){
+		angle = 90;
+	}
+	if( frag[3] ){
+		angle = 270;
+	}
+	
+	if( frag[0] && frag[2] ){
+		angle = 45;
+	}
+	if( frag[0] && frag[3] ){
+		angle = 315;
+	}
+	if( frag[1] && frag[2] ){
+		angle = 135;
+	}
+	if( frag[1] && frag[3] ){
+		angle = 225;
+	}
+	
+	return angle;
+}
+
+
+task Option_Eff(_ID,path){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ObjRender_GetX(_ID),ObjRender_GetY(_ID)];
+	let i		= 0;
+	let sca		= 0.5;
+	let sca1	= 0;
+	let scaA	= 0;
+	let animc	= 0;
+	let anim1	= 0;
+	let hc		= rand( 0, 0.5 );
+	let len		= 0;
+	let angle	= 90;
+	
+	let _rect = 0;
+	if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ){
+		_rect = 4;
+	}
+	else{
+		_rect = 2;
+	}
+	
+	ObjRender_SetPosition( ID, gpos[0] + sca1*len * cos(angle), gpos[1] + sca1*len * sin(angle), 0 );
+	ObjPrim_SetTexture( ID, path );
+	Obj_SetRenderPriorityI( ID, 31 );
+	ObjRender_SetBlendType( ID, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ( ID, 0, 0, rand(0,360) );
+	ObjSprite2D_SetSourceRect( ID, 0 + _rect*32, 96, 32 + _rect*32, 128 );
+	ObjSprite2D_SetDestCenter( ID );
+	
+	
+	while( !Obj_IsDeleted( _ID ) && sca1 < 1 ){
+		
+		ObjRender_SetPosition( ID, gpos[0] + sca1*len * cos(angle), gpos[1] + sca1*len * sin(angle), 0 );
+		ObjRender_SetScaleXYZ( ID, sca1*(sca+hc), sca1*(sca+hc), 0 );
+		ObjRender_SetAlpha( ID, 255 - sca1*255 );
+		
+		if( sca1 < 1 ){ scaA += 5; }
+		sca1 = 1 * sin( scaA );
+		animc++;
+		if( animc > 0 && animc%2 == 0 ){
+			anim1++;
+			if( anim1 > 7 ){ anim1 = 0; }
+		}
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+task SetSyotokuLaser(level,long,damage){
+	if( level > 0 ){
+		//　初期の4本
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 48, 8, 512, 270-3, damage, [255,160,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 48, 8, 512, 270+3, damage, [255,160,32], long );
+		ObjSound_Play( Player_SE[8] );
+	}
+	if( level > 1 ){
+		//　追加の6本
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 64, 12, 512, 270-8, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 64, 12, 512, 270+8, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 64, 12, 512, 270-16, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 64, 12, 512, 270+16, damage, [255,128,32], long );
+	}
+	if( level > 2 ){
+		//　追加の7本
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 80, 16, 512, 270, damage, [255,255,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 80, 14, 512, 270-24, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 80, 14, 512, 270+24, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 80, 14, 512, 270-40, damage, [255,128,32], long );
+		CreatePLLaser01_FUTO(GetPlayerObjectID(), 80, 14, 512, 270+40, damage, [255,128,32], long );
+	}
+}
+
+task PowerCharge(){
+	let count	= 0;
+	let level	= 0;
+	let chargewt=[ 60, 150, 300 ];
+	
+	while( GetVirtualKeyState(VK_SHOT) != KEY_FREE && IsEvolution ){
+		
+		if( count > 0 && count%chargewt[ level%length( chargewt ) ] == 0 && level < 3 ){
+			level++;
+			if( level == 3 ){
+				ObjSound_Play( Player_SE[6] );
+				CreateWaveEffect( GetPlayerObjectID(), 6, [64,32,128], 255 );
+			}
+			ObjSound_Play( Player_SE[7] );
+			CreateWaveEffect( GetPlayerObjectID(), 5, [128,32,128], 255 );
+			CreateWaveEffect( GetPlayerObjectID(), 4, [128,128,32], 255 );
+		}
+		
+		count++;
+		
+		yield;
+	}
+	if( IsPermitPlayerShot() ){
+		SetSyotokuLaser( level, 90, PL03_ShotPower_EXTRA01[ level ] );
+	}
+	SyotokuLaserFrag = false;
+}

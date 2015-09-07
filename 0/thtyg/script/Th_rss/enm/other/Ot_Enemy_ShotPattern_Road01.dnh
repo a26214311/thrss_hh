@@ -1,0 +1,688 @@
+
+
+//　自機狙い N way 弾を放つ
+task Road01_ShotPattern00(objID,wait,shote){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 4;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= -0.1;
+	let mx		= 1.4;
+	let delay	= 16;
+	
+	let way		= 3;
+	let wide	= 15;
+
+	local{
+;
+	}
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+		wide = 0;
+		mx = 1.8;
+	}
+	case( "Normal" ){
+		way = 3;
+		wide = 5;
+		speed = 2.8;
+		mx	= 1.4;
+	}
+	case( "Hard" ){
+		way = 3;
+	}
+	case( "Lunatic" ){
+		way = 7;
+		wide = 160;
+		mx	= 4
+	}
+	case( "OverDrive" ){
+		way = 5;
+		wide = 72;
+		mx = 3.5;
+	}
+	
+	if( !Obj_IsDeleted(objID) && way > 0 ){
+		let ag = angle - wide / 2;
+		loop( way ){
+			let sht = CreateShotA2( pos[0], pos[1], speed, ag, acc, mx, shote, delay );
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			ag += wide / ( way - 1 );
+		}
+		ObjSound_Play( CreateShotSE[0] );
+	}
+}
+
+//　威圧鱗弾
+task Road01_ShotPattern01(objID,wait,shote,long){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let count	= 0;
+	let shot_f	= 0;
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= [-3,-2,-3];
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.1;
+	let mx		= 100;
+	let delay	= 16;
+	
+	let roundway= 6;
+	let way		= 3;
+	let wide	= 6;
+	let wideplus= 0;
+	
+	let move1	= 0;
+	let moveA	= 0;
+	
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		roundway = 1;
+		mx = 3;
+		
+	}
+	case( "Normal" ){
+		roundway = 3;
+		wide = 1;
+	}
+	case( "Hard" ){
+		roundway = 6;
+		way = 3;
+		wide = 12;
+		wideplus = 0.7;
+	}
+	case( "Lunatic" ){
+		acc = 0.1;
+		roundway = 6;
+		way = 5;
+		wide = 12;
+		speed = [-3,-1.5,-1,-1.5,-3];
+		wideplus = 1.35;
+	}
+	case( "OverDrive" ){
+		acc = 0.1;
+		roundway = 5;
+		way = 5;
+		wide = 24;
+		speed = [-3,-1.5,-1,-1.5,-3];
+		wideplus = 1.3;
+	}
+	
+	while( !Obj_IsDeleted(objID) && count < long ){
+		move1 = 1 * sin( moveA );
+		
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		if( count > 0 && count%(54-shot_f) == 0 ){
+			ascent( let i in 0..(roundway) ){
+				let spos = [
+					pos[0] + (64-move1*64) * cos( angle+i*(360/roundway) ),
+					pos[1] + (64-move1*64) * sin( angle+i*(360/roundway) ),
+				];
+				let ag = angle + 360 / roundway * i - wide / 2;
+				ascent( let j in 0..way ){
+					let sht = CreateShotA2( spos[0], spos[1], speed[j], ag, acc, mx, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					ag += wide / way;
+				}
+			}
+			ObjSound_Play( CreateShotSE[0] );
+			if( shot_f < 50 ){ shot_f += 10; }
+			wide += wideplus;
+		}
+		
+		if( move1 < 1 ){ moveA += 0.1; }
+		
+		count++;
+		
+		yield;
+	}
+}
+
+//　自機狙い N way 矢弾
+task Road01_ShotPattern02(objID,shote){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+
+
+	let speed	= 4;
+	let acc		= -0.1;
+	let mx		= 1.4;
+	let delay	= 8;
+	
+	let way		= 3;
+	let wide	= 16;
+	let lp		= 1;
+	let wt		= 5;
+	let swt		= 90;
+	local{
+
+	}
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+	}
+	case( "Normal" ){
+		way = 3;
+		wide = 300;
+	}
+	case( "Hard" ){
+		way = 3;
+		wide = 48;
+		lp = 2;
+		wt = 45;
+	}
+	case( "Lunatic" ){
+		way = 9;
+		wide = 15;
+		lp = 5;
+		wt = 18;
+	}
+	case( "OverDrive" ){
+		lp = 8;
+		way = 3;
+		wt = 12;
+		wide = 36;
+		mx = 2;
+	}
+	loop( swt ){ yield; }
+	if( way ){
+		loop( lp ){
+			if( !Obj_IsDeleted(objID) ){
+				let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+				let angle	= GetAngleToPlayer( objID );
+				let ag = angle - wide / 2;
+				loop( way ){
+					let sht = CreateShotA2( pos[0], pos[1], speed, ag, acc, mx, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					ag += wide / ( way - 1 );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			loop( wt ){ yield; }
+		}
+	}
+}
+
+//　射出後停滞弾
+task Road01_ShotPattern03(objID,wait,shote,long){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let count	= 0;
+	let shot_f	= 0;
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= [5,3.8,5];
+	let angle	= 90;
+	let acc		= -0.04;
+	let mx		= 1.5;
+	let delay	= 8;
+	
+	let way		= 5;
+	let wide	= 8;
+	
+	let move1	= 0;
+	let moveA	= 0;
+	
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 2;
+		speed = [3,2,3];
+	}
+	case( "Normal" ){
+		way = 3;
+		speed = [3,2,3];
+	}
+	case( "Hard" ){
+		way = 7;
+		wide = 15;
+	}
+	case( "Lunatic" ){
+		way = 7;
+		wide = 36;
+	}
+	case( "OverDrive" ){
+		way = 5;
+		wide = 36;
+	}
+	
+	while( !Obj_IsDeleted(objID) && count < long ){
+		move1 = 1 * sin( moveA );
+		
+		angle = 90+(360/way)/2 + 8 * sin( count*2 );
+		
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		if( count > 0 && count%(58-shot_f) == 0 ){
+			ascent( let i in 0..(way) ){
+				let spos = [
+					pos[0] - (64-move1*64) * cos( angle+i*(360/way) ),
+					pos[1] - (64-move1*64) * sin( angle+i*(360/way) ),
+				];
+				let ag = angle+i*(360/way) - wide / 2;
+				ascent( let j in 0..3 ){
+					let sht = CreateShotA2( spos[0], spos[1], speed[j], ag, acc, mx, shote[ j%2 ], delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					ag += wide / 2;
+				}
+			}
+			ObjSound_Play( CreateShotSE[0] );
+			if( shot_f < 50 ){ shot_f += 10; }
+		}
+		
+		if( move1 < 1 ){ moveA += 0.1; }
+		
+		count++;
+		
+		yield;
+	}
+}
+
+//　全方位 N way 弾
+task Road01_ShotPattern04(objID,wait,shote){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 4;
+	let angle	= round( GetAngleToPlayer( objID ) / 16 ) * 16;
+	let rd		= 0;
+	let acc		= -0.1;
+	let mx		= 1.4;
+	let delay	= 16;
+	
+	let way		= 7;
+	let lp		= 3;
+	let wt		= 30;
+
+	local{
+
+	}
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 5;
+		lp = 1;
+	}
+	case( "Normal" ){
+		way = 6;
+		lp = 2;
+		wt = 20;
+	}
+	case( "Hard" ){
+		way = 9;
+		lp = 9;
+		rd = 4;
+		wt = 10;
+	}
+	case( "Lunatic" ){
+		way = 9;
+		acc = -0.02;
+		lp = 9;
+		rd = 8;
+		wt = 10;
+	}
+	case( "OverDrive" ){
+		way = 7;
+		mx = 2;
+		lp = 4;
+		wt = 24;
+	}
+	
+	loop( lp ){
+		if( !Obj_IsDeleted(objID) ){
+			ascent( let i in 0..(way) ){
+				let ag = angle + i*(360/way) + round( rand( -rd, rd ) );
+				let sht = CreateShotA2( pos[0], pos[1], speed, ag, acc, mx, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			}
+			ObjSound_Play( CreateShotSE[1] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+//　チルノ
+task Road01_ShotPattern06(objID,wait,shote,long){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "Normal" );
+	
+	loop( wait ){ yield; }
+	
+	let cc		= 0;
+	let count	= 0;
+	let shot_f	= 0;
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= [5,4,5];
+	let angle	= 90;
+	let acc		= -0.04;
+	let mx		= 2;
+	let delay	= 18;
+	
+	let way		= 9;
+	
+	let move1	= 0;
+	let moveA	= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+	}
+	case( "Normal" ){
+		way = 5;
+	}
+	case( "Hard" ){
+		way = 8;
+	}
+	case( "Lunatic" ){
+		way = 5;
+	}
+	case( "OverDrive" ){
+		way = 4;
+	}
+	
+	while( !Obj_IsDeleted(objID) && count < long ){
+		move1 = 1 * sin( moveA );
+		
+		angle = 90 + 16 * sin( count*2 );
+		
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		if( count > 0 && count%(60-shot_f) == 0 ){
+			ascent( let j in 0..8 ){
+				let sht1 = CreateShotA2( pos[0] + 32 + j*32, pos[1] - j*16, speed[j%3], 135-j*way - 64*sin(cc), acc, mx, shote[ j%2 ], delay );
+				let sht2 = CreateShotA2( pos[0] - 32 - j*32, pos[1] - j*16, speed[j%3], 45+j*way + 64*sin(cc), acc, mx, shote[ j%2 ], delay );
+				NotifyEventAll( EV_USER + 40, [ sht1, delay ] );
+				NotifyEventAll( EV_USER + 40, [ sht2, delay ] );
+			}
+			ObjSound_Play( CreateShotSE[12] );
+			if( shot_f < 50 ){ shot_f += 10; }
+		}
+		
+		if( move1 < 1 ){ moveA += 0.1; }
+		
+		count++;
+		alternative( GetDifficulty )
+		case( "Hard", "Lunatic", "OverDrive" ){
+			cc++;
+		}
+		
+		yield;
+	}
+}
+
+//　ツイン矢弾
+task Road01_ShotPattern07(objID,wait,shote,long){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "Normal" );
+	
+	loop( wait ){ yield; }
+	
+	let count	= 0;
+	let shot_f	= 0;
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 5;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= -0.04;
+	let mx		= 2.5;
+	let delay	= 8;
+	
+	let lp		= 6;
+	let way		= 3;
+	let wide	= 5;
+	let wt		= 5;
+	let wtB		= 50;
+
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 2;
+		wide = 0;
+		speed = 2.5;
+		lp = 3;
+	}
+	case( "Normal" ){
+		way = 2;
+		wide = 2;
+		speed = 2.5;
+	}
+	case( "Hard" ){
+		way = 6;
+		wide = 10;
+		mx = 3;
+		lp = 9;
+		wt = 4;
+	}
+	case( "Lunatic" ){
+		way = 6;
+		wide = 60;
+		mx = 4;
+		lp = 7;
+		wt = 7;
+	}
+	case( "OverDrive" ){
+		way = 3;
+		wide = 18;
+		mx = 2.5;
+		lp = 11;
+		wt = 7;
+		wtB = 10;
+	}
+	
+	local{
+
+	}
+	
+	loop( 3 ){
+		if( Obj_IsDeleted( objID ) ){ break; }
+		angle = GetAngleToPlayer( objID );
+		loop( lp ){
+			if( !Obj_IsDeleted( objID ) ){
+				
+				pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+				let ag = angle - wide / 2;
+				loop( way ){
+					ascent( let i in 0..2 ){
+						let spos = [
+							pos[0] + 36 * cos( angle + 90 + 180 * i ),
+							pos[1] + 36 * sin( angle + 90 + 180 * i ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], speed, ag, acc, mx, shote[ i%2 ], delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					}
+					ag += wide / ( way - 1 );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				
+				loop( wt ){ yield; }
+			}
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+
+
+//　打ち返し弾 1
+task Road01_ShotPattern08( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 1;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.025;
+	let mx		= 5;
+	let delay	= 16;
+	
+	let roundway= 1;
+	let row		= 1;
+	let ave		= 0;
+
+	let seal	= 96;
+
+	let distance= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		roundway = 0;
+	}
+	case( "Normal" ){
+		roundway = 0;
+		speed = 0;
+		mx = 1.5;
+		ave = 3;
+	}
+	case( "Hard" ){
+		roundway = 1;
+		row = 3;
+		ave = 5;
+	}
+	case( "Lunatic" ){
+		roundway = 3;
+		row = 7;
+		ave = 7;
+	}
+	case( "OverDrive" ){
+		roundway = 5;
+		row = 3;
+		ave = 9;
+	}
+	
+	if( roundway > 0 ){
+		//　敵削除待ち
+		while( !Obj_IsDeleted(objID) ){
+			pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle = GetAngleToPlayer( objID );
+			distance = GetObjectDistance( objID, GetPlayerObjectID );
+			yield;
+		}
+		
+		//　画面内で撃破されていれば打ち返し生成
+		//　自機との距離が一定以内の場合発生させない(変数seal値)
+		let dis = [-48,-48];
+		if( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] && distance > seal ){
+			let ag = angle;
+			loop( roundway ){
+				ascent( let i in 0..(row) ){
+					let sht = CreateShotA2( pos[0], pos[1], speed, ag + round( rand( -ave, ave ) ), acc, mx, shote, delay + i*2 );
+					NotifyEventAll( EV_USER + 40, [ sht, delay + i*2 ] );
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[1] );
+		}
+	}
+}
+
+//　打ち返し弾 2
+task Road01_ShotPattern09( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= 0;
+	let acc		= 0.03;
+	let mx		= 6;
+	let delay	= 16;
+	
+	let way		= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 0;
+	}
+	case( "Normal" ){
+		way = 0;
+	}
+	case( "Hard" ){
+		way = 1;
+	}
+	case( "Lunatic" ){
+		way = 4;
+	}
+	case( "OverDrive" ){
+		way = 5;
+	}
+	
+	if( way > 0 ){
+		//　敵削除待ち
+		while( !Obj_IsDeleted(objID) ){
+			pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle	= round( GetAngleToPlayer( objID ) / 8 ) * 8;
+			yield;
+		}
+		
+		//　画面内で撃破されていれば打ち返し生成
+		let dis = [64,64];
+		if( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] ){
+			ascent( let i in 0..(way) ){
+				let sht = CreateShotA2( pos[0], pos[1], speed, angle + i*(360/way), acc, mx, shote, delay + i );
+				NotifyEventAll( EV_USER + 40, [ sht, delay + i ] );
+			}
+			ObjSound_Play( CreateShotSE[1] );
+		}
+	}
+}
+
+// 自機狙い弾
+task Road01_ShotPattern10( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	loop( round( rand( 5, 12 ) ) * 9 ){ yield; }
+	let wt 		= 30;
+	let speed 	= 1.4;
+	let acc 	= 0;
+	let mx 		= 6;
+	let delay 	= 15;
+	let ave 	= 1;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		wt = 100;
+	}
+	case( "Normal" ){
+		wt = 75;
+		acc = 0.01;
+		mx = 2.3;
+	}
+	case( "Hard" ){
+		wt = 24;
+		acc = 0.05;
+		ave = 4;
+	}
+	case( "Lunatic" ){
+		wt = 9;
+		acc = 0.05;
+		ave = 8;
+	}
+	case( "OverDrive" ){
+		wt = 6;
+		acc = 0.02;
+		ave = 8;
+	}
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let angle = round( GetAngleToPlayer( objID ) / ave ) * ave;
+		// どっかのタイミングで座標がおかしくなる不具合
+		// 面倒なので画面内に居る条件でごまかす
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY){
+			let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			ObjSound_Play( CreateShotSE[ 0 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+
+

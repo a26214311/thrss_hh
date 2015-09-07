@@ -1,0 +1,137 @@
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//　桃姫背景
+task SetBackGroundEffect_06( CallID ){
+	let ID			= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D)
+	];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let cc			= 0;
+	let i			= 0;
+	
+	ObjPrim_SetTexture(ID[0], spell_tex[18] );
+	ObjPrim_SetTexture(ID[1], spell_tex[19] );
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], CenX, CenY, 0 );
+		Obj_SetRenderPriorityI(ID[i], 29 );
+		ObjRender_SetScaleXYZ(ID[i], 1, 1, 0 );
+		ObjPrim_SetVertexCount(ID[i], 4 );
+		ObjPrim_SetVertexPosition(ID[i], 0, 384/-2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 1, 384/-2, 448/2, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 2, 384/2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 3, 384/2, 448/2, 0 );
+		ObjPrim_SetVertexUVT(ID[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(ID[i], 1, 0, 448 );
+		ObjPrim_SetVertexUVT(ID[i], 2, 384, 0 );
+		ObjPrim_SetVertexUVT(ID[i], 3, 384, 448 );
+	}
+	
+	SetBackGroundEffect_06_CreatePolygon( CallID, [CenX,CenY], 16, 400, 29, [0,0], BLEND_MULTIPLY );
+	SetBackGroundEffect_06_CreatePolygon( CallID, [CenX,CenY], 16, 400, 29, [180,0], BLEND_MULTIPLY );
+	
+	while( !Obj_IsDeleted(CallID) ){
+		
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjPrim_SetVertexUVT(ID[1], 0, 0, 0 + cc/4 );
+		ObjPrim_SetVertexUVT(ID[1], 1, 0, 448 + cc/4 );
+		ObjPrim_SetVertexUVT(ID[1], 2, 384, 0 + cc/4 );
+		ObjPrim_SetVertexUVT(ID[1], 3, 384, 448 + cc/4 );
+		
+		ascent( i in 0..2 ){
+			ObjPrim_SetVertexAlpha(ID[0], 0 + i*2, alpha1*255 );
+			ObjPrim_SetVertexAlpha(ID[0], 1 + i*2, alpha2*255 );
+			ObjPrim_SetVertexAlpha(ID[1], 0 + i*2, alpha1*64 );
+			ObjPrim_SetVertexAlpha(ID[1], 1 + i*2, alpha2*64 );
+		}
+		
+		ascent( i in 0..4 ){
+			ObjPrim_SetVertexColor(ID[0], i, 255, 255, 255 );
+			ObjPrim_SetVertexColor(ID[1], i, 255, 64, 255 );
+			i++;
+		}
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 >= 0.5 ){ alphaB += 5; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　頂点数を奇数するときもくなるよ
+task SetBackGroundEffect_06_CreatePolygon( SET_ID, SET_POSITION, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, BLEND_TYPE ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	
+	//　スクロール
+	let scr			= 0;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten			=  SET_POLYGON + 1 + 1 ;
+	//　回転の早さ
+	let ang_plus	= SET_ANGLE_Z[1];
+	
+	ObjPrim_SetTexture(id, spell_tex[20] );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetBlendType(id, BLEND_TYPE );
+	ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		ObjRender_SetPosition(id, SET_POSITION[0], SET_POSITION[1], 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, 255, 128, 64 );
+		ObjPrim_SetVertexAlpha(id, 0, move1*255 );
+		
+		let rgb = [
+			160 + 32 * sin( scr/4 ),
+			160 + 32 * sin( scr/4 ),
+			255,
+		];
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + 256 * sin( i*(180/(SET_POLYGON)) ), 512 - scr );
+			ObjPrim_SetVertexColor(id, 1+i, rgb[0], rgb[1], rgb[2] );
+			ObjPrim_SetVertexAlpha(id, 1+i, move1*255 );
+			
+			pc		+= 360/SET_POLYGON;
+			i++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 2; }
+		scr += 1;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}

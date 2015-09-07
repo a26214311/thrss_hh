@@ -1,0 +1,508 @@
+task Road07_ShotPattern01( objID, shote ){
+	
+	let swt 	= frame % 7 * 10;
+	let wt		= 45;
+	let speed	= 0;
+	
+	let delay	= 9;
+	let wide	= 2;
+	let ave		= 6;
+	let seal	= 72;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = round( GetAngleToPlayer( objID ) / ave ) * ave;
+		let distance = GetObjectDistance( objID, GetPlayerObjectID );
+//		if( distance < seal ){ break; }
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 && distance > seal ){
+			let mx = 2.8;
+			local{
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, p, mx/30, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			}
+			mx -= 0.07;
+			let angle = p - wide / 2;
+			loop( 2 ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, mx/30, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += wide;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+
+task Road07_ShotPattern02A( objID, shote ){
+	
+	let lp = 7;
+	let speed = 4;
+	let delay = 15;
+	let wide = 70;
+	let way = 4;
+	let wtA = 3;
+	let wtB = 40;
+	loop( 60 ){ yield; }
+	loop( 5 ){
+		let p = GetAngleToPlayer( objID );
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = p - wide / 2;
+			loop( way ){
+				let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 60, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road07_ShotPattern02B( objID, shote ){
+	let lp = 7;
+	let speed = 1.5;
+	let delay = 15;
+	let wtA = 4;
+	let wtB = 40;
+	loop( 80 ){ yield; }
+	loop( 5 ){
+		let p = GetAngleToPlayer( objID );
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = p;
+			local{
+				let sht = CreateShotA2( pos[0], pos[1], speed * 6, angle, -speed / 4, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road07_ShotPattern03( objID, shote ){
+	let swt = 1 + frame % 6 * 10;
+	let speed = 1.5;
+	let delay = 15;
+	let wide = [ 720, 12, 36 ];
+	let wt = 30;
+	let lp = 0;
+
+	loop( swt ){ yield; }
+	
+	while( !Obj_IsDeleted( objID ) ){
+		loop( 3 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let p = GetAngleToPlayer( objID );
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 ){
+				let angle = p - wide[ lp % length( wide ) ] / 2;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide[ lp % length( wide ) ];
+				}
+				ObjSound_Play( CreateShotSE[ 1 ] );
+			}
+			lp++;
+			loop( wt ){ yield; }
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern04A( objID, shote ){
+	let roundway = 9;
+	let wide = 160;
+	let delay = 12;
+	let wt = 48;
+	loop( 100 ){ yield; }
+	loop( 12 ){
+		if( Obj_IsDeleted( objID ) ){ return; }
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = GetAngleToPlayer( objID );
+		let ag = p - wide / 2;
+		loop( roundway ){
+			let speed = 3;
+			let way = 1;
+			let wd = 0;
+			loop( 4 ){
+				let angle = ag - wd / 2;
+				loop( way ){
+					let sht = CreateShotA1( pos[0], pos[1], speed, angle, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wd / ( way - 1 );
+				}
+				speed /= 1.05;
+				wd += 1;
+				way++;
+			}
+			ag += wide / ( roundway - 1 );
+		}
+		ObjSound_Play( CreateShotSE[ 0 ] );
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern04B( enmID, objID, shote ){
+	let lp = 12;
+	let delay = 15;
+	let wide = 16;
+	let way = 4;
+	let wtA = 2;
+	let wtB = 30;
+	let r = 1;
+	loop( 140 ){ yield; }
+	loop( 7 ){
+		let speed = 2.2;
+		let p = atan2( ObjMove_GetY( objID ) - ObjMove_GetY( enmID ), ObjMove_GetX( objID ) - ObjMove_GetX( enmID ) ) + 150 * r;
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = p - wide / 2 + round( rand( -1, 1 ) ) * 0.4;
+			loop( way ){
+				let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 30, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			speed += 0.07;
+			loop( wtA ){ yield; }
+		}
+		r = -r;
+		loop( wtB ){ yield; }
+	}
+}
+
+
+task Road07_ShotPattern06( objID, shote ){
+	let swt = 100;
+	let delay = 15;
+	let roundway = 3;
+	let wide = [ 720, 10 ];
+	let wt = 60;
+	let lp = 0;
+
+	loop( swt ){ yield; }
+	
+	loop( 4 ){
+		let speed = 2;
+		let lp = 0;
+		loop( 3 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let p = GetAngleToPlayer( objID );
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let ag = p;
+			loop( roundway ){
+				let angle = ag - wide[ lp % length( wide ) ] / 2;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide[ lp % length( wide ) ];
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+			lp++;
+			speed /= 1.15;
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+
+task Road07_ShotPattern07A( objID, shote ){
+	let swt = 120;
+	let roundway = 9;
+	let speed = 3;
+	let delay = 15;
+	let wtA = 2;
+	let wtB = 50;
+	loop( swt ){ yield; }
+	
+	loop( 5 ){
+		let p = GetAngleToPlayer( objID );
+		let wide = 720;
+		loop( 7 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let ag = p;
+			loop( roundway ){
+				let angle = ag - wide / 2;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide;
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			wide += 3;
+			loop( wtA ){ yield; }
+		}
+		speed += 0.2;
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road07_ShotPattern07B( objID, shote ){
+	
+	let swt 	= 20;
+	let wt		= 7;
+
+	let way		= 2;
+	let rd		= 1;
+	let mx		= 3.4;
+	let delay	= 15;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let speed = 0;
+		let acc = mx / 75;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY ){
+			let angle = GetAngleToPlayer( objID ) + round( rand( -1, 1 ) ) * rd;
+			loop( way ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern08( objID, shote ){
+	
+	let swt 	= 40;
+	let wt		= 30;
+
+	let way		= 5;
+	let wide	= 75;
+	let rd		= 1;
+	let mx		= 5.5;
+	let delay	= 15;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let speed = 0;
+		let acc = mx / 50;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY ){
+			let angle = GetAngleToPlayer( objID ) - wide / 2;
+			loop( way ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+
+task Road07_ShotPattern09( objID, shote ){
+	
+	let swt 	= 50;
+	let wt		= 20;
+	let speed	= 0;
+	
+	let delay	= 9;
+	let line	= 2;
+	let ave		= 6;
+	let seal	= 112;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = round( GetAngleToPlayer( objID ) / ave ) * ave;
+		let distance = GetObjectDistance( objID, GetPlayerObjectID );
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 && distance > seal ){
+			let mx = 2.8;
+			loop( line ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, p, mx/30, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				mx /= 1.07;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern10A( objID, slave, shote ){
+	let swt 	= 100;
+	let way		= 24;
+	let mx		= 1.7;
+	let delay	= 15;
+
+	loop( swt ){ yield; }
+
+	let lp = 0;
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let wt = 50;
+		ascent( idx in 0..length( slave ) ){
+			if( Obj_IsDeleted( slave[ idx ] ) ){ wt -= 15; }
+		}
+		let speed = 0;
+		let acc = mx / 10;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY ){
+			let p = GetAngleToPlayer( objID ) + 360 / way / 3 * lp;
+			
+			let angle = p;
+			loop( way ){
+				let sx = pos[ 0 ] + 36 * cos( angle );
+				let sy = pos[ 1 ] + 36 * sin( angle );
+				let sht = CreateShotA2( sx, sy, speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+		}
+		lp++;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern10B( objID, master, shoteA, shoteB ){
+	let swt 	= 120;
+	let wide	= 168;
+	let delay	= 15;
+	let wt 		= 2;
+	loop( swt ){ yield; }
+
+	let lp = 0;
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let speed = 0;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY ){
+			let p = atan2( ObjMove_GetY( objID ) - ObjMove_GetY( master ), ObjMove_GetX( objID ) - ObjMove_GetX( master ) );
+			let shote = [ shoteA, shoteB ];
+			let g = 0;
+			loop( 4 ){
+				let angle = p + rand( -wide/2, wide/2 );
+				let mx = rand( 0.5, 7 );
+				let acc = mx / 10;
+				let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote[ g % length( shote ) ], delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				g++;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		lp++;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern11A( objID, shote ){
+	let swt 	= 300;
+	let way		= 18;
+	let mx		= 2;
+	let wt		= 60;
+	let delay	= 15;
+
+	loop( swt ){ yield; }
+
+	let lp = 0;
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let speed = 0;
+		let acc = mx / 10;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-112 ){
+			let p = GetAngleToPlayer( objID ) + 360 / way / 3 * lp;
+			
+			let angle = p;
+			loop( way ){
+				let sx = pos[ 0 ] + 36 * cos( angle );
+				let sy = pos[ 1 ] + 36 * sin( angle );
+				let sht = CreateShotA2( sx, sy, speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+		}
+		lp++;
+		loop( wt ){ yield; }
+	}
+}
+
+task Road07_ShotPattern11B( objID, master ){
+	let swt = 360;
+	let rgb_array = [ 255, 32, 0 ];
+	let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+	let p = atan2( ObjMove_GetY( objID ) - ObjMove_GetY( master ), ObjMove_GetX( objID ) - ObjMove_GetX( master ) );
+	let leng = 0;
+	let width = 18;
+	let del = 216000;
+	loop( swt ){ yield; }
+	let laser = CreateStraightLaser01( objID, pos, p, leng, width, rgb_array, true, 0, del );
+	ObjSound_Play( CreateShotSE[ 10 ] );
+	while( !Obj_IsDeleted( objID ) ){
+		pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		if( !Obj_IsDeleted( master ) ){
+			p = atan2( ObjMove_GetY( objID ) - ObjMove_GetY( master ), ObjMove_GetX( objID ) - ObjMove_GetX( master ) );
+		}
+		ObjMove_SetPosition( laser, pos[0], pos[1] );
+		ObjStLaser_SetAngle( laser, p );
+		ObjLaser_SetLength( laser, leng );
+		if( leng < 768 ){ leng += 1; }
+		yield;
+	}
+	Obj_Delete( laser );
+}
+
+task Road07_ShotPattern00( objID, lp, shote ){
+	
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	if( GetDifficulty != "OverDrive" ){ return; }
+	
+	let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+	while( !Obj_IsDeleted( objID ) ){
+		pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		yield;
+	}
+
+	let wt = 2;
+	let av = lp;
+	let seal = 72;
+	
+	let v = 0;
+	loop( lp ){
+		let dist = Distance( pos, [ GetPlayerX, GetPlayerY ] );
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 && dist > seal ){
+			let ag = rand( 0, 360 );
+			let sx = pos[0] + rand( 0, v ) * cos( ag );
+			let sy = pos[1] + rand( 0, v ) * sin( ag );
+			
+			let speed = 3.6 + rand( -0.3, 0.3 );
+			let p = atan2( GetPlayerY - sy, GetPlayerX - sx );
+			let angle = p + round( rand( -1, 1 ) ) * av;
+			let delay = 20;
+
+			let sht = CreateShotA2( sx, sy, 0, angle, speed/80, speed, shote, delay );
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			ObjSound_Play( CreateShotSE[ 14 ] );
+		}
+
+		v += 3;
+		loop( wt ) { yield; }
+	}
+
+	function Distance( pos1, pos2 ){
+		return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+	}
+}

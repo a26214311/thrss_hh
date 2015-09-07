@@ -1,0 +1,537 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stagePh　spell3"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./../enm03/lib_IceShot.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, true );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(112,112,112,96);
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1700 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path_c );
+	}
+	
+	task CallSpellCard( ID ){
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "温暖化「幻想大氷山」";
+		
+		SpellCounter( GetDifficult, 8, 2 );
+		let sct = GetSpellCounter( GetDifficult, 8, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path1, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_03_R(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task MainThread{
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-80, 8, 8 );
+		Wait( 160 );
+		Concentration03_Main( enm, power_rgb_c, 60 );
+		Wait( 60 );
+		State;
+		Pattern1;
+		while( !Obj_IsDeleted( enm ) ){
+			if( Wait( 120 ) ){ return; }
+			Pattern2;
+			if( Wait( 120 ) ){ return; }
+			EnemyMove( enm, 2, 8 );
+		}
+		task Pattern1{
+			let way = 4;
+			let radius = 140;
+			let spn = 0.42;
+			loop( 3 ){
+				let angle = rand( 0, 360 );
+				loop( way ){
+					CreateCircleShot( enm, angle, spn, 0, radius, ADD_BGW_BLUE_03, r );
+					angle += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				Wait( 40 );
+				radius += 96;
+				spn -= 0.08;
+				way += 1;
+				r = -r;
+			}
+			function CreateCircleShot( CallID, angle, spin, disD, disM, shote, r ){
+				let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				let sht		= CreateShotA2( gpos[0], gpos[1], 0, angle, 0, 0, shote, 0 );
+				NotifyEventAll( EV_USER + 40, [ sht, 0 ] );
+				
+				ObjShot_SetAutoDelete( sht, false );
+				ObjShot_SetSpellResist( sht, true );
+				
+				UpDate( CallID, sht, angle, spin, disD, disM );
+				
+				return sht;
+				
+				task UpDate( CallID, ObjID, angle, spin, disD, disM ){
+					let count	= 0;
+					let move1	= 0;
+					let moveA	= 0;
+					
+					ObjShot_SetIntersectionEnable(ObjID, false );
+					
+					while( !Obj_IsDeleted(CallID) ){
+						
+						move1 = 1 * sin( moveA );
+						
+						angle = angle + spin * r;
+						
+						let distance = disD + move1*disM;
+						ObjMove_SetPosition(ObjID, gpos[0] + distance * cos( angle ), gpos[1] + distance * sin( angle ) );
+						ObjRender_SetScaleXYZ(ObjID, move1, move1, 0 );
+						
+						if( move1 < 1 ){ moveA += 1; }
+						else{
+							if( count == 0 ){
+//								IceEffect( CallID, ObjID, rand(0.8,1) );
+							}
+							ObjShot_SetIntersectionEnable(ObjID, true );
+							count++;
+						}
+						
+						if( count > 0 && count%4 == 0 && count%50 < 30 ){
+							let spos = [
+								ObjMove_GetX( ObjID ),
+								ObjMove_GetY( ObjID ),
+							];
+							let ag = angle + 180 + 10 * cos( count / 8 ) * r;
+							let sht = CreateShotA2( spos[0], spos[1], 2, ag, 0, 10, ADD_BGW_BLUE_18, 8 );
+							NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+						//	IceEffect( CallID, sht, rand(0.4,0.6) );
+							ObjSound_Play( CreateShotSE[2] );
+						}
+						
+						yield;
+					}
+					Obj_Delete( ObjID );
+				}
+			}
+		}
+		
+		task Pattern2{
+			let way = 9;
+			local{
+				let angle = GetAngleToPlayer( enm );
+				let ar_p = [];
+				loop( floor( way ) ){
+					ar_p = ar_p~[ angle ];
+					angle += 360 / floor( way );
+				}
+				loop( floor( way ) ){
+					let idx = round( rand( 0, length( ar_p ) ) ) % length( ar_p );
+					SetShot( ar_p[ idx ] );
+					if( Wait( 7 ) ){ return; }
+					ar_p = erase( ar_p, idx );
+				}
+			}
+			
+			task SetShot( let ag ){
+				let delay = 60;
+				let del = 50;
+				let color = [ 88, 88, 255 ];
+				CreateSwordLaser( gpos, ag, 1024, 80, del, color, delay );
+				ObjSound_Play( CreateShotSE[ 13 ] );
+				loop( delay ){ yield; }
+				if( Obj_IsDeleted( enm ) ){ return; }
+				let sx = gpos[0];
+				let sy = gpos[1];
+				while( sx > MinX && sx < MaxX && sy > MinY && sy < MaxY ){
+					sx += 10 * cos( ag );
+					sy += 10 * sin( ag );
+				}
+				local{
+					let way = 24;
+					let angle = ag;
+					let shote = ADD_BGW_WHITE_04;
+					let delay = 30;
+					let lp = 0;
+					loop( way ){
+						let speed = 0.2+0.3*cos(lp*96);
+						let sht = CreateShotA1( sx, sy, speed, angle, shote, delay );
+						ObjShot_SetSpellResist( sht, true );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						Set( sht, delay );
+						task Set( sht, delay ){
+							if( Wait( delay ) ){ return; }
+							IceEffect( enm, sht, rand(0.4,0.6) );
+							let del = 100;
+							if( Wait( del ) ){ return; }
+							Obj_Delete( sht );
+						}
+						lp++;
+						angle += 360 / way;
+					}
+				}
+				local{
+					ObjSound_Play( CreateShotSE[ 8 ] );
+				}
+				
+			}
+		}
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+
+
+		function CreateSwordLaser( pos, angle, _length, width, kill, color, delay ){
+			let obj = ObjShot_Create(OBJ_STRAIGHT_LASER);
+			
+			ObjMove_SetPosition( obj, pos[0], pos[1] );
+			ObjStLaser_SetSource( obj, false );
+			ObjStLaser_SetAngle( obj, angle );
+			ObjLaser_SetRenderWidth( obj, width );
+			ObjLaser_SetIntersectionWidth( obj, width/4.4 );
+			ObjLaser_SetLength( obj, _length );
+			ObjShot_SetDelay( obj, delay );
+			ObjShot_SetAutoDelete( obj, false );
+			ObjShot_SetSpellResist( obj, true );
+			ObjShot_SetGraphic( obj, ADD_BGW_WHITE_30 );
+			ObjRender_SetColor( obj, color[0], color[1], color[2] );
+			ObjShot_Regist( obj );
+			
+			CreateSwordLaser_Update( obj, _length, width, kill, delay );
+			CreateSwordLaser_Render( obj, color, delay );
+			
+			return obj;
+
+			task CreateSwordLaser_Update( obj, _length, width, kill, delay ){
+				let move1	= 0;
+				let moveA	= 0;
+				let frame	= 0;
+				
+				loop( delay ){
+					if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+					yield;
+				}
+				
+				while( !Obj_IsDeleted(obj) && !Obj_IsDeleted(enm) && frame < kill ){
+					
+					move1 = 1 * sin( moveA );
+					
+					ObjLaser_SetLength( obj, move1*_length );
+					
+					if( move1 < 1 ){ moveA += 5; }
+					frame++;
+					
+					yield;
+				}
+				ObjShot_SetIntersectionEnable( obj, false );
+				move1 = 0;
+				moveA = 0;
+				while( move1 < 1 ){
+					
+					move1 = 1 * sin( moveA );
+					
+					ObjLaser_SetRenderWidth( obj, width - move1*width );
+					
+					moveA += 5;
+					
+					yield;
+				}
+				Obj_Delete( obj );
+			}
+			task CreateSwordLaser_Render( obj, color, delay ){
+				let ID		= [
+					ObjPrim_Create( OBJ_SPRITE_2D ),
+					ObjPrim_Create( OBJ_SPRITE_2D ),
+				];
+				let gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+				let angle	= ObjStLaser_GetAngle(obj);
+				let _length	= ObjLaser_GetLength(obj);
+				let move1	= 0;
+				let moveA	= 0;
+				let animc	= 0;
+				let anim1	= 0;
+				
+				let blend	= [ BLEND_ADD_ARGB, BLEND_SUBTRACT ];
+				let sca		= [ [ 1.04, 1.04 ], [ 1, 1 ] ];
+				
+				ascent( let i in 0..length(ID) ){
+					ObjPrim_SetTexture( ID[i], GetCurrentScriptDirectory() ~ "./../../img/stg/stg7img/slash01.png" );
+					Obj_SetRenderPriorityI( ID[i], 49 );
+					ObjRender_SetBlendType( ID[i], blend[i] );
+					ObjRender_SetColor( ID[i], color[0], color[1], color[2] );
+				}
+				ObjRender_SetAlpha( ID[1], 192 );
+				
+				CreateSwordLaser_Delay( obj, color, delay );
+				
+				loop( delay ){
+					if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+					yield;
+				}
+				while( !Obj_IsDeleted(obj) && !Obj_IsDeleted(enm) ){
+					gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+					angle	= ObjStLaser_GetAngle(obj);
+					_length	= ObjLaser_GetLength(obj);
+					
+					move1 = 1 * sin( moveA );
+					
+					ascent( i in 0..length(ID) ){
+						ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+						ObjRender_SetAngleXYZ( ID[i], 0, 0, angle );
+						ObjRender_SetScaleXYZ( ID[i], sca[i][0], move1*sca[i][1], 0 );
+						ObjSprite2D_SetSourceRect( ID[i], 0, 0 + anim1*32, 512, 32 + anim1*32 );
+						ObjSprite2D_SetDestRect( ID[i], 0, -16, _length, 16 );
+					}
+					
+					if( move1 < 1 ){ moveA += 5; }
+					if( animc > 0 && animc%2 == 0 ){ anim1++; }
+					animc++;
+					
+					yield;
+				}
+				move1 = 0;
+				moveA = 0;
+				while( move1 < 1 ){
+					
+					move1 = 1 * sin( moveA );
+					
+					ascent( i in 0..length(ID) ){
+						ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+						ObjRender_SetAngleXYZ( ID[i], 0, 0, angle );
+						ObjRender_SetScaleXYZ( ID[i], sca[i][0], sca[i][1] - move1*sca[i][1], 0 );
+						ObjSprite2D_SetSourceRect( ID[i], 0, 0 + anim1*32, 512, 32 + anim1*32 );
+						ObjSprite2D_SetDestRect( ID[i], 0, -16, _length, 16 );
+					}
+					
+					moveA += 10;
+					if( animc > 0 && animc%2 == 0 ){ anim1++; }
+					animc++;
+					
+					yield;
+				}
+				ascent( i in 0..length(ID) ){
+					Obj_Delete( ID[i] );
+				}
+			}
+			task CreateSwordLaser_Delay( obj, color, delay ){
+				let ID		= ObjPrim_Create( OBJ_PRIMITIVE_2D );
+				let gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+				let angle	= ObjStLaser_GetAngle(obj);
+				let _length	= ObjLaser_GetLength(obj);
+				let move1	= 0;
+				let moveA	= 0;
+				let animc	= 0;
+				
+				let sca = [ 1, 0.3 ];
+				
+				ObjPrim_SetTexture( ID, GetCurrentScriptDirectory() ~ "./../../img/stg/stg7img/slash00.png" );
+				Obj_SetRenderPriorityI( ID, 49 );
+				ObjRender_SetBlendType( ID, BLEND_ADD_ARGB );
+				ObjPrim_SetVertexCount( ID, 6 );
+				ObjPrim_SetPrimitiveType( ID, PRIMITIVE_TRIANGLESTRIP );
+				ObjRender_SetColor( ID, color[0], color[1], color[2] );
+				
+				loop( delay ){
+					if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+					
+					gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+					angle	= ObjStLaser_GetAngle(obj);
+					_length	= ObjLaser_GetLength(obj);
+					
+					move1 = 1 * sin( moveA );
+					
+					ObjPrim_SetVertexPosition( ID, 0, 0, -32, 0 );
+					ObjPrim_SetVertexPosition( ID, 1, 0, 32, 0 );
+					ObjPrim_SetVertexPosition( ID, 2, _length/2, -32, 0 );
+					ObjPrim_SetVertexPosition( ID, 3, _length/2, 32, 0 );
+					ObjPrim_SetVertexPosition( ID, 4, _length, -32, 0 );
+					ObjPrim_SetVertexPosition( ID, 5, _length, 32, 0 );
+					ObjPrim_SetVertexUVT( ID, 0, 0 - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 1, 0 - animc, 64 );
+					ObjPrim_SetVertexUVT( ID, 2, _length/2 - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 3, _length/2 - animc, 64 );
+					ObjPrim_SetVertexUVT( ID, 4, _length - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 5, _length - animc, 64 );
+					ObjPrim_SetVertexAlpha( ID, 0, 0 );
+					ObjPrim_SetVertexAlpha( ID, 1, 0 );
+					ObjPrim_SetVertexAlpha( ID, 2, 255 );
+					ObjPrim_SetVertexAlpha( ID, 3, 255 );
+					ObjPrim_SetVertexAlpha( ID, 4, 0 );
+					ObjPrim_SetVertexAlpha( ID, 5, 0 );
+					
+					ObjRender_SetPosition( ID, gpos[0], gpos[1], 0 );
+					ObjRender_SetAngleXYZ( ID, 0, 0, angle );
+					ObjRender_SetScaleXYZ( ID, move1*sca[0], sca[1], 0 );
+					
+					if( animc/8%6 == 0 ){
+						let dis = rand( 0, _length );
+						let spos = [
+							gpos[0] + dis * cos( angle ),
+							gpos[1] + dis * sin( angle ),
+							0
+						];
+						let rag = rand( 0, 360 );
+						let spd = rand( -0.3, 0.3 );
+						let ag = [
+							spd * cos( rag ),
+							spd * sin( rag ),
+							rand(0,360)
+						];
+						FlashLight(
+							spos,
+							ag,
+							rand(0.02,0.08),
+							rand(192,255),
+							rand(8,16),
+							color
+						);
+					}
+					
+					if( move1 < 1 ){ moveA += 5; }
+					animc += 8;
+					
+					yield;
+				}
+				move1 = 0;
+				moveA = 0;
+				while( move1 < 1 ){
+					
+					move1 = 1 * sin( moveA );
+					
+					ObjPrim_SetVertexUVT( ID, 0, 0 - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 1, 0 - animc, 64 );
+					ObjPrim_SetVertexUVT( ID, 2, _length/2 - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 3, _length/2 - animc, 64 );
+					ObjPrim_SetVertexUVT( ID, 4, _length - animc, 0 );
+					ObjPrim_SetVertexUVT( ID, 5, _length - animc, 64 );
+					ObjPrim_SetVertexAlpha( ID, 0, 0 );
+					ObjPrim_SetVertexAlpha( ID, 1, 0 );
+					ObjPrim_SetVertexAlpha( ID, 2, 255 - move1*255 );
+					ObjPrim_SetVertexAlpha( ID, 3, 255 - move1*255 );
+					ObjPrim_SetVertexAlpha( ID, 4, 0 );
+					ObjPrim_SetVertexAlpha( ID, 5, 0 );
+					
+					ObjRender_SetPosition( ID, gpos[0], gpos[1], 0 );
+					ObjRender_SetAngleXYZ( ID, 0, 0, angle );
+					ObjRender_SetScaleXYZ( ID, sca[0], sca[1] + move1*sca[1]*8, 0 );
+					
+					moveA += 5;
+					animc += 8;
+					
+					yield;
+				}
+				Obj_Delete( ID );
+			}
+		}
+	}
+
+	
+
+	

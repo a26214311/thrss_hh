@@ -1,0 +1,315 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5　合体「敏腕剛腕宰相」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1200 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 5, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b(enm, true, enemy_tex_path2 );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "合体「敏腕剛腕宰相」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "爆掌「海内鬼無双」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "夢幻抱擁「いざ死出の旅の供をせよ」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "夢幻抱擁「いざ死出の旅の供をせよ」";
+		}
+		
+		SpellCounter( GetDifficult, 5, 2 );
+		let sct = GetSpellCounter( GetDifficult, 5, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_05b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　弾種類
+		let shote	=[
+			[ ADD_BGW_GREEN_21, ADD_BGW_AQUA_21, ADD_BGW_BLUE_21 ],
+			[ ADD_BGW_PURPLE_18, ADD_BGW_RED_18, ADD_BGW_ORANGE_18 ],
+		];
+		//　1ループ発射数
+		let lp		= 9;
+
+		//　発射間隔
+		let wtA		= 8;
+		let wtB		= 120;
+
+		//　拳速度
+		let facc	= 0.1;
+
+		//　拳サイズ
+		let scale	= 0.7;
+		
+		//　角度
+		let agp = 360 / lp;
+
+		let roundway = 24;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp = 6;
+			wtB = 160;
+			agp = 360 / lp;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			lp = 11;
+			wtB = 110;
+			facc = 0.015;
+			agp = 360 / lp * 2;
+		}
+		case( "Lunatic" ){
+			lp = 9;
+			wtB = 240;
+			agp = 360 / lp * 2;
+		}
+		case( "OverDrive" ){
+			lp			= [ 1.2, 256 ];
+		}
+		
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		SetShot;
+		task State{
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+		task SetShot{	
+			loop{
+				let ag = GetAngleToPlayer( ID ) - rand( 70, 110 ) * r;
+				loop( lp ){
+					let spos = [
+						gpos[0] + 64 * cos( ag ),
+						gpos[1] + 64 * sin( ag ),
+					];
+					let sht = CreateFistShot( spos, 0, ag, facc, 99, [255,32,32], scale, "RIGHT" );
+					SetAreaCommonData( "anime", "spa", true );
+					ShotVision( sht, scale );
+					ag += agp * r;
+					ObjSound_Play( CreateShotSE[3] );
+					if( Wait( wtA ) ){ return; }
+				}
+				EnemyMove(enm, 2, 8 );
+				SetAreaCommonData( "anime", "spa", false );
+				if( Wait( wtB ) ){ return; }
+				r = -r;
+			}
+		}
+		task CreateShot( pos, speed, angle, acc, max_speed, rgb_array, scale, way, wide, type ){
+			let ag = angle - wide / 2;
+			loop( way ){
+				let spos = [
+					pos[0] + 64 * cos( ag ),
+					pos[1] + 64 * sin( ag ),
+				];
+				let sht = CreateFistShot( spos, speed, ag, acc, max_speed, rgb_array, scale, type );
+				ShotVision( sht, scale );
+				ag += wide / ( way - 1 );
+				ObjSound_Play( CreateShotSE[3] );
+				loop( 8 ){
+					if( Obj_IsDeleted(enm) ){ break; }
+					yield;
+				}
+			}
+		}
+		
+		task ShotVision( CallID, scale ){
+			let count = 0;
+			let gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let gang = ObjMove_GetAngle(CallID);
+			while( !Obj_IsDeleted(CallID) ){
+				gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				let gang = ObjMove_GetAngle(CallID);
+				if( count%6 == 0 ){
+					let v = 48;
+					let spos = [
+						gpos[0] + rand(-v*scale,v*scale),
+						gpos[1] + rand(-v*scale,v*scale),
+					];
+					let angle = gang + round( rand( -1, 1 ) ) * 48;
+					
+					let sht = CreateShotA2( spos[0], spos[1], -2, angle, 0.05, 2, ADD_BGW_RED_21, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+					ObjSound_Play( CreateShotSE[1] );
+				}
+				count++;
+				yield;
+			}
+			if( gpos[0]>MinX && gpos[0]<MaxX && gpos[1]>MinY && gpos[1]<MaxY ){ return; }
+			if( !Obj_IsDeleted(enm) ){
+				WorldShake_Single( 15, 4 );
+				ObjSound_Play( CreateShotSE[8] );
+				gpos[0] = gpos[0] + 32 * cos( gang+180 );
+				gpos[1] = gpos[1] + 32 * sin( gang+180 );
+				if( GetDifficult == "Lunatic" ){
+					let angle = 0;
+					loop( roundway ){
+						let v = 36;
+						let spos = [
+							gpos[0] + v * cos( angle ),
+							gpos[1] + v * sin( angle ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], 0, angle, 0.02, 1, ADD_BGW_RED_02, 16 );
+						NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+						angle += 360 / roundway;
+					}
+				}
+			}
+		}
+	}
+	
+
+	
+

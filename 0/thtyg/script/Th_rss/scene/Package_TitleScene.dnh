@@ -1,0 +1,1141 @@
+
+
+//　タイトル
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+
+	let csd		= GetCurrentScriptDirectory();
+	
+	//　使用する効果音
+	let se = [
+		PlaySEsP( csd ~ "./../se/menuselect.ogg" ),
+		PlaySEsP( csd ~ "./../se/menudecide.ogg" ),
+		PlaySEsP( csd ~ "./../se/menucancel.ogg" ),
+	];
+
+#include "./ControlMusic.dnh"
+
+task TTitleScene(){
+	let id				= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let csd				= GetCurrentScriptDirectory();
+	let Endflg			= false;
+	let act				= GetAreaCommonData("System", "title_act", 0 );
+	let sector			= GetAreaCommonData("System", "title_sector", 0 );
+	let stc				= GetAreaCommonData("System", "title_place", 0 );
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let standby_EX		= GetAreaCommonData("SaveData", "Standby_ExtraStage", false );
+	let standby_stage	= GetAreaCommonData("SaveData", "Standby_StagePractice", false );
+	let standby_spell	= GetAreaCommonData("SaveData", "Standby_SpellPractice", false );
+	let cst				= GetAreaCommonData("SaveData", "StageFlg", 0 );
+	let INDEX_START		= 0;
+	let INDEX_EXTRA		= 1;
+	let INDEX_STAGEPRA	= 2;
+	let INDEX_SPELLPRA	= 3;
+	let INDEX_MUSIC		= 4;
+	let INDEX_RESULT	= 5;
+	let INDEX_OPTION	= 6;
+	let INDEX_REPLAY	= 7;
+	let INDEX_MANUAL	= 8;
+	let INDEX_QUIT		= 9;
+	let ctr				= 0;
+	let ctr2			= 0;
+	let sx				= 568;
+	let sy				= 128;
+	let cc				= 0;
+	let texts			= [INDEX_START,
+							INDEX_EXTRA,
+							INDEX_STAGEPRA,
+							INDEX_SPELLPRA,
+							INDEX_MUSIC,
+							INDEX_RESULT,
+							INDEX_OPTION,
+							INDEX_REPLAY,
+							INDEX_MANUAL,
+							INDEX_QUIT];
+	let cursor_color	= [[255,64,64],		//　赤
+							[255,64,128],	//　赤紫
+							[128,64,255],	//　青紫
+							[64,64,255],	//　青
+							[64,255,255],	//　水
+							[64,255,64],	//　緑
+							[255,255,64],	//　黄
+							[255,128,64],	//　橙
+							[255,255,255],	//　白
+							[64,255,128]];	//　青っぽい緑
+	let i				= 0;
+	let anim			= 4;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let alpha2			= 0;
+	let alphaB			= 0;
+	let flgOn			= 0;
+	let logoOn			= false;
+	let move1			= 0;
+	let moveA			= 0;
+	let script_version	= "ScriptVersion 1.02b〔完成版〕";
+	
+	let logo_pos		= [ 460, 370 ];
+	
+	//　タイトル背景
+	ObjPrim_SetTexture(id[0], csd ~ "../img/title/Title00_d.png" );
+	//　背景の上に1個出してるテクスチャ
+	ObjPrim_SetTexture(id[1], csd ~ "../img/title/et03.png" );
+	//　鳥居
+	ObjPrim_SetTexture(id[2], csd ~ "../img/title/Title00c.png" );
+	//　霊夢立ち絵
+	ObjPrim_SetTexture(id[3], csd ~ "../img/title/TGKtitle.png" );
+	//　ゲームロゴ　サブタイ部分
+	ObjPrim_SetTexture(id[4], csd ~ "../img/title/title00b.png" );
+	//　ゲームロゴ
+	ObjPrim_SetTexture(id[5], csd ~ "../img/title/Title00a.png" );
+	
+	loop( length(id) ){
+		ObjRender_SetBlendType(id[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(id[i], 21 );
+		ObjSprite2D_SetSourceRect(id[i], 0, 0, 640, 480 );
+		ObjSprite2D_SetDestRect(id[i], 0, 0, 640, 480 );
+		i++;
+	}
+	i = 0;
+	
+	//　背景
+	Obj_SetRenderPriorityI(id[0], 20 );
+	ObjRender_SetColor(id[0], 0, 0, 0 );
+	
+	//　蝶紋
+	Obj_SetVisible(id[1], false );
+	ObjRender_SetBlendType(id[1], BLEND_MULTIPLY );
+	
+	//　ロゴの後ろのやつ
+	ObjRender_SetPosition(id[2], logo_pos[0]+32, logo_pos[1], 0 );
+	Obj_SetRenderPriorityI(id[2], 34 );
+	ObjRender_SetAngleZ(id[2], -16 );
+	ObjRender_SetScaleXYZ(id[2], 0.8, 0.8, 0 );
+	ObjRender_SetAlpha(id[2], 0 );
+	ObjSprite2D_SetSourceRect(id[2], 0, 0, 512, 256 );
+	ObjSprite2D_SetDestCenter(id[2]);
+	
+	//　霊夢
+	ObjRender_SetPosition(id[3], 380, 210, 0 );
+	Obj_SetRenderPriorityI(id[3], 33 );
+	ObjSprite2D_SetSourceRect(id[3], 0, 0, 512, 512 );
+	ObjSprite2D_SetDestCenter(id[3]);
+	ObjRender_SetAlpha(id[3], 255 );
+	
+	//　サブタイ
+	ObjRender_SetPosition(id[4], logo_pos[0] + 32, logo_pos[1] + 50, 0 );
+	Obj_SetRenderPriorityI(id[4], 34 );
+	ObjRender_SetScaleXYZ(id[4], 0.5, 0.5, 0 );
+	ObjRender_SetAlpha(id[4], 0 );
+	ObjSprite2D_SetSourceRect(id[4], 0, 0, 512, 64 );
+	ObjSprite2D_SetDestCenter(id[4]);
+	
+	//　ロゴ
+	ObjRender_SetPosition(id[5], logo_pos[0] - 32, logo_pos[1], 0 );
+	Obj_SetRenderPriorityI(id[5], 34 );
+	ObjRender_SetScaleXYZ(id[5], 0.7, 0.7, 0 );
+	ObjRender_SetAlpha(id[5], 0 );
+	ObjSprite2D_SetSourceRect(id[5], 0, 0, 512, 128 );
+	ObjSprite2D_SetDestCenter(id[5]);
+	
+	//　バージョン表記
+	let id2	= ObjText_Create();
+	ObjRender_SetPosition(id2, 8, 464, 0 );
+	ObjText_SetText(id2, script_version );
+	ObjText_SetFontType(id2, "ＭＳ ゴシック" );
+	Obj_SetRenderPriorityI(id2, 34 );
+	ObjText_SetFontSize(id2, 12 );
+	ObjText_SetHorizontalAlignment(id2, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(id2, 450 );
+	ObjText_SetFontBorderWidth(id2, 1 );
+	ObjText_SetFontBorderType(id2, BORDER_FULL );
+	ObjText_SetFontBorderColor(id2, 10, 10, 10 );
+	ObjText_SetFontColorTop(id2, 128, 128, 255 );
+	ObjText_SetFontColorBottom(id2, 64, 64, 255 );
+	
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	//　メインメニュー項目
+	task MenuItem(index, mx, my, text){
+		let move1	= 0;
+		let moveA	= 0;
+		let move2	= 0;
+		let moveB	= 0;
+		let flash	= 0;
+		function CreateText(mx, my, text){
+			let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+			let sca		= 0.82;
+			
+			ObjRender_SetPosition(id, mx, my, 0 );
+			ObjPrim_SetTexture(id, csd ~ "../img/title/sl0t.png" );
+			Obj_SetRenderPriorityI(id, 34 );
+			ObjRender_SetBlendType(id, BLEND_ALPHA );
+			ObjRender_SetAngleXYZ(id, 0, 0, 0 );
+			ObjRender_SetScaleXYZ(id, sca, sca, 0 );
+			ObjRender_SetColor(id, 64, 64, 64 );
+			ObjRender_SetAlpha(id, 255 );
+			ObjSprite2D_SetSourceRect(id, 0, 0+64*text, 256, 64+64*text );
+			ObjSprite2D_SetDestCenter(id);
+			
+			//　EX未開放ならば、テクスチャの色を黒っぽく
+			if( !standby_EX && text == 1 ){
+				ObjRender_SetColor(id, 0, 0, 0 );
+			}
+			//　ステージプラクティス未開放ならば、テクスチャの色を黒っぽく
+			if( !standby_stage && text == 2 ){
+				ObjRender_SetColor(id, 0, 0, 0 );
+			}
+			//　スペルプラクティス未開放ならば、テクスチャの色を黒っぽく
+			if( !standby_spell && text == 3 ){
+				ObjRender_SetColor(id, 0, 0, 0 );
+			}
+			
+			return id;
+		}
+		let objText		= CreateText(mx, my, text);
+		let objSelect	= CreateText(mx, my, text);
+		
+		//　選択中の項目は明るくする　レイヤーも変更
+		ObjRender_SetColor(objSelect,255,255,255);
+		Obj_SetRenderPriorityI(objSelect, 34 );
+		
+		while( !Endflg && !eflg ){
+			sector	= GetAreaCommonData("System", "title_sector", 0 );
+			eflg	= GetAreaCommonData("System", "title_end", false );
+			
+			if( sector == -1 ){
+				ObjRender_SetAlpha(objText, 255 );
+				ObjRender_SetAlpha(objSelect, 255 );
+			}
+			else{
+				ObjRender_SetAlpha(objText, 0 );
+				ObjRender_SetAlpha(objSelect, 0 );
+			}
+			
+			//　選択されたオブジェクトは
+			if( index == stc ){
+				move2 = 0;
+				moveB = 0;
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetPosition(objSelect, mx + move1*8 * cos(-45), my + move1*8 * sin(-45), 0 );
+				ObjRender_SetPosition(objText, mx + move1*8 * cos(-45), my + move1*8 * sin(-45), 0 );
+				
+				let RGB = 200 + 55*sin( flash*8 );
+				
+				ObjRender_SetColor(objSelect, RGB, RGB, RGB );
+				
+				if( move1 < 1 ){
+					moveA += 10;
+					if( sector == -1 ){
+						//　項目を移動した時に何かする時はココに
+						loop( 3 ){
+							let spos = [
+								mx + rand(-128,48),
+								my + rand(-6,6),
+							];
+							CreateLight( spos, 0 + rand(-8,8), 3, rand(0.01,0.1), 10, [255,255,255], 128, rand(15,30) );
+						}
+					}
+				}
+				flash++;
+			}
+			else{
+				move1 = 0;
+				moveA = 0;
+				move2 = 1 * sin( moveB );
+				
+				ObjRender_SetPosition(objSelect, mx + (8 - move2*8) * cos(-45), my + (8 - move2*8) * sin(-45), 0 );
+				ObjRender_SetPosition(objText, mx + (8 - move2*8) * cos(-45), my + (8 - move2*8) * sin(-45), 0 );
+				
+				if( move2 < 1 ){ moveB += 10; }
+			}
+			
+			Obj_SetVisible(objSelect, index == stc );
+			yield;
+		}
+		Obj_Delete(objText);
+		Obj_Delete(objSelect);
+	}
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	//------------------------------------------------------------------------------------------------------
+	
+	
+	
+	
+	//　ここでしか使用しないので、セーブはいなない
+	//　動かすと色変わる奴用
+	CreateCommonDataArea("stc_area");
+	SetAreaCommonData("stc_area", "stc_area", stc );
+	
+	//　BGMナンバー0を再生　フェードアウトあり　delay 0
+	PlayMusic_Title( 0, true, 0 );
+	
+	
+	
+	
+	//　タイトル開始の演出
+	while( act == 0 && sector == -1 && !logoOn && alpha1 < 1 ){
+		act		= GetAreaCommonData("System", "title_act", 0 );
+		sector	= GetAreaCommonData("System", "title_sector", 0 );
+		
+		//　決定キーでスキップ
+		if( GetVirtualKeyState(VK_OK)==KEY_PUSH ){
+			alpha1 = 1;
+			alphaA = 0;
+			break;
+		}
+		
+		if( cc%8 == 0 && false ){
+			let rgb_array	= [
+				[255,255,255],	//　白
+				[64,255,255],	//　水
+				[64,255,128],	//　青緑
+				[64,128,255],	//　青
+			];
+			CreateIceCrystal( [rand(0,640),rand(0,480)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.7), rand(120,180), rand(64,128), rgb_array, 21 );
+		}
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetColor(id[0], alpha1*255, alpha1*255, alpha1*255 );
+		ObjRender_SetAlpha(id[2], alpha1*255 );
+		ObjRender_SetAlpha(id[3], alpha1*255 );
+		ObjRender_SetAlpha(id[4], alpha1*255 );
+		ObjRender_SetAlpha(id[5], alpha1*255 );
+		ObjRender_SetAlpha(id2, 0 );
+		
+		//　スクロール
+		ObjSprite2D_SetSourceRect(id[1], 0+cc/10, 0+128*sin(cc/20), 640+cc/10, 480+128*sin(cc/20) );
+		
+		cc++;
+		if( alpha1 < 1 && cc > 60 ){
+			Obj_SetVisible(id[1], true );
+			alphaA += 1;
+		}
+		
+		yield;
+	}
+	
+	
+	
+	
+	ascent( i in 0..(length(texts)) ){
+		//　メニュー項目作成
+		MenuItem(i, (sx-530+i*12) + 8 * cos(45), (sy+i*24) + 8 * sin(45), texts[i] );
+		yield;
+	}
+	i = 0;
+	
+	//　背景明るく
+	ObjRender_SetColor(id[0], 255, 255, 255 );
+	//　乗算スクロール可視化
+	Obj_SetVisible(id[1], true );
+	
+	while( act == 0 && !eflg ){
+		act		= GetAreaCommonData("System", "title_act", 0 );
+		sector	= GetAreaCommonData("System", "title_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　スクロール
+		ObjSprite2D_SetSourceRect(id[1], 0+cc/10, 0+128*sin(cc/20), 640+cc/10, 480+128*sin(cc/20) );
+		
+		//　sectorの状態がタイトルならば
+		if( sector == -1 ){
+			//　リプレイ化回避
+			SetAreaCommonData("System", "ReplayPath", "" );
+			SetAreaCommonData("Trance", "High_Score", 0 );
+			
+			if( cc%8 == 0 ){
+			let rgb_array	= [
+					[255,255,255],	//　白
+					[64,255,255],	//　水
+					[64,255,128],	//　青緑
+					[64,128,255],	//　青
+				];
+				CreateIceCrystal( [rand(0,640),rand(0,480)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.7), rand(120,180), rand(64,128), rgb_array, 21 );
+			}
+			
+			alpha1 = 1 * sin( alphaA );
+			alpha2 = 1 * sin( alphaB );
+			ObjRender_SetAlpha(id[2], alpha1*255 );
+			ObjRender_SetAlpha(id[3], alpha1*255 );
+			ObjRender_SetAlpha(id[4], alpha1*255 );
+			ObjRender_SetAlpha(id[5], alpha1*255 );
+			ObjRender_SetAlpha(id2, alpha1*255 );
+			
+			if( ctr == 1 ){
+				//　カーソルに出てるアレ
+				DrawCursor2( [90, sy+110], stc, cursor_color[stc] );
+				DrawCursor([128,sy+stc*24-4], stc, [255,255,255] );
+			}
+			
+			//------------------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------------------
+			//　項目選択関係
+			if( GetVirtualKeyState(VK_UP) == KEY_PUSH ){
+				stc--;
+				if( stc < 0 ){ stc = length(texts)-1; }
+				
+				//　フラグがfalseならば、各種項目を選択させない
+				if( !standby_spell && stc == 3 ){ stc--; }
+				if( !standby_stage && stc == 2 ){ stc--; }
+				if( !standby_EX && stc == 1 ){ stc--; }
+				
+				SetAreaCommonData("stc_area", "stc_area", stc );
+				
+				ObjSE_Play( se[0] );
+				ctr = 0;
+			}
+			else if( GetVirtualKeyState(VK_DOWN) == KEY_PUSH ){
+				stc++;
+				if( stc > length(texts)-1 ){ stc = 0; }
+				
+				//　フラグがfalseならば、各種項目を選択させない
+				if( !standby_EX && stc == 1 ){ stc++; }
+				if( !standby_stage && stc == 2 ){ stc++; }
+				if( !standby_spell && stc == 3 ){ stc++; }
+				
+				SetAreaCommonData("stc_area", "stc_area", stc );
+				
+				ObjSE_Play( se[0] );
+				ctr = 0;
+			}
+			//　キー長押しで自動移動
+			if( GetVirtualKeyState( VK_UP ) == KEY_HOLD ){
+				if( ctr2 >= 30 && ctr2 %4 == 0 ){
+					stc--;
+					if( stc < 0 ){ stc = length(texts)-1; }
+					
+					//　フラグがfalseならば、各種項目を選択させない
+					if( !standby_spell && stc == 3 ){ stc--; }
+					if( !standby_stage && stc == 2 ){ stc--; }
+					if( !standby_EX && stc == 1 ){ stc--; }
+					
+					SetAreaCommonData("stc_area", "stc_area", stc );
+					
+					ObjSE_Play( se[0] );
+					ctr = 0;
+				}
+				ctr2++;
+			}
+			else if( GetVirtualKeyState( VK_DOWN ) == KEY_HOLD ){
+				if( ctr2 >= 30 && ctr2 %4 == 0 ){
+					stc++;
+					if( stc > length(texts)-1 ){ stc = 0; }
+					
+					//　フラグがfalseならば、各種項目を選択させない
+					if( !standby_EX && stc == 1 ){ stc++; }
+					if( !standby_stage && stc == 2 ){ stc++; }
+					if( !standby_spell && stc == 3 ){ stc++; }
+					
+					SetAreaCommonData("stc_area", "stc_area", stc );
+					
+					ObjSE_Play( se[0] );
+					ctr = 0;
+				}
+				ctr2++;
+			}
+			else{
+				ctr2 = 0;
+			}
+			//------------------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------------------
+			
+			//　決定キー
+			if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 10 ){
+				//　ゲーム終了
+				if( stc == INDEX_QUIT ){
+					SaveCommonDataAreaA1("SaveData");
+					ClosePackage();
+				}
+				else{
+					//　sectorの状態を変更し、該当するsceneを起動
+					ctr = 0;
+					SetAreaCommonData("System", "title_sector", stc );
+					TSelectScene(stc);
+				}
+				SetAreaCommonData("System", "title_place", stc );
+				ObjSE_Play( se[1] );
+			}
+			//　キャンセルキー
+			if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 10 && stc != INDEX_QUIT ){
+				//　カーソルをQUITに移動
+				stc = INDEX_QUIT;
+				SetAreaCommonData("stc_area", "stc_area", stc );
+				ObjSE_Play( se[2] );
+				ctr = 0;
+			}
+			if( alpha1 < 1 ){ alphaA += 5; }
+			if( alpha2 < 1 ){ alphaB += 5; }
+		}
+		else{
+			//　今の画面がメインタイトルでなければ
+			if( alpha1 <= 0 ){
+				alpha1 = 0;
+				alpha2 = 0;
+				alphaA = 0;
+				alphaB = 0;
+			}
+			
+			alpha1 = 1 * sin( alphaA );
+			
+			ObjRender_SetAlpha(id[2], alpha1*255 );
+			ObjRender_SetAlpha(id[3], alpha1*255 );
+			ObjRender_SetAlpha(id[4], alpha1*255 );
+			ObjRender_SetAlpha(id[5], alpha1*255 );
+			ObjRender_SetAlpha(id2, alpha1*255 );
+			
+			if( alpha1 > 0 ){ alphaA += 10; }
+			ctr = 0;
+		}
+		
+		cc++;
+		if( move1 < 1 ){ moveA += 5; }
+		ctr++;
+		
+		yield;
+	}
+	i = 0;
+	
+	//　削除
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+	Obj_Delete(id2);
+}
+
+task TSelectScene(sc){
+	let csd				= GetCurrentScriptDirectory();
+	let INDEX_START		= 0;
+	let INDEX_EXTRA		= 1;
+	let INDEX_STAGEPRA	= 2;
+	let INDEX_SPELLPRA	= 3;
+	let INDEX_MUSIC		= 4;
+	let INDEX_RESULT	= 5;
+	let INDEX_OPTION	= 6;
+	let INDEX_REPLAY	= 7;
+	let INDEX_MANUAL	= 8;
+	let INDEX_QUIT		= 9;
+	let pathScript;
+	
+	alternative( sc )
+	case( INDEX_START ){
+		pathScript = csd ~ "./Package_RankSelectScene.dnh";
+		SetAreaCommonData("System", "Stage_Index", 1 );
+		SetAreaCommonData("System", "PlayMode", "Story" );
+		SetAreaCommonData("System", "Continue", false );
+		SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+		SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+		SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	}
+	case( INDEX_EXTRA ){
+		pathScript = csd ~ "./Package_RankSelectSceneEx.dnh";
+		SetAreaCommonData("System", "Stage_Index", 7 );
+		SetAreaCommonData("System", "PlayMode", "Story" );
+		SetAreaCommonData("System", "Continue", false );
+		SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+		SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+		SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	}
+	case( INDEX_STAGEPRA ){
+		pathScript = csd ~ "./Package_PracticeStartScene.dnh";
+		SetAreaCommonData("System", "PlayMode", "Stage" );
+		SetAreaCommonData("System", "Continue", false );
+		SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+		SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+		SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	}
+	case( INDEX_SPELLPRA ){
+		pathScript = csd ~ "./Package_SpellPracticeScene.dnh";
+		SetAreaCommonData("System", "PlayMode", "Spell" );
+		SetAreaCommonData("System", "Continue", false );
+		SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+		SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+		SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	}
+	case( INDEX_MUSIC ){
+		pathScript = csd ~ "./Package_MusicRoomScene.dnh";
+	}
+	case( INDEX_RESULT ){
+		pathScript = csd ~ "./Package_ResultScene.dnh";
+	}
+	case( INDEX_OPTION ){
+		pathScript = csd ~ "./Package_OptionSelectScene.dnh";
+	}
+	case( INDEX_REPLAY ){
+		pathScript = csd ~ "./Package_ReplaySelectScene.dnh";
+		SetAreaCommonData("System", "Continue", false );
+		SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+		SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+		SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+	}
+	case( INDEX_MANUAL ){
+		pathScript = csd ~ "./Package_ManualScene.dnh";
+	}
+	others{
+		//　変な値が渡されたらタスク終了
+		SetAreaCommonData("System", "title_sector", 0 );
+		break;
+	}
+	
+	//　代入されたシーンスクリプト起動
+	let idScript = LoadScript( pathScript );
+	StartScript( idScript );
+	
+	while( !IsCloseScript( idScript ) ){
+		yield;
+	}
+	
+	//　シーン結果処理
+	let result = GetScriptResult( idScript );
+	if( length(result) == 0 ){
+		//　シーンからタイトルへ戻る
+		SetAreaCommonData("System", "title_sector", -1 );
+		if( sc == INDEX_MUSIC ){
+			//　ミュージックルームから戻る時は、タイトル曲を再生
+			PlayMusic_Title( 0, true, 0 );
+		}
+	}
+	else{
+		alternative( sc )
+		case( INDEX_START ){
+		}
+		case( INDEX_EXTRA ){
+		}
+		case( INDEX_STAGEPRA ){
+		}
+		case( INDEX_SPELLPRA ){
+		}
+		case( INDEX_MUSIC ){
+		}
+		case( INDEX_OPTION ){
+		}
+		case( INDEX_REPLAY ){
+			//　リプレイ再生開始
+			pathScript	= csd ~ "./Package_StageScene.dnh";
+			let idScript = LoadScript( pathScript );
+			StartScript( idScript );
+		}
+		case( INDEX_MANUAL ){
+			//　リプレイ再生開始
+			pathScript	= csd ~ "./Package_StageScene.dnh";
+			let idScript = LoadScript( pathScript );
+			StartScript( idScript );
+		}
+	}
+}
+
+
+
+
+
+
+
+
+//　エフェクトとか
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　蝶のエフェクト
+task ButterflyL(pos,sca,dis,angle,plus,rgb_h){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let efrg		= GetAreaCommonData("System", "title_end", false );
+	let csd			= GetCurrentScriptDirectory();
+	let sca1		= 0;
+	let scaA		= 0;
+	let dis1		= 0;
+	let disA		= 0;
+	let sp			= rand(16,32);
+	let cc			= 0;
+	let i			= 0;
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "../img/effect/bt.png" );
+		Obj_SetRenderPriorityI(ID[i], 21 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ(ID[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 128 );
+		ObjSprite2D_SetDestRect(ID[i], 0, -64, 64, 64 );
+		ObjRender_SetColor(ID[i], rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjRender_SetAlpha(ID[i], sca1*255 );
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID[0]) && !Obj_IsDeleted(ID[1]) && sca < 1 && !efrg ){
+		efrg = GetAreaCommonData("System", "title_end", false );
+		
+		dis1 = 1 * sin( disA );
+		sca1 = 1 * sin( scaA );
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca - sca1*sca + sca/4 * sin(cc*sp), sca - sca1*sca, 0 );
+			ObjRender_SetAlpha(ID[i], sca1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetAngleXYZ(ID[0], 0, 0, 90+angle );
+		ObjRender_SetAngleXYZ(ID[1], 0, 180, (90+angle)*-1 );
+		
+		angle += plus;
+		
+		cc++;
+		if( dis1 < 1 ){ disA += 1; }
+		if( sca1 < 1 ){ scaA += 1; }
+		else{ break; }
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　選択してる所に出るやつ
+task DrawCursor(pos,stc,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let efrg	= GetAreaCommonData("System", "title_end", false );
+	let stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+	let csd		= GetCurrentScriptDirectory();
+	let scr		= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	
+	let vertex	= (256+stc*16);
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "../img/title/cursor.png" );
+	Obj_SetRenderPriorityI(ID, 21 );
+	ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+	ObjPrim_SetPrimitiveType(ID, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexPosition(ID, 0, -vertex/2, -12, 0 );
+	ObjPrim_SetVertexPosition(ID, 1, -vertex/2, 12, 0 );
+	ObjPrim_SetVertexPosition(ID, 2, -vertex/2 + alpha1*vertex, -12, 0 );
+	ObjPrim_SetVertexPosition(ID, 3, -vertex/2 + alpha1*vertex, 12, 0 );
+	ObjPrim_SetVertexUVT(ID, 0, 0, 0 );
+	ObjPrim_SetVertexUVT(ID, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(ID, 2, vertex, 0 );
+	ObjPrim_SetVertexUVT(ID, 3, vertex, 128 );
+	ObjPrim_SetVertexColor(ID, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 1, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 2, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 3, rgb_h[0], rgb_h[1], rgb_h[2] );
+	
+	//　フェードイン
+	while( !Obj_IsDeleted( ID ) && alpha1 < 1 && !efrg && stc == stcg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjPrim_SetVertexPosition(ID, 2, -vertex/2 + alpha1*vertex, -12, 0 );
+		ObjPrim_SetVertexPosition(ID, 3, -vertex/2 + alpha1*vertex, 12, 0 );
+		ObjPrim_SetVertexUVT(ID, 0, 0 + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 1, 0 + scr, 32 );
+		ObjPrim_SetVertexUVT(ID, 2, vertex + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 3, vertex + scr, 32 );
+		ObjPrim_SetVertexAlpha(ID, 0, alpha1*255 );
+		ObjPrim_SetVertexAlpha(ID, 1, alpha1*255 );
+		ObjPrim_SetVertexAlpha(ID, 2, alpha1*0 );
+		ObjPrim_SetVertexAlpha(ID, 3, alpha1*0 );
+		
+		alphaA += 5;
+		scr++;
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	//　削除まで待機
+	while( !Obj_IsDeleted( ID ) && !efrg && stc == stcg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+		
+		//　タイトル画面じゃなければ
+		let sector	= GetAreaCommonData("System", "title_sector", 0 );
+		if( sector != -1 ){
+			break;
+		}
+		
+		ObjPrim_SetVertexUVT(ID, 0, 0 + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 1, 0 + scr, 32 );
+		ObjPrim_SetVertexUVT(ID, 2, vertex + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 3, vertex + scr, 32 );
+		
+		scr++;
+		
+		yield;
+	}
+	//　フェードアウト
+	while( !Obj_IsDeleted( ID ) && alpha1 < 1 && !efrg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjPrim_SetVertexPosition(ID, 0, -vertex/2, -12 + alpha1*12, 0 );
+		ObjPrim_SetVertexPosition(ID, 1, -vertex/2, 12 - alpha1*12, 0 );
+		ObjPrim_SetVertexPosition(ID, 2, vertex/2, -12 + alpha1*12, 0 );
+		ObjPrim_SetVertexPosition(ID, 3, vertex/2, 12 - alpha1*12, 0 );
+		ObjPrim_SetVertexUVT(ID, 0, 0 + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 1, 0 + scr, 32 );
+		ObjPrim_SetVertexUVT(ID, 2, vertex + scr, 0 );
+		ObjPrim_SetVertexUVT(ID, 3, vertex + scr, 32 );
+		ObjPrim_SetVertexAlpha(ID, 0, 128 - alpha1*128 );
+		ObjPrim_SetVertexAlpha(ID, 1, 128 - alpha1*128 );
+		ObjPrim_SetVertexAlpha(ID, 2, alpha1*0 );
+		ObjPrim_SetVertexAlpha(ID, 3, alpha1*0 );
+		
+		alphaA += 2;
+		scr++;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　選択してる所に出るやつ2　鍵穴
+task DrawCursor2(pos,stc,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let efrg	= GetAreaCommonData("System", "title_end", false );
+	let stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+	let csd		= GetCurrentScriptDirectory();
+	let i		= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "../img/title/UIkey.png" );
+	Obj_SetRenderPriorityI(ID, 21 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetPrimitiveType(ID, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexPosition(ID, 0, -128, -256, 0 );
+	ObjPrim_SetVertexPosition(ID, 1, -128, 256, 0 );
+	ObjPrim_SetVertexPosition(ID, 2, 128, -256, 0 );
+	ObjPrim_SetVertexPosition(ID, 3, 128, 256, 0 );
+	ObjPrim_SetVertexUVT(ID, 0, 0, 0 );
+	ObjPrim_SetVertexUVT(ID, 1, 0, 512 );
+	ObjPrim_SetVertexUVT(ID, 2, 256, 0 );
+	ObjPrim_SetVertexUVT(ID, 3, 256, 512 );
+	ObjPrim_SetVertexColor(ID, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 1, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 2, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjPrim_SetVertexColor(ID, 3, rgb_h[0], rgb_h[1], rgb_h[2] );
+	
+	//　フェードイン
+	while( !Obj_IsDeleted( ID ) && alpha1 < 1 && !efrg && stc == stcg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ascent( i in 0..4 ){
+			ObjPrim_SetVertexAlpha(ID, i, alpha1*64 );
+		}
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	//　削除まで待機
+	while( !Obj_IsDeleted( ID ) && !efrg && stc == stcg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		stcg	= GetAreaCommonData("stc_area", "stc_area", 0 );
+		
+		//　タイトル画面じゃなければ
+		let sector	= GetAreaCommonData("System", "title_sector", 0 );
+		if( sector != -1 ){
+			break;
+		}
+		
+		yield;
+	}
+	//　フェードアウト
+	while( !Obj_IsDeleted( ID ) && alpha1 > 0 && !efrg ){
+		efrg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ascent( i in 0..4 ){
+			ObjPrim_SetVertexAlpha(ID, i, alpha1*64 );
+		}
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　このスクリプト中でアクティブなサウンドオブジェクト
+function PlaySEsP(path){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	
+//	VolumeChange( sid );
+	
+	return sid;
+}
+
+//　SE再生
+//　VolumeChange関数は構造上ちとマズかろうなのでこの関数で鳴らすタイミングに音量情報を適用
+function ObjSE_Play(ID) {
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	ObjSound_SetVolumeRate( ID, se_vol );
+	ObjSound_Play( ID );
+}
+
+//　タイトルに使う効果音のボリュームを常時変化させる
+task VolumeChange(ID){
+	while( !Obj_IsDeleted(ID) ){
+		let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+		se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+		
+		ObjSound_SetVolumeRate(ID, se_vol );
+		
+		yield;
+	}
+}
+
+//　氷クリスタルっぽいもの
+task CreateIceCrystal( pos, speed, angle, scale, kill, alpha, rgb_array, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let r_type	= 2;
+	let count	= 0;
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "./../img/effect/ice01b.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(obj, scale, scale, 0 );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, -32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, -32, 32, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 32, 32, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 64 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(obj, 2, 64, 64 );
+	ObjPrim_SetVertexUVT(obj, 3, 64, 128 );
+	
+	while( count < kill && GetAreaCommonData("System", "title_sector", 0 ) == -1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0], rgb_array[w][1], rgb_array[w][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(1,2)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 && GetAreaCommonData("System", "title_sector", 0 ) == -1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				ObjPrim_SetVertexColor(obj, i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*alpha );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0]/1.4, rgb_array[w][1]/1.4, rgb_array[w][2]/1.4 );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(2,4)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　雪の結晶
+task CreateSnowflakeL(CallID,pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.4,1);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, csd ~ "./../img/effect/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 21 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && frame < kill ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　キラキラしてるやつ
+task CreateLight(pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.1,0.4);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+	ObjPrim_SetTexture(ID, csd ~ "./../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(ID, 22 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 192, 256, 256, 320 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	let rgb_array = [
+		[ rgb_h[0], rgb_h[1], rgb_h[2] ],
+		[ rgb_h[0]/1.2, rgb_h[1]/1.2, rgb_h[2]/1.2 ],
+	];
+	
+	while( !Obj_IsDeleted(ID) && frame < kill && GetAreaCommonData("System", "title_sector", 0 ) == -1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		let array_pos = truncate(frame%2);
+		ObjRender_SetColor(ID, rgb_array[ array_pos ][0], rgb_array[ array_pos ][1], rgb_array[ array_pos ][2] );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		let array_pos = truncate(frame%2);
+		ObjRender_SetColor(ID, rgb_array[ array_pos ][0], rgb_array[ array_pos ][1], rgb_array[ array_pos ][2] );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

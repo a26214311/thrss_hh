@@ -1,0 +1,310 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　艱難「君が呼ぶメギドの丘で」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 56;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, false );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 128, 80, 128, 80 );
+
+		ShotMain;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 7, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07a( enm, true, enemy_tex_path00 );
+		//　敵位置初期化
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-112, 8, 8 );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "艱難「君が呼ぶメギドの丘で」";
+		
+		SpellCounter( GetDifficult, 7, 2 );
+		let sct = GetSpellCounter( GetDifficult, 7, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[0], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07a(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain{
+		Wait( 180 );
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		let way = 5;
+		while( !Obj_IsDeleted( enm ) ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( Wait( 60 ) ){ return; }
+			let angle = GetAngleToPlayer( enm );
+			let ar_p = [];
+			loop( floor( way ) ){
+				ar_p = ar_p~[ angle ];
+				angle += 360 / floor( way );
+			}
+			loop( floor( way ) ){
+				let idx = round( rand( 0, length( ar_p ) ) ) % length( ar_p );
+				SetShot( ar_p[ idx ] );
+				if( Wait( 15 ) ){ return; }
+				ar_p = erase( ar_p, idx );
+			}
+			if( Wait( 220 ) ){ return; }
+			EnemyMove( enm, 2, 8 );
+			way+=0.5;
+		}
+
+		task SetShot( let ag ){
+			let delay = 60;
+			let del = 20;
+			let color = [ 255, 88, 88 ];
+			CreateSwordLaser( gpos, ag, 1024, 80, del, color, delay );
+			ObjSound_Play( CreateShotSE[ 13 ] );
+			loop( delay ){ yield; }
+			if( Obj_IsDeleted( enm ) ){ return; }
+			let sx = gpos[0];
+			let sy = gpos[1];
+			while( sx > MinX && sx < MaxX && sy > MinY && sy < MaxY ){
+				sx += 10 * cos( ag );
+				sy += 10 * sin( ag );
+			}
+			local{
+				let way = 18;
+				let speed = 1.25;
+				let angle = ag;
+				let shote = BGW_RED_02;
+				let delay = 30;
+				loop( way ){
+					let sht = CreateShotA1( sx, sy, speed, angle, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+			}
+			local{
+				ObjSound_Play( CreateShotSE[ 8 ] );
+				let p = atan2( ObjMove_GetY( GetPlayerObjectID ) - sy, ObjMove_GetX( GetPlayerObjectID ) - sx );
+				let sht = CreateNuClearShot( [sx,sy], 0, p, 0, 0, "RED", 0.1, 30 );
+				Set( sht );
+				task Set( sht ){
+					ObjShot_SetAutoDelete( sht, true );
+					ObjShot_SetSpellResist( sht, true );
+					let sx = ObjMove_GetX( sht );
+					let sy = ObjMove_GetY( sht );
+					let speed = 0;
+					let smax = 0.8;
+					let scale = 0.1;
+					while( !Obj_IsDeleted( sht ) ){
+						sx += speed * cos( p );
+						sy += speed * sin( p );
+						ObjMove_SetPosition( sht, sx, sy );
+						Obj_SetValue( sht, "Scale", scale );
+						if( speed < smax ){ speed += smax / 100; }
+						if( scale < 1 ){ scale += 0.001; }
+						yield;
+					}
+				}
+			}
+			
+		}
+
+
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+
+	//　核弾 オブジェクトIDが返る
+	function CreateNuClearShot( pos, speed, angle, acc, maxspeed, color, scale, delay ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, maxspeed, 0, delay );
+		
+		CreateNuClearShot_Render( sht, color, scale, delay );
+		return sht;
+	}
+
+	//　描画
+	task CreateNuClearShot_Render( CallID, color, scale_base, delay ){
+		let ID		= [
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+		];
+		let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let gang	= ObjMove_GetAngle(CallID);
+		let move1	= 0;
+		let moveA	= 0;
+		
+		let angle	= [ 0, 0 ];
+		let scale	= [ scale_base, scale_base*1.1 ];
+		let alpha	= [ 128, 80 ];
+		
+		let _rect = [ 0 ,0 ];
+		alternative( color )
+		case( "RED" ){ _rect = [ 0, 0 ]; }
+		case( "ORANGE" ){ _rect = [ 1, 0 ]; }
+		case( "YELLOW" ){ _rect = [ 2, 0 ]; }
+		case( "GREEN" ){ _rect = [ 3, 0 ]; }
+		case( "AQUA" ){ _rect = [ 0, 1 ]; }
+		case( "BLUE" ){ _rect = [ 1, 1 ]; }
+		case( "PURPLE" ){ _rect = [ 2, 1 ]; }
+		case( "WHITE" ){ _rect = [ 3, 1 ]; }
+		
+		loop( delay ){ yield; }
+		
+		ascent( let i in 0..( length(ID) ) ){
+			ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../../img/bullet_nuclear.png" );
+			Obj_SetRenderPriorityI(ID[i], 51 );
+			ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+			ObjSprite2D_SetSourceRect(ID[i], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+			ObjSprite2D_SetDestCenter(ID[i]);
+		}
+		
+		while( !Obj_IsDeleted(CallID) ){
+			gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			gang = ObjMove_GetAngle(CallID);
+			scale_base = Obj_GetValueD(CallID,"Scale",1); 
+			scale	= [ scale_base, scale_base*1.1 ];
+			angle[0] = angle[0] - 64;
+			angle[1] = angle[1] + 64;
+			
+			move1 = 1 * sin( moveA );
+			
+			ascent( i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+				ObjRender_SetAngleZ(ID[i], angle[i] );
+				ObjRender_SetScaleXYZ(ID[i], move1*scale[i], move1*scale[i], 0 );
+				ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+			}
+			
+			ObjShot_SetIntersectionCircleA1( CallID, move1*(108*scale_base) );
+			
+			if( move1 < 1 ){ moveA += 2; }
+			
+			yield;
+		}
+		move1 = 0;
+		moveA = 0;
+		while( move1 < 1 ){
+			move1 = 1 * sin( moveA );
+			
+			angle[0] = angle[0] - 64;
+			angle[1] = angle[1] + 64;
+			
+			ascent( i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+				ObjRender_SetAngleZ(ID[i], angle[i] );
+				ObjRender_SetScaleXYZ(ID[i], scale[i] + move1*(scale[i]/2), scale[i] + move1*(scale[i]/2), 0 );
+				ObjRender_SetAlpha(ID[i], alpha[i] - move1*alpha[i] );
+			}
+			
+			moveA += 10;
+			
+			yield;
+		}
+		ascent( i in 0..( length(ID) ) ){
+			Obj_Delete( ID[i] );
+		}
+	}

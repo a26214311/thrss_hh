@@ -1,0 +1,581 @@
+
+	let csd			= GetCurrentScriptDirectory();
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth;
+	let MaxY		= GetStgFrameHeight;
+	let CenX		= GetStgFrameWidth/2;
+	let CenY		= GetStgFrameHeight/2;
+	
+	#include "./../system/Load_AllTexture.dnh"		//　殆ど全部のテクスチャパス
+	
+	let path_effect03	= effect_tex[4];
+	
+	#include "./../lib/lib_BossEndEffect.dnh"
+	#include "./../lib/lib_ExplosionBlur.dnh"
+	
+	@Initialize{
+		StartItemScript( GetCurrentScriptDirectory() ~ "./System_Item.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_GAIN_SPELL ){
+			let objScene	= GetEnemyBossSceneObjectID();
+			let score		= ObjEnemyBossScene_GetInfo(objScene,INFO_SPELL_SCORE);
+			let GetMode		= GetAreaCommonData("System", "PlayMode", "NULL" );
+			
+			//　スペカリザルト
+			TGainSpell( score );
+			
+			if( GetMode == "Spell" ){
+				//　スペプラでスペカ取得出来たら、スペカ取得フラグをtrue
+				SetAreaCommonData("System", "ClearSpellPractice", true );
+			}
+		}
+		case( EV_TIMEOUT ){
+			let objScene	= GetEnemyBossSceneObjectID();
+			let IsDurable	= ObjEnemyBossScene_GetInfo( objScene, INFO_IS_DURABLE_SPELL );
+			if( !IsDurable ){
+				SpellBonusFailed();
+			}
+		}
+		case( EV_START_BOSS_SPELL ){
+			SpellBeginTimer();
+		}
+		case( EV_USER + 0 ){
+			//　スペカ取得失敗
+			SpellBonusFailed();
+		}
+		case( EV_USER + 1 ){
+			//　ボス撃破
+			let pos = GetEventArgument(0);		//　ｲﾍﾞﾝﾄコール時にセットされた座標
+			DisChargeDarkPower(pos, 32, 6 );
+			ExplotionBlur( [255,255,255] );
+		}
+		case( EV_USER + 2 ){
+			let argument = GetEventArgument(0);
+			DisplayMusicName( [CenX-8,MaxY+26], argument[0], argument[1], 89, 180 );
+		}
+		case( EV_USER + 3 ){
+			let pos = GetEventArgument(0);
+			DisChargeDarkPowerB(pos, 24, 6 );
+		}
+	}
+	
+	//　時間情報計測タイマー
+	task SpellBeginTimer(){
+		let objScene 	= GetEnemyBossSceneObjectID();
+		let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		let BreakCount	= 0;
+		let BreakCount2	= 0;
+		let RealCount	= 0;
+		let RealCount2	= 0;
+		
+		//撃破、実時間計測
+		while(OnSpell){
+			objScene 	= GetEnemyBossSceneObjectID();
+			OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+			
+			BreakCount++;
+			RealCount++;
+			if(BreakCount>=60){
+				BreakCount2++;
+				BreakCount=0;
+			}
+			if(RealCount>=GetCurrentFps){
+				RealCount2++;
+				RealCount=0;
+			}
+			SetAreaCommonData("Time", "Breakc", BreakCount );
+			SetAreaCommonData("Time", "Breakc2", BreakCount2 );
+			SetAreaCommonData("Time", "Realc", RealCount );
+			SetAreaCommonData("Time", "Realc2", RealCount2 );
+			
+			yield;
+		}
+	}
+	
+	//　取得した時間とか
+	task SpellEndTimer(){
+		//SpellBeginTimerが時間を計測し、此方が表示
+		let id				= [ObjPrim_Create(OBJ_SPRITE_2D),//撃破時間
+								ObjPrim_Create(OBJ_SPRITE_2D),//実時間
+								
+								ObjPrim_Create(OBJ_SPRITE_2D),//撃破数値
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								
+								ObjPrim_Create(OBJ_SPRITE_2D),//実数値
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								ObjPrim_Create(OBJ_SPRITE_2D),
+								
+								ObjPrim_Create(OBJ_SPRITE_2D),//,1
+								ObjPrim_Create(OBJ_SPRITE_2D),//,2
+								
+								ObjPrim_Create(OBJ_SPRITE_2D),//s1
+								ObjPrim_Create(OBJ_SPRITE_2D)//s2
+								];
+		let uv				= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+		let i				= 0;
+		let alpha1			= 0;
+		let alphaA			= 0;
+		let cc				= 0;
+		
+		//　2は整数
+		//　無印は小数
+		let GetBreakTime	= GetAreaCommonData("Time","Breakc",99);
+		let GetBreakTime2	= GetAreaCommonData("Time","Breakc2",999);
+		let GetRealTime		= GetAreaCommonData("Time","Realc",99);
+		let GetRealTime2	= GetAreaCommonData("Time","Realc2",999);
+		
+		//撃破時間
+		let BreakTime		= [truncate((GetBreakTime2%100)/10),
+								truncate(GetBreakTime2%10),
+								truncate((GetBreakTime%100)/10),
+								truncate(GetBreakTime%10),
+								truncate((GetBreakTime2%1000)/100),//　百の位
+								];
+		
+		//実時間
+		let RealTime		= [truncate((GetRealTime2%100)/10),
+								truncate(GetRealTime2%10),
+								truncate((GetRealTime%100)/10),
+								truncate(GetRealTime%10),
+								truncate((GetRealTime2%1000)/100),//　百の位
+								];
+		
+		//　レイヤー
+		let layer	= 79;
+		
+		if( GetBreakTime2 < 10 ){
+			Obj_Delete(id[2]);
+			Obj_Delete(id[6]);
+		}
+		else if( GetBreakTime2 < 100 ){
+			Obj_Delete(id[6]);
+		}
+		
+		if( GetRealTime2 < 10 ){
+			Obj_Delete(id[7]);
+			Obj_Delete(id[11]);
+		}
+		else if( GetRealTime2 < 100 ){
+			Obj_Delete(id[11]);
+		}
+		
+		//　撃破時間
+		ObjRender_SetPosition(id[0], CenX-32, CenY-32, 0 );
+		ObjPrim_SetTexture(id[0], front_tex[0] );
+		Obj_SetRenderPriorityI(id[0], layer );
+		ObjRender_SetScaleXYZ(id[0], 1, 1, 0 );
+		ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+		ObjSprite2D_SetSourceRect(id[0], 128, 0, 256, 32 );
+		ObjSprite2D_SetDestCenter(id[0]);
+		
+		//　実時間
+		ObjRender_SetPosition(id[1], CenX-32, CenY-16, 0 );
+		ObjPrim_SetTexture(id[1], front_tex[0] );
+		Obj_SetRenderPriorityI(id[1], layer );
+		ObjRender_SetScaleXYZ(id[1], 1, 1, 0 );
+		ObjRender_SetBlendType(id[1], BLEND_ALPHA );
+		ObjSprite2D_SetSourceRect(id[1], 128, 32, 256, 64 );
+		ObjSprite2D_SetDestCenter(id[1]);
+		
+		//　撃破数値
+		loop( 5 ){
+			ObjPrim_SetTexture(id[2+i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[2+i], layer );
+			ObjRender_SetBlendType(id[2+i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[2+i], 0 + 24*uv[ BreakTime[i] ], 488, 24 + 24*uv[ BreakTime[i] ], 512 );
+			ObjSprite2D_SetDestCenter(id[2+i]);
+			ObjRender_SetAlpha(id[2+i], 0 );
+			i++;
+		}
+		i = 0;
+		ObjRender_SetScaleXYZ(id[2], 0.7, 0.7, 0 );
+		ObjRender_SetScaleXYZ(id[3], 0.7, 0.7, 0 );
+		ObjRender_SetScaleXYZ(id[4], 0.5, 0.5, 0 );
+		ObjRender_SetScaleXYZ(id[5], 0.5, 0.5, 0 );
+		ObjRender_SetScaleXYZ(id[6], 0.7, 0.7, 0 );		//　百の位
+		ObjRender_SetPosition(id[2], (CenX+24)+12 ,CenY-32, 0 );
+		ObjRender_SetPosition(id[3], (CenX+24)+24 ,CenY-32, 0 );
+		ObjRender_SetPosition(id[4], (CenX+24)+38 ,CenY-30, 0 );
+		ObjRender_SetPosition(id[5], (CenX+24)+46 ,CenY-30, 0 );
+		ObjRender_SetPosition(id[6], (CenX+24) ,CenY-32, 0 );
+		
+		//　実数値
+		loop( 5 ){
+			ObjPrim_SetTexture(id[7+i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[7+i], layer );
+			ObjRender_SetColor(id[7+i], 160, 160, 160 );
+			ObjRender_SetBlendType(id[7+i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[7+i], 0 + 24*uv[ RealTime[i] ], 488, 24 + 24*uv[ RealTime[i] ], 512 );
+			ObjSprite2D_SetDestCenter(id[7+i]);
+			ObjRender_SetAlpha(id[7+i], 0 );
+			i++;
+		}
+		i = 0;
+		ObjRender_SetScaleXYZ(id[7], 0.7, 0.7, 0 );
+		ObjRender_SetScaleXYZ(id[8], 0.7, 0.7, 0 );
+		ObjRender_SetScaleXYZ(id[9], 0.5, 0.5, 0 );
+		ObjRender_SetScaleXYZ(id[10], 0.5, 0.5, 0 );
+		ObjRender_SetScaleXYZ(id[11], 0.7, 0.7, 0 );	//　百の位
+		ObjRender_SetPosition(id[7], (CenX+24)+12, CenY-16, 0 );
+		ObjRender_SetPosition(id[8], (CenX+24)+24, CenY-16, 0 );
+		ObjRender_SetPosition(id[9], (CenX+24)+38, CenY-14, 0 );
+		ObjRender_SetPosition(id[10], (CenX+24)+46, CenY-14, 0 );
+		ObjRender_SetPosition(id[11], (CenX+24), CenY-16, 0 );
+		
+		//　"."2つ
+		loop( 2 ){
+			ObjPrim_SetTexture(id[12+i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[12+i], layer );
+			ObjRender_SetScaleXYZ(id[12+i], 0.5, 0.5, 0 );
+			ObjRender_SetBlendType(id[12+i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[12+i], 0 + 24*uv[ 13 ], 488, 24 + 24*uv[ 13 ], 512 );
+			ObjSprite2D_SetDestCenter(id[12+i]);
+			ObjRender_SetAlpha(id[12+i], 0 );
+			i++;
+		}
+		i = 0;
+		ObjRender_SetPosition(id[12], (CenX+24)+30, CenY-26, 0 );
+		ObjRender_SetPosition(id[13], (CenX+24)+30, CenY-10, 0 );
+		ObjRender_SetColor(id[12], 255, 255, 255 );
+		ObjRender_SetColor(id[13], 160, 160, 160 );
+		
+		//　"s"2つ
+		loop( 2 ){
+			ObjPrim_SetTexture(id[14+i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[14+i], layer );
+			ObjRender_SetScaleXYZ(id[14+i], 0.5, 0.5, 0 );
+			ObjRender_SetBlendType(id[14+i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[14+i], 0 + 24*uv[ 12 ], 488, 24 + 24*uv[ 12 ], 512 );
+			ObjSprite2D_SetDestCenter(id[14+i]);
+			ObjRender_SetAlpha(id[14+i], 0 );
+			i++;
+		}
+		i = 0;
+		ObjRender_SetPosition(id[14], (CenX+24)+53, CenY-29, 0 );
+		ObjRender_SetPosition(id[15], (CenX+24)+53, CenY-13, 0 );
+		ObjRender_SetColor(id[14], 255, 255, 255 );
+		ObjRender_SetColor(id[15], 160, 160, 160 );
+		
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			
+			loop( length(id) ){
+				ObjRender_SetAngleXYZ(id[i], 0, 90 - alpha1*90, 0 );
+				ObjRender_SetAlpha(id[i], alpha1*255 );
+				i++;
+			}
+			i = 0;
+			
+			alphaA += 2;
+			
+			yield;
+		}
+		alpha1 = 0;
+		alphaA = 0;
+		loop( 120 ){ yield; }
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			
+			loop( length(id) ){
+				ObjRender_SetAngleXYZ(id[i], alpha1*90, 0, 0 );
+				ObjRender_SetAlpha(id[i], 255 - alpha1*255 );
+				i++;
+			}
+			i = 0;
+			
+			alphaA += 5;
+			
+			yield;
+		}
+		loop( length(id) ){
+			Obj_Delete(id[i]);
+			i++;
+		}
+		i=0;
+	}
+	
+	//　スコア表示のほう
+	task TGainSpell(score){
+		let id			= [
+			ObjPrim_Create(OBJ_SPRITE_2D),//gscb!!
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),//百万
+			ObjPrim_Create(OBJ_SPRITE_2D),//千万
+			ObjPrim_Create(OBJ_SPRITE_2D),//億
+			ObjPrim_Create(OBJ_SPRITE_2D),//,1
+			ObjPrim_Create(OBJ_SPRITE_2D),
+		];
+		let sid			= [
+			ObjSound_Create(),
+			ObjSound_Create(),
+		];
+		let objScene	= GetEnemyBossSceneObjectID();
+		let point		= GetAreaCommonData("Trance", "max_score", 0 );
+		let GetScores	= ObjEnemyBossScene_GetInfo(objScene, INFO_SPELL_SCORE );
+		//　ある程度キリの良い数字にしたい
+		GetScores = ceil( GetScores / 10000 ) * 10000;
+		
+		let uv			= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+		let i			= 0;
+		let f			= 0;
+		let f2			= 0;
+		let rgb			= [255,64];
+		let rgb2		= [255,64];
+		let sca			= 0.7;
+		let sca1		= 0;
+		let scaA		= 0;
+		let score_h		= [0,10,100,1000,10000,100000,1000000,10000000,100000000];
+		let gscore		= [truncate(GetScores%10),
+							truncate((GetScores%100)/10),
+							truncate((GetScores%1000)/100),
+							truncate((GetScores%10000)/1000),
+							truncate((GetScores%100000)/10000),
+							truncate((GetScores%1000000)/100000),
+							truncate((GetScores%10000000)/1000000),
+							truncate((GetScores%100000000)/10000000),
+							truncate((GetScores%1000000000)/100000000)];
+		let move1		= 0;
+		let moveA		= 0;
+		let se_vol		= GetAreaCommonData("Option","SE_Volume",100);
+		let layer		= 79;
+
+		se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+		
+		SpellEndTimer();
+		
+		ObjRender_SetPosition(id[0], CenX, CenY-110, 0 );
+		ObjPrim_SetTexture(id[0], front_tex[0] );
+		Obj_SetRenderPriorityI(id[0], layer );
+		ObjRender_SetColor(id[0], rgb[f], rgb[f], rgb[f] );
+		ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+		ObjSprite2D_SetSourceRect(id[0], 256, 32, 512, 64 );
+		ObjSprite2D_SetDestCenter(id[0]);
+		
+		loop( 9 ){
+			ObjRender_SetPosition(id[1+i], CenX-48+i*14, CenY-80, 0 );
+			ObjPrim_SetTexture(id[1+i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[1+i], layer );
+			ObjRender_SetScaleXYZ(id[1+i], sca, sca, 0 );
+			ObjRender_SetColor(id[1+i], rgb2[f2], rgb2[f2], rgb2[f2] );
+			ObjRender_SetBlendType(id[1+i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[1+i], 0 + 24*uv[ gscore[i] ], 488, 24 + 24*uv[ gscore[i] ], 512 );
+			ObjSprite2D_SetDestCenter(id[1+i]);
+			ObjRender_SetAlpha(id[1+i], 0 );
+			i++;
+		}
+		i = 10;
+		
+		loop( 2 ){
+			ObjPrim_SetTexture(id[i], front_tex[0] );
+			Obj_SetRenderPriorityI(id[i], layer );
+			ObjRender_SetScaleXYZ(id[i], sca, sca, 0 );
+			ObjRender_SetColor(id[i], rgb2[f2], rgb2[f2], rgb2[f2] );
+			ObjRender_SetBlendType(id[i], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(id[i], 0 + 24*uv[ 14 ], 488, 24 + 24*uv[ 14 ], 512 );
+			ObjSprite2D_SetDestCenter(id[i]);
+			ObjRender_SetAlpha(id[i], 0 );
+			i++;
+		}
+		i = 0;
+		
+		ascent( i in 0..( length(sid) ) ){
+			if( i == 0 ){
+				ObjSound_Load(sid[i], csd ~ "./../se/echo5.ogg" );
+			}
+			else{
+				ObjSound_Load(sid[i], csd ~ "./../se/get_sp.ogg" );
+			}
+			ObjSound_SetVolumeRate(sid[i], se_vol );
+			ObjSound_SetLoopEnable(sid[i], false );
+			ObjSound_SetSoundDivision(sid[i], SOUND_SE );
+			ObjSound_Play(sid[i]);
+		}
+		i = 0;
+		
+		//　スコア加算
+		AddScoreDelay( GetScores );
+		
+		//　文字点滅
+		loop( 24 ){
+			ObjRender_SetColor(id[0], rgb[f], rgb[f], rgb[f] );
+			
+			f++;
+			if( f >= 2 ){ f=0; }
+			
+			loop(2){ yield; }
+		}
+		ObjRender_SetColor(id[0], rgb[0], rgb[0], rgb[0] );
+		
+		//　ボーナス表示
+		loop( 9 ){
+			if( GetScores >= score_h[i] ){
+				while( move1 < 1 ){
+					move1 = 1 * sin( moveA );
+					
+					ObjRender_SetPosition(id[1+i], CenX-64 + 14*8 - i*14, CenY-120+move1*40, 0 );
+					ObjRender_SetAlpha(id[1+i], move1*255 );
+					
+					if( i == 3 ){
+						ObjRender_SetPosition(id[10], CenX-58 + 14*5, CenY-120+move1*48, 0 );
+						ObjRender_SetAlpha(id[10], move1*255 );
+					}
+					else if( i == 6 ){
+						ObjRender_SetPosition(id[11], CenX-58 + 14*2, CenY-120+move1*48, 0 );
+						ObjRender_SetAlpha(id[11], move1*255 );
+					}
+					
+					if( move1 < 1 ){ moveA += 15; }
+					f2++;
+					if( f2 >= 2 ){ f2 = 0; }
+					
+					yield;
+				}
+			}
+			
+			move1	= 0;
+			moveA	= 0;
+			i++;
+		}
+		i = 0;
+		
+		loop( 60 ){ yield; }
+		
+		//　スケール変えて削除
+		while( sca1 < 1 ){
+			sca1 = 1 * sin( scaA );
+			
+			ObjRender_SetScaleXYZ(id[0], 1, 1 - sca1, 0 );
+			
+			loop( 9 ){
+				ObjRender_SetScaleXYZ(id[1+i], sca, sca - sca1*sca, 0 );
+				i++;
+			}
+			i = 0;
+			ObjRender_SetScaleXYZ(id[10], sca, sca - sca1*sca, 0 );
+			ObjRender_SetScaleXYZ(id[11], sca, sca - sca1*sca, 0 );
+			
+			scaA += 5;
+			
+			yield;
+		}
+		loop( length(id) ){
+			Obj_Delete( id[i] );
+			i++;
+		}
+		i = 0;
+		ascent( i in 0..( length(sid) ) ){
+			Obj_Delete( sid[i] );
+		}
+	}
+	
+	task SpellBonusFailed(){
+		let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+		let alpha1		= 0;
+		let alphaA		= 0;
+		let layer		= 79;
+		
+		SpellEndTimer();
+		
+		ObjRender_SetPosition(id, CenX ,CenY-110, 0 );
+		ObjPrim_SetTexture(id, front_tex[0] );
+		Obj_SetRenderPriorityI(id, layer );
+		ObjRender_SetBlendType(id, BLEND_ALPHA );
+		ObjSprite2D_SetSourceRect(id, 256, 256, 512, 288 );
+		ObjSprite2D_SetDestCenter(id);
+		ObjRender_SetAlpha(id, alpha1 );
+		
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			ObjRender_SetAlpha(id, alpha1*255 );
+			
+			alphaA += 2;
+			
+			yield;
+		}
+		alpha1 = 0;
+		alphaA = 0;
+		loop( 120 ){ yield; }
+		while( alpha1 < 1 ){
+			alpha1 = 1 * sin( alphaA );
+			
+			ObjRender_SetScaleXYZ(id, 1, 1 - alpha1, 0 );
+			
+			alphaA += 5;
+			
+			yield;
+		}
+		Obj_Delete(id);
+	}
+	
+	//　徐々にスコア加算
+	task AddScoreDelay( score ){
+		loop( 60 ){
+			AddScore( score / 60 );
+			yield;
+		}
+	}
+	
+	//　BGM名表示
+	task DisplayMusicName( pos, tex_num, num, layer, long ){
+		let ID			= ObjPrim_Create(OBJ_SPRITE_2D);
+		let move1		= 0;
+		let moveA		= 0;
+		let texture		= [
+			csd ~ "./../img/front/music_name01.png",
+			csd ~ "./../img/front/music_name02.png",
+			csd ~ "./../img/front/music_name03.png",
+		];
+		
+		//　画像スケール
+		let scale = 0.35;
+		
+		ObjPrim_SetTexture(ID, texture[ tex_num ] );
+		Obj_SetRenderPriorityI(ID, layer );
+		ObjRender_SetBlendType(ID, BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(ID, scale, scale, 0 );
+		ObjSprite2D_SetSourceRect(ID, 0, 0 + num*128, 1024, 128 + num*128 );
+		ObjSprite2D_SetDestCenter(ID);
+		
+		while( move1 < 1 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, pos[0] + 256 - move1*256, pos[1], 0 );
+			ObjRender_SetAlpha(ID, move1*255 );
+			
+			moveA += 1;
+			
+			yield;
+		}
+		loop( long ){ yield; }
+		while( move1 > 0 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, pos[0], pos[1] + 16 - move1*16, 0 );
+			ObjRender_SetAlpha(ID, move1*255 );
+			
+			moveA += 1;
+			
+			yield;
+		}
+		Obj_Delete(ID);
+	}
+	
+	

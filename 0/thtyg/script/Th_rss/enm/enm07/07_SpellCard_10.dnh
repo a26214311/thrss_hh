@@ -1,0 +1,1108 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　「邪馬台の大蛇」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let enm_lifegauge = [ -1, -1, -1 ];
+	let spl;
+	
+	//　カウンタ
+	let count		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 199;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+
+		//　特殊ライフゲージ用
+		ascent( idx in 0..length( enm_lifegauge ) ){
+			enm_lifegauge[ idx ] = ObjEnemy_Create( OBJ_ENEMY );
+			ObjEnemy_SetDamageRate( enm_lifegauge[ idx ], 0, 0 );
+			let life = [ 3200, 2800, 1400 ];
+			ObjEnemy_SetLife( enm_lifegauge[ idx ], life[ idx ] );
+			ObjEnemy_Regist( enm_lifegauge[ idx ] );
+		}
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 64, 96, 96 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		//　弾幕
+		if( count == 60 ){
+			MainThread;
+		}
+		
+		//　カウンタ
+		count++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 7400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE * 4.8 );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 7, 12 );
+		}
+	}
+	
+	@Finalize{
+	}
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b( enm, true, enemy_tex_path );
+		//　敵位置初期化
+		ObjMove_SetPosition( enm, CenX, MinY - 64 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Extra" ){
+/* to be translated */			spell_text = "「邪馬台の大蛇」";
+		}
+		others{
+/* to be translated */			spell_text = "「邪馬台の大蛇」";
+		}
+		
+		SpellCounter( GetDifficult, 7, 12 );
+		let sct = GetSpellCounter( GetDifficult, 7, 12 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[1], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	function WaitP( long, ps ){
+		loop( long ){
+			yield;
+			if( PHASE != ps ){ return true; }
+		}
+		return false;
+	}
+	
+
+	let PHASE = 1;
+	
+	
+	//　ショットメイン
+	task MainThread{
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		
+		SetLifeGauge;
+		task SetLifeGauge{
+			ascent( idx in 0..length( enm_lifegauge ) ){
+				let radius = 64 + 8 * idx;
+				CreateLifeBar( enm_lifegauge[ idx ], 60, radius, 71, 0, [255,255,255], "Default" , [true,true] );
+				Wait( 30 );
+			}
+		}
+		Wait( 200 );
+
+		if( PHASE == 1 ){
+			Pattern1_0( 1, r );
+		}
+		while( PHASE == 1 ){
+			let ps = 1;
+			Pattern1_1( ps, rand( 0, 360 ), r );
+			if( WaitP( 180, ps ) ){ break; }
+			Pattern1_2( ps );
+			if( WaitP( 160, ps ) ){ break; }
+			r = -r;
+		}
+		if( PHASE == 2 ){
+			Wait( 180 );
+			Pattern2_0( 2, r );
+		}
+		while( PHASE == 2 ){
+			let ps = 2;
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( WaitP( 60, ps ) ){ break; }
+			Pattern2_1( ps, r );
+			if( WaitP( 100, ps ) ){ break; }
+			Pattern2_2( ps );
+			if( WaitP( 500, ps ) ){ break; }
+			r = -r;
+		}
+		Wait( 80 );
+		SetAreaCommonData( "anime", "spa", true );
+		SetEffect_Enm06;
+		Wait( 120 );
+		Pattern3_0( r );
+		Wait( 80 );
+		while( !Obj_IsDeleted( enm ) ){
+			Pattern3_1( r );
+			if( Wait( 80 ) ){ break; }
+			Pattern3_2( r );
+			if( Wait( 420 ) ){ break; }
+			r = -r;
+			Pattern3_3( r );
+		}
+
+		task Pattern1_0( let ps, let r ){
+			let p = GetAngleToPlayer( enm );
+			let wt = 5;
+			loop{
+				let roundway = 3;
+				let wide = 5;
+				let way = 4;
+				let speed = 1.8;
+				let shote = BGW_GREEN_04;
+				let delay = 9;
+				let ag = p;
+				loop( roundway ){
+					let v = 64;
+					let sx = gpos[0] + v * cos( ag );
+					let sy = gpos[1] + v * sin( ag );
+					let angle = ag - wide / 2;
+					loop( way ){
+						let sht = CreateShotA2( sx, sy, 0, angle, speed / 60, speed, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += wide / ( way - 1 );
+					}
+					ag += 360 / roundway;
+				}
+				p += 11 * r;
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				if( WaitP( wt, ps ) ){ return; }
+			}
+		}
+
+		task Pattern1_1( let ps, let p, let r ){
+			let way = 3;
+			let dist = 128;
+			let rb = r;
+			loop( 3 ){
+				let ag = p;
+				loop( way ){
+					let angle = [ ag, ag + 360 / way ];
+					CreateShotWall( dist, angle, ADD_BGW_YELLOW_22, r );
+					ag += 360 / way;
+				}
+				p += 360 / way / 3 * rb;
+				dist += 72;
+				r = -r;
+				if( WaitP( 30, ps ) ){ return; }
+			}
+			
+			task CreateShotWall( dist, angle, shote, r ){
+				let sposA = [
+					gpos[0] + dist * cos( angle[0] ),
+					gpos[1] + dist * sin( angle[0] ),
+				];
+				let sposB = [
+					gpos[0] + dist * cos( angle[1] ),
+					gpos[1] + dist * sin( angle[1] ),
+				];
+				let agb = GetGapAngle( sposA, sposB );
+				let lp = 7;
+				CreateShotAtoB( sposA, sposB, agb-120, shote );
+
+				task CreateShotAtoB( posA, posB, angle, shote ){
+					let distb	= GetDistance( posA, posB );
+					let agb		= GetGapAngle( posA, posB );
+
+					let base	= 16;
+					let posC	= [ gpos[0] + base * cos( angle ),
+					                gpos[1] + base * sin( angle ) ];
+					                
+					ObjSound_Play( CreateShotSE[13] );
+					CreateSwordLaser( posA, agb, distb, 48, 24, [255,255,64], 30 );
+					if( WaitP( 64, ps ) ){ return; }
+					ascent( let i in 0..lp ){
+						let spos = [
+							posA[0] + i*(distb/(lp-1)) * cos( agb ),
+							posA[1] + i*(distb/(lp-1)) * sin( agb ),
+						];
+						let ag = GetGapAngle( spos, gpos ) + 36 * r;
+						let mx = GetDistance( spos, gpos ) / ( dist / 2 );
+						let acc = mx / 120;
+						CreateShot01( spos, 0, ag, acc, mx, shote, 18 );
+					}
+					ObjSound_Play( CreateShotSE[1] );
+				}
+			}
+		}
+
+		task Pattern1_2( let ps ){
+			ObjMove_SetDestAtWeight( enm, GetPlayerX, CenY-96, 8, 4 );
+			if( WaitP( 80, ps ) ){ return; }
+			Concentration03_Main( enm, power_rgb, 60 );
+			CreateBraidAttack( [ gpos[0], MinY ], 90, ps );
+		}
+
+		task Pattern2_0( let ps, let r ){
+			let i = 0;
+			let p = GetAngleToPlayer( enm );
+			let wt = 10;
+			loop{
+				let roundway = 2;
+				let wide = 58;
+				let way = 3;
+				let speed = 1;
+				let shote = BGW_GREEN_04;
+				let delay = 16;
+				let ag = p + i;
+				loop( roundway ){
+					let v = 64;
+					let sx = gpos[0] + v * cos( ag );
+					let sy = gpos[1] + v * sin( ag );
+					let angle = ag - wide / 2;
+					loop( way ){
+						let sht = CreateShotA2( sx, sy, 0, angle, speed / 60, speed, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += wide / ( way - 1 );
+					}
+					ag += 360 / roundway;
+				}
+				i += 17.3 * r;
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				if( WaitP( wt, ps ) ){ return; }
+			}
+		}
+
+		task Pattern2_1( let ps, let r ){
+			let way = 6;
+			let wide = 240;
+			let angle = GetAngleToPlayer( enm ) + 30 * r - wide / 2;
+			let ar_p = [];
+			loop( way ){
+				ar_p = ar_p~[ angle ];
+				angle += wide / ( way - 1 );
+			}
+			let d = 0;
+			let wt = 9;
+			loop( way ){
+				let idx = round( rand( 0, length( ar_p ) ) ) % length( ar_p );
+				CallFamily( ar_p[ idx ], 7, 400, d );
+				if( WaitP( wt, ps ) ){ return; }
+				d += wt;
+				ar_p = erase( ar_p, idx );
+			}
+			
+			
+			task CallFamily( angle, type, wt, d ){
+				let col		= [ "RED", "GREEN", "BLUE", "YELLOW", "PURPLE", "AQUA", "ORANGE", "WHITE" ];
+				let fam		= CreateEnemy_Jewel( col[type%length(col)], 0.2, 0, 2 );
+				let gpos	= [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+				ObjSound_Play( CreateShotSE[5] );
+				ObjMove_SetPosition(fam, gpos[0], gpos[1] );
+				
+				let spl = wt;
+				
+				let state = 0;
+				Move;
+				if( WaitP( 200 - d, ps ) ){ Obj_Delete( fam ); return; }
+				state = 1;
+		//		SetShot;
+				task Move{
+					let speed = 0;
+					while( gpos[0] >MinX && gpos[0] < MaxX && gpos[1] > MinY && gpos[1] < MaxY ){
+						gpos[0] = gpos[0] + speed * cos( angle );
+						gpos[1] = gpos[1] + speed * sin( angle );
+						ObjMove_SetPosition(fam, gpos[0], gpos[1] );
+						speed += 0.08;
+						if( WaitP( 1, ps ) ){ return; }
+					}
+					local{
+						let way = 12;
+						let p = angle;
+						loop( way ){
+							let sx = gpos[0] + 24 * cos( p );
+							let sy = gpos[1] + 24 * sin( p );
+							let speed = 0.7;
+							let shote = BGW_RED_02 + type % length( col );
+							let delay = 16;
+							let sht = CreateShotA2( sx, sy, 0, p, speed / 90, speed, shote, delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+							p += 360 / way;
+						}
+						ObjSound_Play( CreateShotSE[6] );
+					}
+					while( state == 0 ){ WaitP( 1, ps ); }
+					speed = 0;
+					angle = atan2( ObjMove_GetY(enm) - gpos[1], ObjMove_GetX(enm) - gpos[0] );
+					let epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+					let radius = GetDistance( gpos, [ ObjMove_GetX(enm), ObjMove_GetY(enm) ] );
+					let spd = radius / spl;
+					let lp = 3;
+					let agv = [ 0, -40 * r, 20 * r ];
+					let l = 60;
+					let count = 0;
+					loop( 3 ){
+						epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+						angle = atan2( epos[1] - gpos[1], epos[0] - gpos[0] ) + agv[ lp - 1 ]; 
+						radius = GetDistance( gpos, epos ) / min( lp, 2 );
+						spd = radius / l;
+						local{
+							let color = [ 255, 255, 255 ];
+							CreateSwordLaser( gpos, angle , 768, 16, 30, color, 60 );
+							ObjSound_Play( CreateShotSE[ 13 ] );
+						}
+						loop( l ){
+							gpos[0] = gpos[0] + spd * cos( angle );
+							gpos[1] = gpos[1] + spd * sin( angle );
+							ObjMove_SetPosition( fam, gpos[0], gpos[1] );
+							if( count % 5 == 0 ){
+								let shote = BGB_RED_08 + type % length( col );
+								let delay = 16;
+								let sht = CreateShotA1( gpos[0], gpos[1], 0, angle, shote, delay );
+								NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+								Set( sht, count * 0.3 );
+								task Set( obj, wt ){
+									while( state <= 1 ){
+										if( WaitP( 1, ps ) ){ return; }
+									}
+									let epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+									let ppos = [ ObjMove_GetX( obj ),ObjMove_GetY( obj ) ];
+									if( Obj_IsDeleted( obj ) ){ return; }
+									let ag = GetGapAngle( ppos, epos );
+									ObjMove_SetAngle( obj, ag );
+									if( WaitP( 120 - wt, ps ) ){ return; }
+									ObjMove_SetAcceleration( obj, 0.01 );
+									ObjMove_SetMaxSpeed( obj, 2 );
+								}
+							}
+							count++;
+							if( WaitP( 1, ps ) ){ break; }
+						}
+						if( WaitP( 1, ps ) ){ break; }
+						lp--;
+						if( lp >= 1 ){
+							if( WaitP( 60, ps ) ){ break; }
+						}
+					}
+					CreateWaveEffect( fam, [255,255,255], 4 );
+					ObjSound_Play( CreateShotSE[6] );
+					Obj_Delete( fam );
+					state = 2;
+					ObjSound_Play( CreateShotSE[0] );
+				}
+
+				task SetShot{
+					while( !Obj_IsDeleted( fam ) ){
+						let shote = BGB_RED_08 + type % length( col );
+						let delay = 16;
+						let sht = CreateShotA1( gpos[0], gpos[1], 0, angle, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						Set( sht );
+						task Set( obj ){
+							while( state <= 1 ){
+								if( WaitP( 1, ps ) ){ return; }
+							}
+							let epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+							let ppos = [ ObjMove_GetX( obj ),ObjMove_GetY( obj ) ];
+							if( Obj_IsDeleted( obj ) ){ return; }
+							let ag = GetGapAngle( ppos, epos );
+							ObjMove_SetAngle( obj, ag );
+							ObjMove_SetAcceleration( obj, 0.01 );
+							ObjMove_SetMaxSpeed( obj, 10 );
+						}
+						if( WaitP( 6, ps ) ){ return; }
+					}
+					while( state <= 1 ){
+						if( WaitP( 1, ps ) ){ return; }
+					}
+					ObjSound_Play( CreateShotSE[0] );
+				}
+			}
+		}
+
+
+		task Pattern2_2( let ps ){
+			let movewt = 60;
+			let lp = 3;
+			let l = lp;
+			loop( 3 ){
+				let ag = GetAngleToPlayer( enm );
+				let dist = GetDistance( gpos, [ GetPlayerX, GetPlayerY ] ) / 4;
+				let mx = gpos[0] + dist * cos( ag );
+				let my = gpos[1] + dist * sin( ag );
+				let speed = dist / movewt;
+				ObjMove_SetDestAtWeight( enm, mx, my, 16, speed );
+				if( WaitP( 120, ps ) ){ return; }
+				l--;
+			}
+			if( WaitP( 120, ps ) ){ return; }
+			ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 4 );
+		}
+
+
+		task Pattern3_0( let r ){
+			let wt = 30;
+			let roundway = 2;
+			let wide = 48;
+			let color = [ 64, 244, 64 ];
+			let p = GetAngleToPlayer( enm ) + 90;
+			while( !Obj_IsDeleted( enm ) ){
+				let ag = p;
+				loop( roundway ){
+					let v = 72;
+					let spos = [ gpos[0] + v * cos( ag ), gpos[1] + v * sin( ag ) ];
+					let angle = ag - wide / 2;
+					loop( 2 ){
+						CreateSwordLaser( spos, angle, 512, 16, 16, color, 75 );
+						angle += wide;
+					}
+					ObjSound_Play( CreateShotSE[ 13 ] );
+					ag += 360 / roundway;
+				}
+				p += rand( 11, 16 ) * r;
+				if( Wait( wt ) ){ return; }
+			}
+		}
+
+		task Pattern3_1( let r ){
+			let roundway = 4;
+			let wt = 8;
+			let p = GetAngleToPlayer( enm );
+			let line = 3;
+			let shote = BGW_GREEN_14;
+			let delay = 10;
+			loop( 64 ){
+				let ag = p;
+				loop( roundway ){
+					let sx = gpos[0] + 64 * cos( ag + 90 * r );
+					let sy = gpos[1] + 64 * sin( ag + 90 * r );
+					let wide = 720;
+					let speed = 2.6;
+					loop( line ){
+						let angle = ag - wide / 2;
+						loop( 2 ){
+							let sht = CreateShotA1( sx, sy, speed, angle, shote, delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+							angle += wide;
+						}
+						wide += 2;
+						speed /= 1.04;
+					}
+					ag += 360 / roundway;
+				}
+				p += 19 * r;
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				if( Wait( wt ) ){ return; }
+			}
+		}
+
+		task Pattern3_2( let r ){
+			let way = 5;
+			let wt = 10;
+			let p = GetAngleToPlayer( enm );
+			let speed = 2;
+			let shote = ADD_BGW_GREEN_02;
+			let delay = 0;
+			loop( 49 ){
+				let angle = p;
+				loop( way ){
+					CreateShotA2( gpos[0], gpos[1], 0, angle, speed / 90, speed, shote, delay );
+					angle += 360 / way;
+				}
+				p -= 27 * r;
+				if( Wait( wt ) ){ return; }
+			}
+		}
+
+		task Pattern3_3( let r ){
+			let way = 2;
+			let wt = 5;
+			let p = GetAngleToPlayer( enm );
+			let speed = 0.6;
+			let shote = BGW_GREEN_05;
+			let delay = 0;
+			loop( 99 ){
+				let angle = p;
+				loop( way ){
+					let sx = gpos[0] + 36 * cos( angle );
+					let sy = gpos[1] + 36 * sin( angle );
+					CreateShotA2( sx, sy, 0, angle, speed / 90, speed, shote, delay );
+					angle += 360 / way;
+				}
+				p += 9.02 * r;
+				if( Wait( wt ) ){ return; }
+			}
+		}
+		
+		task State{
+			let life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+			let damage = 0;
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				damage = life - ObjEnemy_GetInfo( enm, INFO_LIFE );
+				life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+				alternative( PHASE )
+				case( 1 ){
+					ObjEnemy_AddLife( enm_lifegauge[ 2 ], -damage );
+					if( life < 6000 ){
+						PHASE = 2;
+						ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+						DeleteShotAll( TYPE_SHOT, TYPE_ITEM );
+					}
+				}
+				case( 2 ){
+					ObjEnemy_AddLife( enm_lifegauge[ 1 ], -damage );
+					if( life <= 3200 ){
+						PHASE = 3;
+						ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+						DeleteShotAll( TYPE_SHOT, TYPE_ITEM );
+					}
+				}
+				case( 3 ){
+					ObjEnemy_AddLife( enm_lifegauge[ 0 ], -damage );
+					if( life <= 0 ){
+						PHASE = 0;
+					}
+				}
+				ascent( idx in 0..length( enm_lifegauge ) ){
+					ObjMove_SetPosition( enm_lifegauge[ idx ], gpos[0], gpos[1] );
+				}
+				yield;
+			}
+			ascent( idx in 0..length( enm_lifegauge ) ){
+				if( !Obj_IsDeleted( enm_lifegauge[ idx ] ) ){
+					Obj_Delete( enm_lifegauge[ idx ] );
+				}
+			}
+			PHASE = 0;
+		}
+	}
+
+	
+	task CreateBraidAttack( pos, angle, ps ){
+		let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let width	= 0.8;
+		let delay	= 60;
+		let frame	= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		
+		let rgb_array = [ 255, 255, 255 ];
+		
+		ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+		ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg4img/enm4eff_02a.png" );
+		Obj_SetRenderPriorityI(ID, 50 );
+		ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+		ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjRender_SetScaleX(ID, 0.01 );
+		ObjRender_SetAngleZ(ID, angle-90 );
+		ObjPrim_SetVertexPosition(ID, 0, -256, 0, 0 );
+		ObjPrim_SetVertexPosition(ID, 1, -256, move1*1024, 0 );
+		ObjPrim_SetVertexPosition(ID, 2, 256, -0, 0 );
+		ObjPrim_SetVertexPosition(ID, 3, 256, move1*1024, 0 );
+		ObjPrim_SetVertexUVT(ID, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(ID, 1, 0, 1024 );
+		ObjPrim_SetVertexUVT(ID, 2, 512, 0 );
+		ObjPrim_SetVertexUVT(ID, 3, 512, 1024 );
+		
+		ObjSound_Play( CreateShotSE[5] );
+		WorldShake_Single( delay+120, 2 );
+		
+		while( !Obj_IsDeleted(enm) && move1 < 1 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetAlpha(ID, move1*255 );
+			ObjPrim_SetVertexPosition(ID, 1, -256, move1*1024, 0 );
+			ObjPrim_SetVertexPosition(ID, 3, 256, move1*1024, 0 );
+			ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+			
+			if( frame%4 == 0 ){
+				FlashLight(
+					[ rand(MinX,MaxX), pos[1]+512, 0 ],
+					[ 0, rand(-1,-8), rand(0,360) ],
+					rand(0.01,0.1),
+					rand(192,255),
+					rand(30,60),
+					[255,255,255]
+				);
+			}
+			
+			frame++;
+			moveA += 1;
+			
+			if( WaitP( 1, ps ) ){ 
+				Obj_Delete( ID );
+				return;
+			}
+		}
+		
+		loop( delay ){
+			if( Obj_IsDeleted(enm) ){ break; }
+			
+			ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+			
+			if( frame%4 == 0 ){
+				FlashLight(
+					[ rand(MinX,MaxX), pos[1]+512, 0 ],
+					[ 0, rand(-1,-8), rand(0,360) ],
+					rand(0.01,0.1),
+					rand(192,255),
+					rand(30,60),
+					[255,255,255]
+				);
+			}
+			
+			frame++;
+			
+			if( WaitP( 1, ps ) ){
+				Obj_Delete( ID );
+				return;
+			}
+		}
+		
+		ObjSound_Play( CreateShotSE[8] );
+		WorldShake_Single( 16, 32 );
+		
+		SetAreaCommonData( "anime", "spa", true );
+		
+		//　剣戟
+		let epos = [ pos[0]+724*cos(angle), pos[1]+724*sin(angle) ];
+		
+		move1 = 0;
+		moveA = 0;
+		while( !Obj_IsDeleted(enm) && move1 < 1 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetScaleX(ID, 0.01+move1*width );
+			ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+
+			//斬撃判定
+			local{
+				if( IsIntersected_Line_Circle( 
+				 pos[0], pos[1], epos[0], epos[1],
+				 64, GetPlayerX, GetPlayerY, 1 ) ){
+					PlayerShootingDown;
+				}
+
+				//自機を撃墜させる関数が無いので酷いやり方で実装
+				task PlayerShootingDown{
+					let obj = ObjShot_Create( OBJ_SHOT );
+					ObjShot_SetAutoDelete( obj, false );
+					ObjMove_SetPosition( obj, -100, -100 );
+					ObjShot_SetIntersectionCircleA2( obj, GetPlayerX, GetPlayerY, 10 );
+					ObjShot_Regist( obj );
+					yield;
+					Obj_Delete( obj );
+				}
+			}
+
+			if( frame%4 == 0 ){
+				FlashLight(
+					[ rand(MinX,MaxX), pos[1]+512, 0 ],
+					[ 0, rand(-1,-8), rand(0,360) ],
+					rand(0.01,0.1),
+					rand(192,255),
+					rand(30,60),
+					[255,255,255]
+				);
+			}
+			
+			frame++;
+			moveA += 10;
+			
+			yield;
+		}
+		move1 = 0;
+		moveA = 0;
+		while( !Obj_IsDeleted(enm) && move1 < 1 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetScaleX(ID, (0.01+width) + move1*(0.01+width) );
+			ObjRender_SetAlpha(ID, 255 - move1*255 );
+			ObjPrim_SetVertexUVT(ID, 0, 0, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 1, 0, 1024 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 2, 512, 0 - frame*24 );
+			ObjPrim_SetVertexUVT(ID, 3, 512, 1024 - frame*24 );
+			
+			if( frame%4 == 0 ){
+				FlashLight(
+					[ rand(MinX,MaxX), pos[1]+512, 0 ],
+					[ 0, rand(-1,-8), rand(0,360) ],
+					rand(0.01,0.1),
+					rand(192,255),
+					rand(30,60),
+					[255,255,255]
+				);
+			}
+			
+			frame++;
+			moveA += 5;
+			
+			yield;
+		}
+		Obj_Delete( ID );
+	}
+
+	function CreateEnemy_Jewel( char_color, scale, angle, spin ){
+		let obj = ObjEnemy_Create( OBJ_ENEMY );
+		
+		ObjEnemy_SetLife(obj, 800 );
+		ObjEnemy_SetDamageRate(obj, 0, 0 );
+		ObjEnemy_Regist( obj );
+		
+		CreateEnemy_Jewel_Update( obj, 800 );
+		CreateEnemy_Jewel_Render( obj, char_color, scale, angle, spin );
+		
+		return obj;
+
+		task CreateEnemy_Jewel_Update( CallID, MaxLife ){
+			let count = 0;
+			
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+				let EnemyLife = ObjEnemy_GetInfo( CallID, INFO_LIFE );
+				ObjEnemy_SetDamageRate( CallID, 0, 0 );
+				yield;
+			}
+			Obj_Delete( CallID );
+		}
+
+		task CreateEnemy_Jewel_Render( CallID, char_color, scale_base, angle, spin ){
+			let ID		= [
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+			];
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let count	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			let rgb_array = [ 255, 255, 255 ];
+			
+			let _rect = [ 0, 0 ];
+			alternative( char_color )
+			case( "RED" ){
+				_rect[0]	= 0;
+				rgb_array	= [ 255, 64, 64 ];
+			}
+			case( "GREEN" ){
+				_rect[0]	= 1;
+				rgb_array	= [ 64, 255, 64 ];
+			}
+			case( "BLUE" ){
+				_rect[0]	= 2;
+				rgb_array	= [ 64, 64, 255 ];
+			}
+			case( "YELLOW" ){
+				_rect[0]	= 3;
+				rgb_array	= [ 255, 255, 64 ];
+			}
+			case( "PURPLE" ){
+				_rect[0]	= 0;
+				_rect[1]	= 1;
+				rgb_array	= [ 255, 64, 255 ];
+			}
+			case( "AQUA" ){
+				_rect[0]	= 1;
+				_rect[1]	= 1;
+				rgb_array	= [ 64, 255, 255 ];
+			}
+			case( "ORANGE" ){
+				_rect[0]	= 2;
+				_rect[1]	= 1;
+				rgb_array	= [ 255, 128, 64 ];
+			}
+			case( "WHITE" ){
+				_rect[0]	= 3;
+				_rect[1]	= 1;
+				rgb_array	= [ 255, 255, 255 ];
+			}
+			
+			//　オブジェクト作成
+			ascent( let i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+				ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg5img/maga.png" );
+				Obj_SetRenderPriorityI(ID[i], 41 );
+			}
+			ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+			ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+			ObjRender_SetBlendType(ID[2], BLEND_ALPHA );
+			ObjSprite2D_SetSourceRect(ID[0], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+			ObjSprite2D_SetSourceRect(ID[1], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+			ObjSprite2D_SetSourceRect(ID[2], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+			ascent( i in 0..( length(ID) ) ){
+				ObjSprite2D_SetDestCenter(ID[i]);
+			}
+			
+			ObjRender_SetColor(ID[0], rgb_array[0], rgb_array[1], rgb_array[2] );
+			
+			let alpha = [ 128, 128, 255 ];
+			let scale = [ (scale_base+0.08), (scale_base+0.06), scale_base ];
+			
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+				gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				
+				move1 = 1 * sin( moveA );
+				
+				scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+				
+				ascent( i in 0..( length(ID) ) ){
+					ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+					ObjRender_SetAngleZ(ID[i], angle + count );
+					ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+					ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+				}
+				
+				ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+				ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+				
+				count += spin;
+				if( move1 < 1 ){ moveA += 5; }
+				
+				yield;
+			}
+			while( move1 > 0 ){
+				move1 = 1 * sin( moveA );
+				
+				scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+				
+				ascent( i in 0..( length(ID) ) ){
+					ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+					ObjRender_SetAngleZ(ID[i], angle + count );
+					ObjRender_SetScaleXYZ(ID[i], move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+					ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+				}
+				
+				ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+				ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+				
+				count += spin;
+				moveA += 10;
+				
+				yield;
+			}
+			ascent( i in 0..( length(ID) ) ){
+				Obj_Delete( ID[i] );
+			}
+		}
+	}
+	
+	task SetEffect_Enm06{
+		SetEffect_Enm06_01;
+		SetEffect_Enm06_02;
+
+		task SetEffect_Enm06_01{
+			let ID		= [
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+			];
+			let count1	= 0;
+			let countA	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			ObjSound_Play( CreateShotSE[5] );
+			
+			let scale_base	= 0.7;
+			let scale		= [ scale_base, scale_base+0.04, scale_base ];
+			
+			ascent( let i in 0..( length(ID) ) ){
+				ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg6img/enm6eff_01a.png" );
+				Obj_SetRenderPriorityI(ID[i], 29 );
+				ObjPrim_SetPrimitiveType(ID[i], PRIMITIVE_TRIANGLESTRIP );
+				ObjPrim_SetVertexCount(ID[i], 4 );
+				//　頂点
+				ObjPrim_SetVertexPosition(ID[i], 0, -256, -256, 0 );
+				ObjPrim_SetVertexPosition(ID[i], 1, -256, 256, 0 );
+				ObjPrim_SetVertexPosition(ID[i], 2, 256, -256, 0 );
+				ObjPrim_SetVertexPosition(ID[i], 3, 256, 256, 0 );
+				//　テクスチャ
+				ObjPrim_SetVertexUVT(ID[i], 0, 0, 0 );
+				ObjPrim_SetVertexUVT(ID[i], 1, 0, 512 );
+				ObjPrim_SetVertexUVT(ID[i], 2, 512, 0 );
+				ObjPrim_SetVertexUVT(ID[i], 3, 512, 512 );
+			}
+			
+			ObjPrim_SetVertexUVT(ID[2], 0, 512, 0 );
+			ObjPrim_SetVertexUVT(ID[2], 1, 512, 512 );
+			ObjPrim_SetVertexUVT(ID[2], 2, 1024, 0 );
+			ObjPrim_SetVertexUVT(ID[2], 3, 1024, 512 );
+			
+			ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+			ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+			ObjRender_SetBlendType(ID[2], BLEND_ADD_ARGB );
+			
+			while( !Obj_IsDeleted( enm ) ){
+				let gpos	= [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+				
+				let rgb_array = [ 32, 255, 96 ];
+				
+				move1 = 1 * sin( moveA );
+				
+				ascent( i in 0..( length(ID) ) ){
+					ObjRender_SetPosition(ID[i], gpos[0], gpos[1] + 8 * sin( count1/4 ), 0 );
+					ObjRender_SetAngleZ(ID[i], 180 - move1*180 - count1/4 );
+					ObjRender_SetScaleXYZ(ID[i], move1*scale[i], move1*scale[i], 0 );
+				}
+				ObjRender_SetAlpha(ID[1], 160 );
+				ObjRender_SetColor(ID[2], rgb_array[0], rgb_array[1], rgb_array[2] );
+				
+				count1 += countA;
+				if( move1 < 1 ){ moveA += 1; }
+				else if( countA < 1 ){ countA += 0.01; }
+				
+				yield;
+			}
+			ascent( i in 0..( length(ID) ) ){
+				Obj_Delete( ID[i] );
+			}
+		}
+
+		task SetEffect_Enm06_02{
+			
+			let ID		= [
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+				ObjPrim_Create(OBJ_SPRITE_2D),
+			];
+			let dis		= 96;
+			let sca		= 0.8;
+			let count	= 0;
+			let i		= 0;
+			let j		= 0;
+			let v_num	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			ascent( j in 0..( length(ID) ) ){
+				ObjRender_SetBlendType(ID[j], BLEND_ALPHA );
+				ObjPrim_SetTexture(ID[j], csd ~ "./../../img/stg/stg6img/enm6eff_01b.png" );
+				ObjPrim_SetPrimitiveType(ID[j], PRIMITIVE_TRIANGLESTRIP );
+				ObjPrim_SetVertexCount(ID[j], 16 );
+				Obj_SetRenderPriorityI(ID[j], 29 );
+				ObjRender_SetScaleXYZ(ID[j], sca, sca, 0 );
+				
+				v_num = ObjPrim_GetVertexCount(ID[j])/2;
+				ascent( i in 0..( v_num ) ){
+					ObjPrim_SetVertexUVT(ID[j], 0+i*2, 0+i*(256/(v_num-1)), 0 );
+					ObjPrim_SetVertexUVT(ID[j], 1+i*2, 0+i*(256/(v_num-1)), 256 );
+				}
+				ObjRender_SetColor(ID[j], 128, 255, 128 );
+			}
+			ObjRender_SetAngleXYZ(ID[0], 0, 0, 32 );
+			ObjRender_SetAngleXYZ(ID[1], 0, 180, 32 );
+			ObjRender_SetAngleXYZ(ID[2], 0, 0, -32 );
+			ObjRender_SetAngleXYZ(ID[3], 0, 180, -32 );
+			
+			while( !Obj_IsDeleted(enm) ){
+				move1 = 1 * sin( moveA );
+				
+				let angle	= [ 225, -45, 135, 45 ];
+				ascent( j in 0..( length(ID) ) ){
+					ObjRender_SetPosition(ID[j], ObjMove_GetX(enm)+dis*cos(angle[j]),
+													ObjMove_GetY(enm)+dis*sin(angle[j]), 0 );
+					ObjRender_SetAlpha(ID[j], move1*128 );
+					ascent( i in 0..( v_num ) ){
+						let val = [
+							( 16-i*(16/(v_num-1)) ) * sin( count+i*64 ),
+							( 16-i*(16/(v_num-1)) ) * sin( count+i*64 ),
+						];
+						ObjPrim_SetVertexPosition(ID[j], 0+i*2, -128 + ( i*(256/(v_num-1)) + val[i%2] ),
+														move1*-128 + val[i%2]*1, 0 );
+						ObjPrim_SetVertexPosition(ID[j], 1+i*2, -128 + ( i*(256/(v_num-1)) + val[i%2] ),
+														move1*128 + val[i%2]*1, 0 );
+					}
+				}
+				
+				count += 4;
+				if( move1 < 1 ){ moveA += 1; }
+				
+				yield;
+			}
+			ascent( i in 0..( length(ID) ) ){
+				Obj_Delete( ID[i] );
+			}
+		}
+	}
+	

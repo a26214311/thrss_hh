@@ -1,0 +1,187 @@
+
+//　ボス死SE　再生時間が長めの効果音だと変な感じになるのでもう一個用意
+function PlayBossEndSE( se_path ){
+	let se		= ObjSound_Create();
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	ObjSound_Load(se, se_path );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	
+	return se;
+}
+
+//　ボス撃破
+task DisChargeDarkPower(pos,_length,way){
+	let se		= [PlayBossEndSE( GetCurrentScriptDirectory() ~ "./../se/BossEnd_Begin.ogg" ),
+					PlayBossEndSE( GetCurrentScriptDirectory() ~ "./../se/BossEnd_End.ogg" )];
+	let spos	= [
+		[ pos[0], pos[1] ],
+		[ pos[0], pos[1] ]
+	];
+	let i		= 0;
+	let j		= 0;
+	
+	let rgb = [32,128,255];
+	
+	ObjSound_Play( se[0] );
+	ascent( i in 0..( _length ) ){
+		CreateDarkPower01(pos, rand(1,8), rand(0,360), 0.01, 10, rgb, 1, 32 );
+		loop( 3 ){ yield; }
+	}
+	
+	ObjSound_Play( se[1] );
+	ascent( i in 0..(_length) ){
+		ascent( j in 0..(way) ){
+			spos = [
+				[ pos[0] + i*16 * cos( j*(360/way) + i*4 ), pos[1] + i*16 * sin( j*(360/way) + i*4 ) ],
+				[ pos[0] + i*16 * cos( j*(360/way) - i*4 ), pos[1] + i*16 * sin( j*(360/way) - i*4 ) ],
+			];
+			CreateDarkPower01(spos[0], 0, j*(360/way), 0, 10, rgb, 2, 8 );
+			CreateDarkPower01(spos[1], 0, j*(360/way), 0, 10, rgb, 2, 8 );
+		}
+		loop( 1 ){ yield; }
+	}
+	loop( 120 ){ yield; }
+	ascent( i in 0..( length(se) ) ){
+		Obj_Delete( se[i] );
+	}
+}
+
+//　短縮版
+task DisChargeDarkPowerB(pos,_length,way){
+	let se		= [PlayBossEndSE( GetCurrentScriptDirectory() ~ "./../se/BossEnd_Begin.ogg" ),
+					PlayBossEndSE( GetCurrentScriptDirectory() ~ "./../se/BossEnd_End.ogg" )];
+	let spos	= [
+		[ pos[0], pos[1] ],
+		[ pos[0], pos[1] ]
+	];
+	let i		= 0;
+	let j		= 0;
+	
+	let rgb = [32,128,255];
+	
+	ObjSound_Play( se[1] );
+	ascent( i in 0..(_length) ){
+		ascent( j in 0..(way) ){
+			spos = [
+				[ pos[0] + i*16 * cos( j*(360/way) + i*4 ), pos[1] + i*16 * sin( j*(360/way) + i*4 ) ],
+				[ pos[0] + i*16 * cos( j*(360/way) - i*4 ), pos[1] + i*16 * sin( j*(360/way) - i*4 ) ],
+			];
+			CreateDarkPower01(spos[0], 0, j*(360/way), 0, 10, rgb, 2, 8 );
+			CreateDarkPower01(spos[1], 0, j*(360/way), 0, 10, rgb, 2, 8 );
+		}
+		loop( 1 ){ yield; }
+	}
+	loop( 120 ){ yield; }
+	ascent( i in 0..( length(se) ) ){
+		Obj_Delete( se[i] );
+	}
+}
+
+//　光の珠っぽいやつ
+task CreateDarkPower01(pos,speed,angle,acc,mx,rgb_array,scale,long){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let i		= 0;
+	let spos	= [pos[0],pos[1]];
+	let animc	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let dis		= speed;
+	let sca		= [scale,scale/1.6];
+	
+	let rgb_array_sub = [255,255,255];
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], spos[0], spos[1], 0 );
+		ObjPrim_SetTexture(ID[i], path_effect03 );
+		Obj_SetRenderPriorityI(ID[i], 39 );
+		ObjRender_SetAngleZ(ID[i], rand(0,360) );
+		ObjSprite2D_SetSourceRect(ID[i], 0 + 64*anim1, 0 + 64*anim2, 64 + 64*anim1, 64 + 64*anim2 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(ID[0], rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjRender_SetBlendType(ID[1], BLEND_ALPHA );
+	
+	while( animc < long ){
+		spos = [
+			ObjRender_GetX(ID[0]) + dis * cos( angle ),
+			ObjRender_GetY(ID[0]) + dis * sin( angle ),
+		];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], spos[0], spos[1], 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca[i]*3 - move1*sca[i]*2, sca[i]*3 - move1*sca[i]*2, 0 );
+			ObjSprite2D_SetSourceRect(ID[i], 0 + 64*anim1, 0, 64 + 64*anim1, 64 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+		}
+		
+		ObjRender_SetColor(ID[1], move1*rgb_array_sub[0], move1*rgb_array_sub[1], move1*rgb_array_sub[2] );
+		
+		//　アニメーション等
+		animc++;
+		if( animc > 0 && animc%1 == 0 ){
+			ObjRender_SetAngleZ(ID[0], rand(0,360) );
+			ObjRender_SetAngleZ(ID[1], rand(0,360) );
+			anim1++;
+			if( anim1 >= 4 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){ anim2 = 0; }
+			}
+		}
+		if( move1 < 1 ){ moveA += 10; }
+		if( dis < mx ){ dis += acc; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		spos = [
+			ObjRender_GetX(ID[0]) + dis * cos( angle ),
+			ObjRender_GetY(ID[0]) + dis * sin( angle ),
+		];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], spos[0], spos[1], 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca[i] + move1*sca[i]*2, sca[i] + move1*sca[i]*2, 0 );
+			ObjSprite2D_SetSourceRect(ID[i], 0 + 64*anim1, 0, 64 + 64*anim1, 64 );
+			ObjRender_SetAlpha(ID[i], 255 - move1*255 );
+		}
+		
+		ObjRender_SetColor(ID[1], rgb_array_sub[0] - move1*rgb_array_sub[0],
+									rgb_array_sub[1] - move1*rgb_array_sub[1],
+									rgb_array_sub[2] - move1*rgb_array_sub[2] );
+		
+		//　アニメーション等
+		animc++;
+		if( animc > 0 && animc%1 == 0 ){
+			ObjRender_SetAngleZ(ID[0], rand(0,360) );
+			ObjRender_SetAngleZ(ID[1], rand(0,360) );
+			anim1++;
+			if( anim1 >= 4 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){ anim2 = 0; }
+			}
+		}
+		moveA += 10;
+		if( dis < mx ){ dis += acc; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}

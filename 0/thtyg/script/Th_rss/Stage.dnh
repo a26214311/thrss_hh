@@ -1,0 +1,423 @@
+#東方弾幕風[Stage]
+#ScriptVersion[3]
+#Title["stage"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+
+	let csd			= GetCurrentScriptDirectory();
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	let frame		= 0;
+	
+	//　プレイヤー残機
+	let PL			= GetAreaCommonData("Option", "Player", 8 );
+	//　今のモードが ｽﾍﾟﾌﾟﾗか ｽﾃﾌﾟﾗか 本編か
+	let GetMode		= GetAreaCommonData("System", "PlayMode", "Stage" );
+	//　起動するステージ番号
+	let stun		= GetAreaCommonData("System", "stg_ST", 0 );
+	//　起動するスペルナンバー
+	let snun		= GetAreaCommonData("System", "spell_ST", 0 );
+	//　プレイ中のステージ　主に本編用　0は使いません
+	let index_stg		= GetAreaCommonData("System", "Stage_Index", 8 );
+	//　コンティニュ済みか
+	let continue		= GetAreaCommonData("System", "Continue", false );
+	
+	//　ｽﾍﾟﾌﾟﾗ用の連続再生スクリプト読み込み　スペプラでしか使わない
+	let compile_file	= LoadScriptInThread( csd ~ "./enm/Plural.dnh" );
+	
+	//　各種include
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	#include "./lib/lib_LoadingEffect.dnh"	//　少女祈祷中
+	#include "./system/Load_AllTexture.dnh"	//　ロード済みの画像パス
+	#include "./lib/lib_AllSound.dnh"		//　サウンド
+	#include "./lib/lib_front_ctr.dnh"		//　UI
+	#include "./lib/lib_world_ctrl.dnh"		//　ステージ背景
+	#include "./lib/lib_stg.dnh"			//　ステージタイトル
+	#include "./system/lib_evolution.dnh"	//　システム
+	#include "./scene/ControlMusic.dnh"		//　道中
+	#include "./scene/Road_Manager.dnh"		//　道中
+	#include "./lib/lib_CommonDataManager.dnh"
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	
+	@Initialize{
+		//InitializeCommonData();
+		
+		//SetAreaCommonData("System", "StgWorldBreak", false );
+		
+		//　Stage起動時に行う処理　コンティニュー時もここを必ず通る
+		StageInitialize();
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		StageMain();
+		frame++;
+		
+		yield;
+	}
+	
+	@Event{ }
+	
+	
+	task StageInitialize(){
+		//　本編モードで
+		if( GetMode == "Story" ){
+			//　リプレイで無くて
+			if( !IsReplay ){
+				//　コンティニューした
+				if( continue ){
+					if( GetAreaCommonData("System", "Difficulty", "NULL" ) != "Extra" &&
+						GetAreaCommonData("System", "Difficulty", "NULL" ) != "Phantasm" &&
+						GetAreaCommonData("System", "Difficulty", "NULL" ) != "OverDrive" ){
+						//　残機とボムをMAXに
+						SetPlayerLife(8);
+						SetPlayerSpell(8);
+					}
+					else{
+						//　ｴｸｽﾄﾗだと2機補充
+						SetPlayerLife(2);
+					}
+				}
+				else{
+					//　ｴｸｽﾄﾗでなければオプションで設定した通りに補充
+					if( GetAreaCommonData("System", "Difficulty", "NULL" ) != "Extra"  &&
+						GetAreaCommonData("System", "Difficulty", "NULL" ) != "Phantasm" &&
+						GetAreaCommonData("System", "Difficulty", "NULL" ) != "OverDrive" ){
+						SetPlayerLife(PL);
+					}
+					else{
+						//　ｴｸｽﾄﾗだと2機補充
+						SetPlayerLife(2);
+					}
+				}
+			}
+			//　終了待機
+			STEND();
+		}
+		else if( GetMode == "Stage" ){
+			//　ステージプラクティスの時
+			SetPlayerLife(8);	//　残機とライフMAX
+			SetPlayerSpell(8);
+			
+			//　終了待機
+			STEND();
+		}
+		else if( GetMode == "Spell" ){
+			//　スペルプラクティスの時
+			
+			//　ステージインデックスをこれから起動予定のステージに合わせる
+			SetAreaCommonData("System", "Stage_Index", stun );
+			
+			//　ボス出現待機
+			SetCommonData("RegistBoss", false);
+			
+			//　コンパイル開始
+			LoadBossScript(compile_file);
+			
+			//　上で設定したステージインデックスから、起動するステージの背景を決定
+			if( stun != 9 ){
+				CreateWorld( stun );
+			}else{
+				alternative( snun )
+				case( 0 ){ CreateWorld( 1 ); }
+				case( 1, 2 ){ CreateWorld( 2 ); }
+				case( 3 ){ CreateWorld( 4 ); }
+				case( 4, 5 ){ CreateWorld( 5 ); }
+				case( 6 ){ CreateWorld( 6 ); }
+				case( 7, 8 ){ CreateWorld( 7 ); }
+				case( 9, 10 ){ CreateWorld( 8 ); }
+			}
+			
+			//　残機とボムは0に
+			SetPlayerLife(0);
+			SetPlayerSpell(0);
+			
+			//　終了待機
+			STEND();
+		}
+		
+		//　UI系表示
+		SetUI(false, csd ~ "./img/front/stg_frame.png" );
+		
+		//　描画優先度クリア　しないと歪みエフェクトの影響で色々狂う
+		ClearInvalidRenderPriority();
+		
+		//　弾が消える範囲　色々面倒そうなので　基本弄らない様にする
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+
+		SetCommonData( "GainSpellCount", 0 );	//　1プレー中のスペル取得数
+		
+		//　弄ると yuke mode になる
+		//SetStgFrame(0,0,640,480,20,80);
+	}
+	
+	
+	task StageMain(){
+		if( GetMode == "Story" ){
+			//　本編の時
+			
+			//　難易度を渡してゲーム開始
+			if( frame == 60 ){
+				GameStart_Main();
+			}
+		}
+		else if( GetMode == "Stage" ){
+			//　ステージプラクティスの時
+			
+			//　難易度を渡して道中開始　始まるステージは勝手に判断されるとおもう
+			if( frame == 60 ){
+				Practice_RoadMain();
+			}
+		}
+		else if( GetMode == "Spell" ){
+			//　スペルプラクティスの時
+			
+			if( frame == 120 ){
+				//　この後にスペプラで流すBGMとスペルカードを対応させる処理を書いてね
+				
+				_PlayMusic();
+				
+				//　ボス出現許可
+				RegistBoss();
+			}
+		}
+	}
+	
+	//　ユーティリティ
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	//　画面推移からUI表示
+	task SetUI(BOOL_SCENE_CENTER,path){
+		ControlFront(BOOL_SCENE_CENTER, path );
+		SetGauge([530,200]);
+		
+		if( GetMode != "Spell" ){
+			loop( 60 ){ yield; }
+			ItemGetBorderLine_Begin([CenX,CenY-96], 180, [128,128,255] );
+		}
+	}
+	
+	function wait(long){
+		loop( long ){ yield; }
+	}
+	
+	//　ボスが出るフラグ
+	task RegistBoss(){
+		SetCommonData("RegistBoss", true );
+	}
+	
+	//　ボススクリプト(Plural)ロード
+	task LoadBossScript(idScript){
+		wait(60);
+		StartScript(idScript);
+	}
+	
+	//　背景作成
+	task CreateWorld(num){
+		alternative( num )
+		case( 1 ){ SetWorld03b(); }
+		case( 2 ){ SetWorld02(); }
+		case( 3 ){ SetWorld03a(); }
+		case( 4 ){ SetWorld04a(); }
+		case( 5 ){ SetWorld05b(); }
+		case( 6 ){ SetWorld06b(); }
+		case( 7 ){ SetWorld07a(); }
+		case( 8 ){ SetWorld08a(); }
+		case( 9 ){
+			alternative( snun )
+			case( 0 ){ SetWorld03b(); }
+			case( 1 ){ SetWorld02(); }
+			case( 2 ){ SetWorld02(); }
+			case( 3 ){ SetWorld04a(); }
+			case( 4 ){ SetWorld05b(); }
+			case( 5 ){ SetWorld05b(); }
+			case( 6 ){ SetWorld06b(); }
+			case( 7 ){ SetWorld07a(); }
+			case( 8 ){ SetWorld07a(); }
+			case( 9 ){ SetWorld08a(); }
+			case( 10 ){ SetWorld08a(); }
+		}
+	}
+	
+	//　終了待機
+	task STEND(){
+		//敵ボスシーンが終了するまで待機
+		while( !IsCloseScript(compile_file) && GetPlayerState() != STATE_END && index_stg != 0 ){
+			//　インデックス初期化　0は未使用
+			index_stg	= GetAreaCommonData("System", "Stage_Index", 1 );
+			yield;
+		}
+		wait(90);
+		CloseStgScene();
+	}
+	
+	task _PlayMusic(){
+		let tex_no	= 0;	//　テクスチャナンバー
+		let rect_no	= 0;	//　画像rectナンバー
+		let play_no	= 0;	//　再生BGMナンバー
+		
+		alternative( stun )
+		case( 1 ){
+			tex_no	= 0;
+			rect_no	= 2;
+			play_no	= 2;
+		}
+		case( 2 ){
+			if( snun <= 11 ){
+				tex_no	= 0;
+				rect_no	= 3;
+				play_no	= 3;
+			}
+			else{
+				tex_no	= 0;
+				rect_no	= 4;
+				play_no	= 4;
+			}
+		}
+		case( 3 ){
+			if( snun <= 3 ){
+				tex_no	= 0;
+				rect_no	= 5;
+				play_no	= 5;
+			}
+			else{
+				tex_no	= 0;
+				rect_no	= 6;
+				play_no	= 6;
+			}
+		}
+		case( 4 ){
+			if( snun <= 3 ){
+				tex_no	= 1;
+				rect_no	= 0;
+				play_no	= 7;
+			}
+			else{
+				tex_no	= 1;
+				rect_no	= 1;
+				play_no	= 8;
+			}
+		}
+		case( 5 ){
+			if( snun <= 3 ){
+				tex_no	= 1;
+				rect_no	= 2;
+				play_no	= 9;
+			}
+			else{
+				tex_no	= 1;
+				rect_no	= 3;
+				play_no	= 10;
+			}
+		}
+		case( 6 ){
+			if( snun <= 3 ){
+				tex_no	= 1;
+				rect_no	= 4;
+				play_no	= 11;
+			}
+			else{
+				tex_no	= 1;
+				rect_no	= 5;
+				play_no	= 12;
+			}
+		}
+		case( 7 ){
+			if( snun <= 2 ){
+				tex_no	= 1;
+				rect_no	= 6;
+				play_no	= 15;
+			}
+			else{
+				tex_no	= 1;
+				rect_no	= 7;
+				play_no	= 16;
+			}
+		}
+		case( 8 ){
+			if( snun <= 2 ){
+				tex_no = 2;
+				rect_no = 2;
+				play_no = 17;
+			}else{
+				tex_no = 2;
+				rect_no = 3;
+				play_no = 18;
+			}
+		}
+		case( 9 ){
+			alternative( snun )
+			case( 0 ){
+				tex_no	= 0;
+				rect_no	= 2;
+				play_no	= 2;
+			}
+			case( 1 ){
+				tex_no	= 0;
+				rect_no	= 3;
+				play_no	= 3;
+			}
+			case( 2 ){
+				tex_no	= 0;
+				rect_no	= 4;
+				play_no	= 4;
+			}
+			case( 3 ){
+				tex_no	= 1;
+				rect_no	= 1;
+				play_no	= 8;
+			}
+			case( 4 ){
+				tex_no	= 1;
+				rect_no	= 2;
+				play_no	= 9;
+			}
+			case( 5 ){
+				tex_no	= 1;
+				rect_no	= 3;
+				play_no	= 10;
+			}
+			case( 6 ){
+				tex_no	= 1;
+				rect_no	= 5;
+				play_no	= 12;
+			}
+			case( 7 ){
+				tex_no	= 1;
+				rect_no	= 6;
+				play_no	= 15;
+			}
+			case( 8 ){
+				tex_no	= 1;
+				rect_no	= 7;
+				play_no	= 16;
+			}
+			case( 9 ){
+				tex_no = 2;
+				rect_no = 2;
+				play_no = 17;
+			}
+			case( 10 ){
+				tex_no = 2;
+				rect_no = 3;
+				play_no = 18;
+			}
+		}
+		
+		//　引数2に情報セット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+		//　[ テクスチャ番号(0~2), 画像rect番号 ]
+		NotifyEventAll( EV_USER + 2, [ tex_no, rect_no ] );
+		//　BGM再生
+		PlayMusic( play_no, true, 0 );
+	}

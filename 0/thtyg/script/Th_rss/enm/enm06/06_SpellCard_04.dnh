@@ -1,0 +1,436 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　神鏡「キリングミラージュミラー」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm06_setting.dnh"
+	#include "./lib_enm06_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 75;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+
+		ObjMove_SetPosition( enm, CenX, MinY+96 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　通常4と繋げる為に0フレーム目から行動開始
+		if( timer == 0 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　正面取りやすい＆至近距離なので2000
+			SetScriptResult( 2000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 6, 4 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a(enm, true, enemy_tex_path );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "魔鏡「キリングミラージュミラー」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "神鏡「マスカレードスコープ」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "神鏡「マスカレードスコープ」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "神鏡「マスカレードスコープ」";
+		}
+		
+		SpellCounter( GetDifficult, 6, 4 );
+		let sct = GetSpellCounter( GetDifficult, 6, 4 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_06(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			if( Obj_IsDeleted( enm ) ){ return true; }
+			yield;
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		//　発射間隔
+		let wtA		= 3;
+		let wtB		= 90;
+		let wtC		= 120;
+
+		//　way数
+		let roundway = 8;
+
+		//　ボスからの弾
+		let way		= 6;
+
+		//　回転速度
+		let rtmax	= 1;
+		
+		//　弾種
+		let shote	= [ BGW_GREEN_02, ADD_BGW_GREEN_22 ];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			wtB = 120;
+			way = 5;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			wtA = 2;
+			wtB = 105;
+			way = 9;
+			rtmax = 1.25;
+			roundway = 0;
+		}
+		case( "Lunatic" ){
+			wtA = 2;
+			wtB = 80;
+			way = 9;
+			rtmax = 1.25;
+			roundway = 0;
+		}
+		case( "OverDrive" ){
+		}
+		
+		//　ｴﾌｪｸﾖ
+		SetEffect_Enm06( ID );
+		CreateFamily( ID, 0.5, 180 );
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		State;
+		SetShot;
+		Wait( 200 );
+		
+		task State{
+			Wait( 120 );
+			Concentration03_Main( enm, power_rgb, 60 );
+			SetAreaCommonData( "anime", "spa", true );
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+
+		task SetShot{
+			Wait( 200 );
+			loop{
+				let ag = GetAngleToPlayer( ID );
+				
+				loop( way ){
+					let spos = [
+						gpos[0] + 32 * cos( ag ),
+						gpos[1] + 32 * sin( ag )
+					];
+					CreateShot01( spos, 0.8, ag, 0, 10, shote[1], 32 );
+					ag += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[2] );
+				if( Wait( wtC ) ){ return; }
+			}
+		}
+
+
+
+		task CreateFamily( ID, scale, WaitTime ){
+			let fam = [
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime ),
+				CreateEnemy_MirrorB( 100, scale, [ 170, 170, 170 ], WaitTime )
+			];
+			let r = 1 - round( rand( 0, 1 ) ) * 2;
+			let bx = ObjMove_GetX( ID );
+			let by = ObjMove_GetY( ID );
+			let rd = round( rand( 0, length(fam) - 1 ) );
+			let rot = GetCommonData( "Mirror_rotation", 0 );
+			ascent( idx in 0..length( fam ) ){
+				FamilyMain( fam[idx], idx );
+				Move( fam[idx], rot, r );
+				rot += 360 / length( fam );
+				if( GetDifficult == "Hard" || GetDifficult == "Lunatic" ){ r = -r; }
+			}
+			task Move( let obj, let rot, let r ){
+				let radius = 150;
+				let rmax = 160 + 20 * r;
+				let rv = 0;
+				while( !Obj_IsDeleted( obj ) ){
+					let spos = [
+						bx + radius * cos( rot ),
+						by + radius * sin( rot )
+					];
+					ObjMove_SetPosition( obj, spos[0], spos[1] );
+					ObjMove_SetAngle( obj, rot );
+					rot += rv * r;
+					if( rv < rtmax ){ rv += 0.003; }
+					if( by < CenY ){ by += ( CenY - by ) / 300; }
+					if( radius < rmax ){ radius += ( rmax - radius ) / 300; }
+					yield;
+				}
+			}
+			task FamilyMain( let obj, let idx ){
+				Wait( 180 );
+				if( GetDifficult == "Hard" || GetDifficult == "Lunatic" ){
+					SetShotA_;
+				}else{
+					SetShotA;
+				}
+				Wait( 70 );
+				SetShotB;
+				task SetShotA{
+					let wide = 1;
+					let count = 0;
+					loop{
+						let life = ObjEnemy_GetInfo( obj, INFO_LIFE );
+						if( life > 0 ){
+							let way = 4;
+							let speed = 6;
+							let angle = ObjMove_GetAngle( obj ) - wide / 2;
+							let delay = 12;
+							loop( way ){
+								let v = 36;
+								let sx = ObjMove_GetX( obj ) + v * cos( angle );
+								let sy = ObjMove_GetY( obj ) + v * sin( angle );
+
+								let sht = CreateShotA2( sx, sy, 0, angle, speed / 40, speed, ADD_BGW_WHITE_01, delay );
+								NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+								angle += wide / ( way - 1 );
+							}
+							ObjSound_Play( CreateShotSE[1] );
+						}
+						if( count >= 30 && wide < 240 ){ wide += 3; }
+						count++;
+						if( Wait( wtA ) ){ return; }
+					}
+				}
+				task SetShotA_{
+					let wbase = 1;
+					let wide = wbase;
+					let count = 0;
+					loop{
+						let life = ObjEnemy_GetInfo( obj, INFO_LIFE );
+						if( life > 0 ){
+							let way = 3;
+							let speed = 6;
+							let angle = ObjMove_GetAngle( obj ) - wide / 2;
+							let delay = 12;
+							loop( way ){
+								let v = 36;
+								let sx = ObjMove_GetX( obj ) + v * cos( angle );
+								let sy = ObjMove_GetY( obj ) + v * sin( angle );
+
+								let sht = CreateShotA2( sx, sy, 0, angle, speed / 40, speed, BGB_GREEN_08, delay );
+								NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+								angle += wide / ( way - 1 );
+							}
+							ObjSound_Play( CreateShotSE[1] );
+						}
+						if( wbase < 240 ){
+							wbase += 3;
+							wide = wbase;
+						}else{
+							wide = wbase + 60 * cos( count*3 );
+							count++;
+						}
+						if( Wait( wtA ) ){ return; }
+					}
+				}
+
+				task SetShotB{
+					loop{
+						if( rd % length( fam ) == idx ){
+							SetLaser( idx, true );
+							if( GetDifficult == "Normal" ){
+								SetLaser( ( idx + 5 ) % length( fam ), false );
+							}
+							if( GetDifficult == "Hard" || GetDifficult == "Lunatic" ){
+								SetLaser( ( idx + 2 ) % length( fam ), false );
+								SetLaser( ( idx + 4 ) % length( fam ), false );
+								SetLaser( ( idx + 6 ) % length( fam ), false );
+							}
+						}
+						task SetLaser( idx, type ){
+							let sx = ObjMove_GetX( fam[ idx ] );
+							let sy = ObjMove_GetY( fam[ idx ] );
+							let px = GetPlayerX;
+							let py = GetPlayerY;
+							let leng = 0;
+							let width = 12;
+							let delay = 150;
+							let del = 120;
+							let angle = atan2( py - sy, px - sx );
+							let obj = CreateStraightLaser01( fam[idx], [ sx, sy ], 90, leng, width, [ 48, 255, 96 ], true, delay, del );
+							ObjSound_Play( CreateShotSE[11] );
+							loop( del ){
+								sx = ObjMove_GetX( fam[ idx ] );
+								sy = ObjMove_GetY( fam[ idx ] );
+								angle = atan2( py - sy, px - sx );
+								ObjMove_SetPosition( obj, sx, sy );
+								ObjStLaser_SetAngle( obj, angle );
+								ObjLaser_SetLength( obj, leng );
+								if( leng < 600 ){ leng += 20; }
+								if( Wait( 1 ) ){
+									return;
+								}
+								if( ObjEnemy_GetInfo( fam[ idx ], INFO_LIFE ) <= 0 ){
+									Obj_Delete( obj );
+									return;
+								}
+							}
+							ObjSound_Play( CreateShotSE[3] );
+							local{
+								let speed = 24;
+								CreateLooseLaserA1( sx, sy, speed, angle, 1200, width*2, ADD_BGW_GREEN_02, 0 );
+								Set( sx, sy, speed, angle );
+								task Set( let sx, let sy, let speed, let ag ){
+									while( sx>MinX && sx<MaxX && sy>MinY && sy<MaxY ){
+										sx += speed * cos( ag );
+										sy += speed * sin( ag );
+										if( Wait( 1 ) ){ return; }
+									}
+									ObjSound_Play( CreateShotSE[0] );
+									local{
+										let speed = 1.25;
+										let angle = ag;
+										let delay = 16;
+										loop( roundway ){
+											let sht = CreateShotA2( sx, sy, 0, angle, speed / 60, speed, shote[0], delay );
+											NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+											angle += 360 / roundway;
+										}
+									}
+								}
+							}
+						}
+						if( rd % length( fam ) == idx ){
+							Next;
+							task Next{
+								yield;
+								rd += 3;
+							}
+						}
+						if( Wait( wtB ) ){ return; }
+
+					}
+				}
+			}
+		}
+	}
+	
+
+	

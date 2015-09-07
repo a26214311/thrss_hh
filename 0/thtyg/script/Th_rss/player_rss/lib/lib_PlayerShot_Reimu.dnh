@@ -1,0 +1,744 @@
+
+
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+//　霊夢用のショット
+
+let shot_layer	= 31;
+
+//　残像札
+task CreatePLShot01_REIMU(pos,speed,angle,acc,mx,dmg,penet,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let frag	= false;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/shote01.png" );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, angle - 270 );
+	ObjRender_SetScaleXYZ(ID, 1, 1, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 32, 0, 64, 64 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		yield;
+	}
+	while( move1 < 1 && frag ){
+		moveA += 5;
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, 1-move1, 1+move1, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　針
+task CreatePLShot02_REIMU(pos,speed,angle,acc,mx,dmg,penet,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let frag	= false;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/shote01.png" );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, angle - 270 );
+	ObjRender_SetScaleXYZ(ID, 1, 2, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 32, 32 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		yield;
+	}
+	while( move1 < 1 && frag ){
+		moveA += 5;
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, 1-move1, 2+move1*2, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　ホーミング札
+task CreatePLShot03_REIMU(pos,speed,angle,acc,mx,dmg,penet,rgb_h,homing){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let frag	= false;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/shote01.png" );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, angle - 270 );
+	ObjRender_SetScaleXYZ(ID, 1, 1, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 32, 32, 64 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, ObjMove_GetAngle(sht)+90 );
+		
+		let GetEnemy	= GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+		
+		if( length(GetEnemy) > 0 ){
+			let GetAngleToEnemy =  atan2( GetEnemy[0][1] - gpos[1], GetEnemy[0][0] - gpos[0] );
+			
+			if( sin( GetAngleToEnemy - ObjMove_GetAngle(sht) ) > 0 ){
+				ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) + homing );
+			}
+			else{
+				ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) - homing );
+			}
+		}
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		yield;
+	}
+	while( move1 < 1 && frag ){
+		moveA += 5;
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, 1-move1, 1+move1, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　ホーミング札・大
+task CreatePLShot04_REIMU(pos,speed,angle,acc,mx,dmg,penet,rgb_h,homing){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let cc		= 0;
+	let frag	= false;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/zabuton_01b.png" );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, angle - 270 );
+	ObjRender_SetScaleXYZ(ID, 0.8, 0.8, 0 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 64, 64 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, cc );
+		ObjRender_SetAlpha(ID, move1*128 );
+		
+		let GetEnemy	= GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+		if( length(GetEnemy) > 0 ){
+			ascent( idx in 0..length( GetEnemy ) ){
+				let epos = GetEnemy[idx];
+				if( epos[1] < MaxY ){
+					let GetAngleToEnemy =  atan2( epos[1] - gpos[1], epos[0] - gpos[0] );
+					
+					if( sin( GetAngleToEnemy - ObjMove_GetAngle(sht) ) > 0 ){
+						ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) + homing );
+					}
+					else{
+						ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) - homing );
+					}
+					break;
+				}
+			}
+		}
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		cc += 16;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 && frag ){
+		moveA += 5;
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, 1 + move1, 1 + move1, 0 );
+		ObjRender_SetAngleZ(ID, cc );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		ObjSprite2D_SetSourceRect(ID, 64, 0, 128, 64 );
+		
+		cc += 16;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　大幣ブレード
+task CreatePLShot05_REIMU(pos,disD,angle,dmg,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], 0, angle, 0, 0, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let sca		= 0.5;
+	let move1	= 0;
+	let moveA	= 0;
+	let cc		= 0;
+	let dis		= 0;
+	let rgb		= [255,255,255];
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetAutoDelete(sht, false );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/oonusa_01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestRect(ID, 0, -256+28, 256, 0+28 );
+	
+	let oonusa_count = GetAreaCommonData("PlayerShot", "oonusa", 0 );
+	SetAreaCommonData("PlayerShot", "oonusa", oonusa_count+1 );
+	
+	while( GetVirtualKeyState(VK_SHOT) != KEY_FREE && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		//　自機パワーアップ中はｱｲﾃﾑ送付
+		if( IsEvolution ){
+			CollectItemsInCircle( gpos[0], gpos[1], 128 );
+		}
+		
+		move1 = 1 * sin( moveA );
+		ObjMove_SetPosition(sht, GetPlayerX() + move1*disD * cos(angle), GetPlayerY() + move1*disD * sin(angle) );
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, angle + cc );
+		
+		if( (cc/24)%2 == 0 ){
+			let sca_hc = 0;
+			if( GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ){
+				rgb		= [96,128,255];
+				sca_hc	= 0;
+				dis		= 96;
+				ObjShot_SetIntersectionCircleA1(sht, 32 );
+			}
+			else{
+				rgb		= [96,128,255];
+				sca_hc	= 0.1;
+				dis		= 128;
+			}
+			if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+				Shot05_eff2([gpos[0],gpos[1]], angle + cc, sca + sca_hc, 128, [255,255,255] );
+			}
+			Shot05_eff([gpos[0],gpos[1]], angle + cc, sca + sca_hc, 128, rgb );
+		}
+		
+		//　回転の中央部分へ行くほど高威力
+		ObjShot_SetIntersectionCircleA1(sht, 8 );
+		ObjShot_SetIntersectionCircleA1(sht, 16 );
+		ObjShot_SetIntersectionCircleA1(sht, 32 );
+		ObjShot_SetIntersectionCircleA1(sht, dis );
+		
+		let col_obj = ObjCol_GetListOfIntersectedEnemyID(sht);
+		
+		if( length( col_obj ) > 0 && cc/24 % 8 == 0 ){
+			OonusaEffect([ObjMove_GetX(col_obj[0]),ObjMove_GetY(col_obj[0])], rgb );
+		}
+		
+		cc += 24;
+		if( move1 < 1 ){ moveA += 10; }
+		
+		yield;
+	}
+	oonusa_count = GetAreaCommonData("PlayerShot", "oonusa", 0 );
+	if( oonusa_count > 0 ){
+		SetAreaCommonData("PlayerShot", "oonusa", oonusa_count-1 );
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjMove_SetPosition(sht, GetPlayerX() + disD * cos(angle), GetPlayerY() + disD * sin(angle) );
+		ObjRender_SetScaleXYZ(ID, sca - move1*sca, sca - move1*sca, 0 );
+		ObjRender_SetAngleZ(ID, angle + cc );
+		
+		if( (cc/24)%2 == 0 ){
+			if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+				Shot05_eff2([gpos[0],gpos[1]], angle + cc, sca - move1*sca + 0.1, 128, [255,255,255] );
+			}
+			Shot05_eff([gpos[0],gpos[1]], angle + cc, sca - move1*sca + 0.1, 128, [64,64,255] );
+		}
+		
+		cc += 24;
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　大幣ブレード 強化時
+task CreatePLShot05EX_REIMU(pos,disD,angle,dmg,rgb_h){
+	if( !GetAreaCommonData("MegaEvolution", "Frag", false ) ){ return; }
+	
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], 0, angle, 0, 0, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let sca		= 0.5;
+	let move1	= 0;
+	let moveA	= 0;
+	let cc		= 0;
+	let dis		= 0;
+	let rgb		= [255,255,255];
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetAutoDelete(sht, false );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/oonusa_01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestRect(ID, 0, -256+28, 256, 0+28 );
+	
+	let oonusa_count = GetAreaCommonData("PlayerShot", "oonusa", 0 );
+	SetAreaCommonData("PlayerShot", "oonusa", oonusa_count+1 );
+	
+	while( GetVirtualKeyState(VK_SHOT) != KEY_FREE && IsPermitPlayerShot() && GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		//　自機パワーアップ中はｱｲﾃﾑ送付
+		if( GetAreaCommonData("System", "Difficulty", "NULL" ) != "OverDrive" ){
+			CollectItemsInCircle( gpos[0], gpos[1], 128 );
+		}
+		
+		move1 = 1 * sin( moveA );
+		ObjMove_SetPosition(sht, GetPlayerX() + move1*disD * cos(angle), GetPlayerY() + move1*disD * sin(angle) );
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, angle + cc );
+		
+		if( (cc/24)%2 == 0 ){
+			let sca_hc = 0;
+			if( GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ){
+				rgb		= [96,128,255];
+				sca_hc	= 0;
+				dis		= 96;
+				ObjShot_SetIntersectionCircleA1(sht, 32 );
+			}
+			else{
+				rgb		= [96,128,255];
+				sca_hc	= 0.1;
+				dis		= 128;
+			}
+			if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+				Shot05_eff2([gpos[0],gpos[1]], angle + cc, sca + sca_hc, 128, [255,255,255] );
+			}
+			Shot05_eff([gpos[0],gpos[1]], angle + cc, sca + sca_hc, 128, rgb );
+		}
+		
+		//　回転の中央部分へ行くほど高威力
+		ObjShot_SetIntersectionCircleA1(sht, 8 );
+		ObjShot_SetIntersectionCircleA1(sht, 16 );
+		ObjShot_SetIntersectionCircleA1(sht, 32 );
+		ObjShot_SetIntersectionCircleA1(sht, dis );
+		
+		let col_obj = ObjCol_GetListOfIntersectedEnemyID(sht);
+		
+		if( length( col_obj ) > 0 && cc/24 % 8 == 0 ){
+			OonusaEffect([ObjMove_GetX(col_obj[0]),ObjMove_GetY(col_obj[0])], rgb );
+		}
+		
+		cc += 24;
+		if( move1 < 1 ){ moveA += 10; }
+		
+		yield;
+	}
+	oonusa_count = GetAreaCommonData("PlayerShot", "oonusa", 0 );
+	if( oonusa_count > 0 ){
+		SetAreaCommonData("PlayerShot", "oonusa", oonusa_count-1 );
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjMove_SetPosition(sht, GetPlayerX() + disD * cos(angle), GetPlayerY() + disD * sin(angle) );
+		ObjRender_SetScaleXYZ(ID, sca - move1*sca, sca - move1*sca, 0 );
+		ObjRender_SetAngleZ(ID, angle + cc );
+		
+		if( (cc/24)%2 == 0 ){
+			if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+				Shot05_eff2([gpos[0],gpos[1]], angle + cc, sca - move1*sca + 0.1, 128, [255,255,255] );
+			}
+			Shot05_eff([gpos[0],gpos[1]], angle + cc, sca - move1*sca + 0.1, 128, [64,64,255] );
+		}
+		
+		cc += 24;
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+//　大幣ブレード残像
+task Shot05_eff(pos,angle,sca,alpha,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/oonusa_01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, shot_layer - 1 );
+	ObjRender_SetAngleZ(ID, angle );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAlpha(ID, alpha - move1*alpha );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestRect(ID, 0, -256+28, 256, 0+28 );
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID)
+}
+
+//　大幣ブレード残像　つよそう
+task Shot05_eff2(pos,angle,sca,alpha,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/oonusa_01c.png" );
+	ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+	Obj_SetRenderPriorityI(ID, shot_layer - 1 );
+	ObjRender_SetAngleZ(ID, angle );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAlpha(ID, alpha - move1*alpha );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestRect(ID, 0, -256+28, 256, 0+28 );
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, sca + move1*sca/2, sca + move1*sca/2, 0 );
+		ObjRender_SetColor(ID, rgb_h[0] - move1*rgb_h[0], rgb_h[1] - move1*rgb_h[1], rgb_h[2] - move1*rgb_h[2] );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID)
+}
+
+//　追跡座布団
+task CreatePLShot06_REIMU(pos,speed,angle,acc,mx,dmg,rgb_h){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let cc		= 0;
+	let frag	= false;
+	let sca		= 1;
+	let i		= 0;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetAutoDelete(sht, false );
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./img/eff/zabuton_01a.png" );
+		Obj_SetRenderPriorityI(ID[i], shot_layer );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, angle - 270 );
+		ObjRender_SetScaleXYZ(ID[i], sca + 0.2*i, sca + 0.2*i, 0 );
+		ObjRender_SetAlpha(ID[i], move1*255 );
+		ObjRender_SetColor(ID[i], rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 64 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	SetAreaCommonData("PlayerShot", "zabuton", 1 );
+	
+	while( GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		//　回転の中央部分へ行くほど高威力
+		ObjShot_SetIntersectionCircleA1(sht, 32 );
+		ObjShot_SetIntersectionCircleA1(sht, 64 );
+		
+		move1 = 1 * sin( moveA );
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			i++;
+		}
+		
+		i = 0;
+		
+		ObjRender_SetAngleZ(ID[0], angle + cc );
+		ObjRender_SetAngleZ(ID[1], angle - cc );
+		ObjRender_SetAlpha(ID[0], move1*255 );
+		ObjRender_SetAlpha(ID[1], move1*128 );
+		
+		if( length( GetIntersectionRegistedEnemyID ) > 0 ){
+			let col_obj = ObjCol_GetListOfIntersectedEnemyID(sht);
+			
+			if( length( col_obj ) > 0 && cc/24 % 2 == 0 ){
+				OonusaEffect([ObjMove_GetX(col_obj[0]),ObjMove_GetY(col_obj[0])], [255,rand(64,255),64] );
+			}
+		}
+		
+		//　自分から一番近い敵に追尾
+		let enemy	= GetEnemyIntersectionPosition(gpos[0], gpos[1], 1 );
+		if( length(enemy) > 0 ){
+			ObjMove_SetDestAtWeight(sht, enemy[0][0], enemy[0][1], 16, 4 );
+		}
+		
+		cc += 16;
+		if( move1 < 1 ){ moveA += 10; }
+		
+		//ショットキーが離されたら座布団も消える
+		if( GetVirtualKeyState( VK_SHOT ) == KEY_FREE ){ break; }
+		yield;
+	}
+	SetAreaCommonData("PlayerShot", "zabuton", 0 );
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		loop( length(ID) ){
+			ObjRender_SetScaleXYZ(ID[i], sca - move1*sca, sca - move1*sca, 0 );
+			ObjRender_SetAngleZ(ID[i], angle + cc );
+			i++;
+		}
+		i = 0;
+		
+		cc += 16;
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　ピンホール　針
+task CreatePLShot02B_REIMU(pos,speed,angle,acc,mx,dmg,penet,rgb_h){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let frag	= false;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/shote01.png" );
+	Obj_SetRenderPriorityI(ID, shot_layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, angle - 270 );
+	ObjRender_SetScaleXYZ(ID, 1, 2, 0 );
+	ObjRender_SetAlpha(ID, 128 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 64, 32, 96 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		yield;
+	}
+	while( move1 < 1 && frag ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetScaleXYZ(ID, 1-move1, 2+move1*2, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID);
+}
+
+
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+//　特殊ショット
+task CreatePLExtraShot01_REIMU(pos,speed,angle,acc,mx,dmg,penet,alpha){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, mx, 1, 0 );
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let move1	= 0;
+	let moveA	= 0;
+	let frag	= false;
+	let animc	= 0;
+	let anim1	= 0;
+	let i		= 0;
+	
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, dmg );
+	ObjShot_SetPenetration(sht, penet );
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./img/eff/extra_shot.png" );
+		Obj_SetRenderPriorityI(ID[i], shot_layer );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, angle - 270 );
+		ObjRender_SetAlpha(ID[i], alpha );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 64 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetScaleXYZ(ID[1], 1.1, 1.1, 0 );
+	ObjRender_SetAlpha(ID[1], alpha/2 );
+	
+	while( !Obj_IsDeleted(sht) && IsPermitPlayerShot() ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		ObjRender_SetPosition(ID[0], gpos[0], gpos[1], 0 );
+		ObjRender_SetPosition(ID[1], gpos[0], gpos[1], 0 );
+		ObjSprite2D_SetSourceRect(ID[0], 0 + anim1*64, 0, 64 + anim1*64, 64 );
+		ObjSprite2D_SetSourceRect(ID[1], 0 + anim1*64, 0, 64 + anim1*64, 64 );
+		
+		if( ObjCol_IsIntersected(sht) ){
+			ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+			frag = true;
+			break;
+		}
+		
+		animc++;
+		if( animc > 0 && animc%4 == 0 ){
+			anim1++;
+			if( anim1 >= 2 ){ anim1 = 0; }
+		}
+		
+		yield;
+	}
+	while( move1 < 1 && frag ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID[0], 1+move1, 1+move1, 0 );
+		ObjRender_SetScaleXYZ(ID[1], 1.1+move1, 1.1+move1, 0 );
+		ObjRender_SetAlpha(ID[0], alpha - move1*alpha );
+		ObjRender_SetAlpha(ID[1], alpha/2 - move1*(alpha/2) );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete(sht);
+	Obj_Delete(ID[0]);
+	Obj_Delete(ID[1]);
+}

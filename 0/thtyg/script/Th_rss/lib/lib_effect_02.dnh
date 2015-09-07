@@ -1,0 +1,386 @@
+
+//　ｵｰﾗと歪みエフェクト
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
+//　歪み無し
+task Aura_NoDistortion(ID,control,rgb1,rgb2){
+	let count	= 0;
+	let layer	= 32;
+	
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 2 ){ return; }
+	
+	while( !Obj_IsDeleted(ID) ){
+		if( count%control == 0 ){
+			Aura_Source01( ID, 32, rgb1 );
+		}
+		Aura_Source02( ID, 32, rgb1 );
+		Aura_Source03( ID, 31, rgb2 );
+		
+		count++;
+		
+		yield;
+	}
+}
+
+task Aura(ID,control,rgb1,rgb2){
+	let count	= 0;
+	let layer	= 32;
+	
+	SetDistortion( ID, 31 );
+	
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 2 ){ return; }
+	
+	while( !Obj_IsDeleted(ID) ){
+		if( count%control == 0 ){
+			Aura_Source01( ID, 32, rgb1 );
+		}
+		Aura_Source02( ID, 32, rgb1 );
+		Aura_Source03( ID, 31, rgb2 );
+		
+		count++;
+		
+		yield;
+	}
+}
+
+task Aura_Source01(ID,layer,rgb){
+	let aeff		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	let cc			= 0;
+	let sca			= rand(0.8,1);
+	let sca1		= 0;
+	let scaA		= 0;
+	let alpha		= 128;
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let ang			= rand(-4,4);
+	
+	ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(aeff, path_effect01 );
+	Obj_SetRenderPriorityI(aeff, layer );
+	ObjRender_SetBlendType(aeff, BLEND_ADD_ARGB);
+	ObjRender_SetAngleXYZ(aeff, 0, 0, ang );
+	ObjRender_SetScaleXYZ(aeff, sca*2 - sca1*sca, sca*2 - sca1*sca, 0 );
+	ObjSprite2D_SetSourceRect(aeff, 0, 256, 64, 256+64 );
+	ObjSprite2D_SetDestCenter(aeff);
+	ObjRender_SetColor(aeff, rgb[0], rgb[1], rgb[2] );
+	ObjRender_SetAlpha(aeff, alpha1*alpha );
+	
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		alpha1 = 1 * sin( alphaA );
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(aeff, gpos[0]+cc * cos(270+ang), gpos[1]+cc * sin(270+ang), 0 );
+		ObjRender_SetScaleXYZ(aeff, sca*2 - sca1*sca, sca*2 - sca1*sca, 0 );
+		ObjRender_SetAlpha(aeff, alpha1*alpha );
+		
+		cc += 4;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		if( sca1 < 1 ){ scaA += 5; }
+		if( alpha1 >= 1 && sca1 >= 1 ){ break; }
+		
+		yield;
+	}
+	alphaA = 0;
+	scaA = 0;
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		alpha1 = 1 * sin( alphaA );
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(aeff, gpos[0]+cc * cos(270+ang), gpos[1]+cc * sin(270+ang), 0 );
+		ObjRender_SetScaleXYZ(aeff, sca - sca1*sca, sca + sca1*sca, 0 );
+		ObjRender_SetAlpha(aeff, alpha - alpha1*alpha );
+		
+		cc += 4;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		if( sca1 < 1 ){ scaA += 5; }
+		if( alpha1 >= 1 && sca1 >= 1 ){ break; }
+		
+		yield;
+	}
+	Obj_Delete(aeff);
+}
+
+task Aura_Source02(ID,layer,rgb){
+	let aeff		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	let cc			= 0;
+	let sca			= rand(0.4,1.4);
+	let sca1		= 0;
+	let scaA		= 0;
+	let alpha		= 128;
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let ang			= rand(0,360);
+	
+	ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(aeff, path_effect01 );
+	Obj_SetRenderPriorityI(aeff, layer );
+	ObjRender_SetBlendType(aeff, BLEND_ADD_ARGB);
+	ObjRender_SetAngleXYZ(aeff, 0, 0, ang );
+	ObjRender_SetScaleXYZ(aeff, sca*2 - sca1*sca, sca*2 - sca1*sca, 0 );
+	ObjSprite2D_SetSourceRect(aeff, 64, 256, 128, 256+64 );
+	ObjSprite2D_SetDestCenter(aeff);
+	ObjRender_SetColor(aeff, rgb[0], rgb[1], rgb[2] );
+	ObjRender_SetAlpha(aeff, alpha1*alpha );
+	
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		alpha1 = 1 * sin( alphaA );
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(aeff, sca*2 - sca1*sca, sca*2 - sca1*sca, 0 );
+		ObjRender_SetAlpha(aeff, alpha1*alpha );
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		if( sca1 < 1 ){ scaA += 10; }
+		if( alpha1 >= 1 && sca1 >= 1 ){ break; }
+		
+		yield;
+	}
+	alphaA = 0;
+	scaA = 0;
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		alpha1 = 1 * sin( alphaA );
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(aeff, sca - sca1*sca, sca - sca1*sca, 0 );
+		ObjRender_SetAlpha(aeff, alpha - alpha1*alpha );
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		if( sca1 < 1 ){ scaA += 10; }
+		if( alpha1 >= 1 && sca1 >= 1 ){ break; }
+		
+		yield;
+	}
+	Obj_Delete(aeff);
+}
+
+//　周囲暗くなる減算のやつ
+task Aura_Source03(ID,layer,rgb){
+	let aeff		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	let cc			= 0;
+	let sca			= rand(3,4);
+	let alpha		= 255;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= rand(0,360);
+	
+	ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(aeff, path_effect01 );
+	Obj_SetRenderPriorityI(aeff, layer );
+	ObjRender_SetBlendType(aeff, BLEND_SUBTRACT );
+	ObjRender_SetAngleXYZ(aeff, 0, 0, ang );
+	ObjSprite2D_SetSourceRect(aeff, 64, 256, 128, 256+64 );
+	ObjSprite2D_SetDestCenter(aeff);
+	ObjRender_SetColor(aeff, rgb[0], rgb[1], rgb[2] );
+	
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(aeff, sca*2 - move1*sca, sca*2 - move1*sca, 0 );
+		ObjRender_SetAlpha(aeff, move1*alpha );
+		
+		cc++;
+		if( move1 < 1 ){ moveA += 10; }
+		if( move1 >= 1 ){ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) ){
+		gpos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(aeff, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(aeff, sca - move1*sca, sca - move1*sca, 0 );
+		ObjRender_SetAlpha(aeff, alpha - move1*alpha );
+		
+		cc++;
+		if( move1 < 1 ){ moveA += 10; }
+		if( move1 >= 1 ){ break; }
+		
+		yield;
+	}
+	Obj_Delete(aeff);
+}
+
+//　歪み
+task SetDistortion(ID,layer){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 0 ){ return; }
+	
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let csd			= GetCurrentScriptDirectory;
+	let dis1		= 0;//　内円
+	let kaku		= 8;
+	let cc			= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= [1024/kaku,256/kaku];
+	//　円の太さ
+	let wight		= [64,0];
+	//　回転の早さ
+	let ang_plus	= 0;
+	
+	loop( length(id) ){
+		ObjRender_SetPosition(id[i], ObjMove_GetX(ID), ObjMove_GetY(ID), 0 );
+		Obj_SetRenderPriorityI(id[i], layer );
+		ObjRender_SetBlendType(id[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(id[i], 1, 1, 0 );
+		ObjRender_SetAngleXYZ(id[i], 0, 0, 0 );
+		ObjPrim_SetPrimitiveType(id[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(id[i], ten );
+		i++;
+	}
+	i = 0;
+	
+	dis1 = 48;
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		let texture = GetReservedRenderTargetName(0);
+		RenderToTextureA1(texture, 10, 29, true);
+		loop( length(id) ){
+			ObjRender_SetPosition(id[j], ObjMove_GetX(ID), ObjMove_GetY(ID), 0 );
+			ObjPrim_SetTexture(id[j], texture );
+			j++;
+		}
+		j = 0;
+		
+		loop( ten ){
+			loop( length(id) ){
+				let disxy1 = [ (dis1-48)+wight[0]*j, (dis1+wight[0]-48)+wight[0]*j ];
+				let vertexX = [ (disxy1[0] + (8) * cos(cc*4)) * cos(pc+ang),
+								(disxy1[1] + (8) * cos(cc*4)) * cos(pc+ang) ];
+				let vertexY = [ (disxy1[0] + (4) * sin(cc*4)) * sin(pc+ang),
+								(disxy1[1] + (4) * sin(cc*4)) * sin(pc+ang) ];
+				
+				ObjPrim_SetVertexPosition(id[j], i, vertexX[0], vertexY[0], 0 );
+				ObjPrim_SetVertexPosition(id[j], i2, vertexX[1], vertexY[1], 0 );
+				
+				ObjPrim_SetVertexUVT(id[j], i, 32+ObjMove_GetX(ID)+(disxy1[0]) * cos(pc+ang), 16+ObjMove_GetY(ID)+(disxy1[0]) * sin(pc+ang) );
+				ObjPrim_SetVertexUVT(id[j], i2, 32+ObjMove_GetX(ID)+(disxy1[1]) * cos(pc+ang), 16+ObjMove_GetY(ID)+(disxy1[1]) * sin(pc+ang) );
+				j++;
+			}
+			j = 0;
+			ObjPrim_SetVertexAlpha(id[ 0 ], i, 0 );
+			ObjPrim_SetVertexAlpha(id[ 0 ], i2, 255 );
+			ObjPrim_SetVertexAlpha(id[ length(id)-1 ], i, 255 );
+			ObjPrim_SetVertexAlpha(id[ length(id)-1 ], i2, 0 );
+			pc			+= 360/kaku;
+			i			+= 2;
+			i2			+= 2;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		
+		
+		
+		cc++;
+		ang += ang_plus;
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}
+
+/*
+//　歪み
+task SetDistortion(ID,layer){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	
+	//　N角形
+	let SET_POLYGON		= 12;
+	
+	//　距離
+	let SET_DISTANCE	= 128;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten			=  SET_POLYGON + 1 + 1 ;
+	
+	Obj_SetRenderPriorityI(id, layer );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(ID) ){
+		let texture = GetReservedRenderTargetName(0);
+		
+		RenderToTextureA1(texture, 10, 29, true);
+		
+		ObjRender_SetPosition(id, ObjMove_GetX(ID), ObjMove_GetY(ID), 0 );
+		//ObjRender_SetPosition(id, GetPlayerX(), GetPlayerY(), 0 );
+		ObjPrim_SetTexture(id, texture );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, (32+ObjMove_GetX(ID)), (16+ObjMove_GetY(ID)), 0 );
+		ObjPrim_SetVertexColor(id, 0, 255, 0, 0 );
+		//ObjPrim_SetVertexAlpha(id, 0, move1*0 );
+		
+		let _rect = [0,512];
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc), SET_DISTANCE * sin(pc), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, (32+ObjMove_GetX(ID)) + SET_DISTANCE * cos(pc),
+											(16+ObjMove_GetY(ID)) + SET_DISTANCE * sin(pc) );
+			//ObjPrim_SetVertexUVT(id, 1+i, 32+ObjMove_GetX(ID), 16+ObjMove_GetY(ID) );
+			//ObjPrim_SetVertexColor(id, 1+i, 128 + 127 * sin( scr/8 ), 0, 128 - 127 * sin( scr/8 ) );
+			//ObjPrim_SetVertexAlpha(id, 1+i, 0 );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+*/

@@ -1,0 +1,229 @@
+
+
+//　核弾
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　核弾 オブジェクトIDが返る
+function CreateNuClearShot01( pos, speed, angle, acc, maxspeed, color, scale, delay ){
+	let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, maxspeed, 0, delay );
+	
+	CreateNuClearShot01_Render( sht, color, scale, delay );
+	CreateNuClearShot01_Update( sht, scale, delay );
+	
+	return sht;
+}
+
+//　描画
+task CreateNuClearShot01_Render( CallID, color, scale_base, delay ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let gang	= ObjMove_GetAngle(CallID);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let angle	= [ 0, 0 ];
+	let scale	= [ scale_base, scale_base*1.1 ];
+	let alpha	= [ 128, 80 ];
+	
+	let _rect = [ 0 ,0 ];
+	alternative( color )
+	case( "RED" ){ _rect = [ 0, 0 ]; }
+	case( "ORANGE" ){ _rect = [ 1, 0 ]; }
+	case( "YELLOW" ){ _rect = [ 2, 0 ]; }
+	case( "GREEN" ){ _rect = [ 3, 0 ]; }
+	case( "AQUA" ){ _rect = [ 0, 1 ]; }
+	case( "BLUE" ){ _rect = [ 1, 1 ]; }
+	case( "PURPLE" ){ _rect = [ 2, 1 ]; }
+	case( "WHITE" ){ _rect = [ 3, 1 ]; }
+	
+	loop( delay ){ yield; }
+	
+	ascent( let i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../img/bullet_nuclear.png" );
+		Obj_SetRenderPriorityI(ID[i], 51 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjSprite2D_SetSourceRect(ID[i], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	while( !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		gang = ObjMove_GetAngle(CallID);
+		
+		angle[0] = angle[0] - 64;
+		angle[1] = angle[1] + 64;
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle[i] );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		angle[0] = angle[0] - 64;
+		angle[1] = angle[1] + 64;
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle[i] );
+			ObjRender_SetScaleXYZ(ID[i], scale[i] + move1*(scale[i]/2), scale[i] + move1*(scale[i]/2), 0 );
+			ObjRender_SetAlpha(ID[i], alpha[i] - move1*alpha[i] );
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　更新
+task CreateNuClearShot01_Update( CallID, scale, delay ){
+	let move1	= 0;
+	let moveA	= 0;
+	
+	loop( delay ){ yield; }
+	
+	while( !Obj_IsDeleted(CallID) ){
+		move1 = 1 * sin( moveA );
+		
+		ObjShot_SetIntersectionCircleA1( CallID, move1*(112*scale) );
+		
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+}
+
+
+
+
+//　描画方法がちょっと違うver
+//　核弾 オブジェクトIDが返る
+function CreateNuClearShot02( pos, speed, angle, acc, maxspeed, color, scale, delay ){
+	let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, maxspeed, 0, delay );
+	
+	CreateNuClearShot02_Render( sht, color, scale, delay );
+	CreateNuClearShot02_Update( sht, scale, delay );
+	
+	return sht;
+}
+
+//　描画
+task CreateNuClearShot02_Render( CallID, color, scale_base, delay ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let gang	= ObjMove_GetAngle(CallID);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let angle	= [ 0, 0, 0 ];
+	let scale	= [ scale_base*1.2, scale_base*1.1, scale_base ];
+	let alpha	= [ 64, 128, 255 ];
+	let blend	= [ BLEND_SUBTRACT, BLEND_ADD_ARGB, BLEND_SUBTRACT ];
+	
+	let _rect = [ 0 ,0 ];
+	alternative( color )
+	case( "RED" ){ _rect = [ 0, 0 ]; }
+	case( "ORANGE" ){ _rect = [ 1, 0 ]; }
+	case( "YELLOW" ){ _rect = [ 2, 0 ]; }
+	case( "GREEN" ){ _rect = [ 3, 0 ]; }
+	case( "AQUA" ){ _rect = [ 0, 1 ]; }
+	case( "BLUE" ){ _rect = [ 1, 1 ]; }
+	case( "PURPLE" ){ _rect = [ 2, 1 ]; }
+	case( "WHITE" ){ _rect = [ 3, 1 ]; }
+	
+	loop( delay ){ yield; }
+	
+	ascent( let i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../img/bullet_nuclear.png" );
+		Obj_SetRenderPriorityI(ID[i], 51 );
+		ObjRender_SetBlendType(ID[i], blend[i] );
+		ObjSprite2D_SetSourceRect(ID[i], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	while( !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		gang = ObjMove_GetAngle(CallID);
+		
+		angle[0] = angle[0] - 64;
+		angle[1] = angle[1] + 64;
+		angle[2] = angle[2] - 64;
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle[i] );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		angle[0] = angle[0] - 64;
+		angle[1] = angle[1] + 64;
+		angle[2] = angle[2] - 64;
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle[i] );
+			ObjRender_SetScaleXYZ(ID[i], scale[i] + move1*(scale[i]/2), scale[i] + move1*(scale[i]/2), 0 );
+			ObjRender_SetAlpha(ID[i], alpha[i] - move1*alpha[i] );
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　更新
+task CreateNuClearShot02_Update( CallID, scale, delay ){
+	let move1	= 0;
+	let moveA	= 0;
+	
+	loop( delay ){ yield; }
+	
+	while( !Obj_IsDeleted(CallID) ){
+		move1 = 1 * sin( moveA );
+		
+		ObjShot_SetIntersectionCircleA1( CallID, move1*(112*scale) );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+}

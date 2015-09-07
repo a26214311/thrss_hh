@@ -1,0 +1,296 @@
+
+
+task PL01_BadED(){
+	let ctr		= 0;
+	let frame	= 0;
+	let count	= 0;
+	let timer	= 0;
+	let hc		= [0,-16];
+	let color	= [64,64,64];
+	let color1	= [128,64,64];//　霊夢テキストカラー
+	let color2	= [128,64,128];//　紫テキストカラー
+	let color3	= [64,128,128];//　霖之助テキストカラー
+	let two		= 24;
+	let size	= 16;
+	let path	= [
+		ed_tex[0],
+		ed_tex[1],
+	];
+	
+	CreateCommonDataArea( "talk_ED" );
+	SetAreaCommonData("talk_ED", "counter", 0 );
+	SetAreaCommonData("talk_ED", "flg", true );
+	
+	while( GetAreaCommonData("talk_ED","flg",false) ){
+		ctr++;
+		if( GetVirtualKeyState(VK_SHOT) == KEY_PUSH && ctr>32){
+			frame++;
+			count	= 0;
+			ctr		= 0;
+			SetAreaCommonData("talk_ED", "counter", frame );
+		}
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD ){
+			timer++;
+		}
+		else{
+			timer = 0;
+		}
+		if( timer > 40 && ctr > 4 ){
+			frame++;
+			count	= 0;
+			ctr		= 0;
+			SetAreaCommonData("talk_ED", "counter", frame );
+		}
+		
+		count++;
+		if( count == 1 ){
+			alternative( frame )
+			case( 0 ){
+				ED_BackGround( path[0], frame, 81, "ON", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "博麗神社。", frame, size, 82, "ON" , color );
+			}
+			case( 1 ){
+				ED_BackGround( path[0], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "邪馬台与桃姫と死闘を繰り広げていた筈の霊夢は、[r]気が付いたら神社に投げ出されていた。", frame, size, 82, "ON" , color );
+			}
+			case( 2 ){
+				ED_BackGround( path[0], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "霊夢「えっ、ちょっと待った。夢…じゃないわよね、少なくとも」", frame, size, 82, "ON" , color1 );
+			}
+			case( 3 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「あら霊夢、大変よ異変だわ」", frame, size, 82, "ON" , color2 );
+			}
+			case( 4 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「あら霊夢、大変よ異変だわ」", frame, size, 82, "OFF" , color2 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "霖之助「はぁはぁ、霊夢、いきなりだが大変だ。[r]　　　　僕の宝物の宝剣がいきなり盗まれてしまった！」", frame, size, 82, "ON" , color3 );
+			}
+			case( 5 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "霊夢「どうやら夢じゃないみたいね。いや、悪い夢なのか？」", frame, size, 82, "ON" , color1 );
+			}
+			case( 6 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "何度も満身創痍から立ち上がり、[r]霊夢は苦戦の末に確かに桃姫を追い詰めた筈だ。", frame, size, 82, "ON" , color );
+			}
+			case( 7 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "スペルカードを失った桃姫の体勢が崩れたその瞬間、[r]紫が一撃必殺のスキマを開く為に魔力を集めた筈だが…", frame, size, 82, "ON" , color );
+			}
+			case( 8 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "邪馬台の国の宝である「鏡」は、[r]持ち主の心に反応して主を守る、王の神器（レガリア）でもあった。", frame, size, 82, "ON" , color );
+			}
+			case( 9 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "桃姫自身も知らないまま、紫のスキマは鏡によって跳ね返され、[r]霊夢を博麗神社へ送還したのだ。", frame, size, 82, "ON" , color );
+			}
+			case( 10 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "幸いにも紫のサポートにより、結界を破るだけのエネルギーは多少奪えた。[r]もう一度桃源宮へ行くだけの時間はある。", frame, size, 82, "ON" , color );
+			}
+			case( 11 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "どうやらこの最後っ屁に対抗する為、[r]次はもっと余裕を持って桃姫を圧倒する必要がありそうだ。", frame, size, 82, "ON" , color );
+			}
+
+			case( 12 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.01　恐ろしいものの片鱗を味わったね", frame, size, 82, "ON" , [32,128,32] );
+			}
+			case( 13 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.01　恐ろしいものの片鱗を味わったね", frame, size, 82, "OFF" , [32,128,32] );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "次はノーコンティニューを目指そう！", frame, size, 82, "ON" , [32,128,32] );
+			}
+			others{
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.01　恐ろしいものの片鱗を味わったね", frame, size, 82, "OFF" , [32,128,32] );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "次はノーコンティニューを目指そう！", frame, size, 82, "OFF" , [32,128,32] );
+				FadeOut_Utility();
+			}
+		}
+		yield;
+	}
+}
+
+task PL01_GoodED(){
+	let flg		= true;
+	let ctr		= 0;
+	let frame	= 0;
+	let count	= 0;
+	let timer	= 0;
+	let hc		= [0,-16];
+	let color	= [48,48,48];
+	let color1	= [128,64,64];	//　霊夢テキストカラー
+	let color2	= [128,64,128];	//　紫テキストカラー
+	let color3	= [128,128,64];	//　魔理沙テキストカラー
+	let color4	= [128,32,32];	//　皇女テキストカラー
+	let color5	= [64,64,128];	//　垂神テキストカラー
+	let color6	= [128,32,64];	//　桃姫テキストカラー
+	let two		= 24;
+	let size	= 16;
+	let path	= [
+		ed_tex[2],
+		ed_tex[3],
+		ed_tex[4],
+	];
+	
+	CreateCommonDataArea("talk_ED");
+	SetAreaCommonData("talk_ED","counter",0);
+	SetAreaCommonData("talk_ED","flg",true);
+	
+	while( GetAreaCommonData("talk_ED","flg",false) ){
+		ctr++;
+		if( GetVirtualKeyState(VK_SHOT) == KEY_PUSH && ctr>32){
+			frame++;
+			count	= 0;
+			ctr		= 0;
+			SetAreaCommonData("talk_ED", "counter", frame );
+		}
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD ){
+			timer++;
+		}
+		else{
+			timer = 0;
+		}
+		if( timer > 40 && ctr > 4 ){
+			frame++;
+			count	= 0;
+			ctr		= 0;
+			SetAreaCommonData("talk_ED", "counter", frame );
+		}
+		
+		count++;
+		if( count == 1 ){
+			alternative( frame )
+			case( 0 ){
+				ED_BackGround( path[0], frame, 81, "ON", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "——邪馬台与桃姫を桃源宮に封じていた結界は、[r]　　幻想郷の結界が破れる一歩手前で無事消滅した。", frame, size, 82, "ON" , color );
+			}
+			case( 1 ){
+				ED_BackGround( path[0], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "博麗神社。", frame, size, 82, "ON" , color );
+			}
+			case( 2 ){
+				ED_BackGround( path[0], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "幻想郷を襲った強烈な冷気は去り、ご神木の梅の花の時期が訪れた。", frame, size, 82, "ON" , color );
+			}
+			case( 3 ){
+				ED_BackGround( path[0], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "幻想郷を襲った強烈な冷気は去り、ご神木の梅の花の時期が訪れた。", frame, size, 82, "OFF" , color );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "今春の参拝客の多さは例年とは比べ物にならない——", frame, size, 82, "ON" , color );
+			}
+			case( 4 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "垂神「これなるは海の秘宝、潮満珠と潮干珠ですぞー、珍しいんですぞー」", frame, size, 82, "ON" , color5 );
+			}
+			case( 5 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "垂神「これなるは海の秘宝、潮満珠と潮干珠ですぞー、珍しいんですぞー」", frame, size, 82, "OFF" , color5 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "皇女「そしてこれが天下をひっくり返す宝剣・草薙の剣で」", frame, size, 82, "ON" , color4 );
+			}
+			case( 6 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "垂神「これなるは海の秘宝、潮満珠と潮干珠ですぞー、珍しいんですぞー」", frame, size, 82, "OFF" , color5 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "皇女「そしてこれが天下をひっくり返す宝剣・草薙の剣で」", frame, size, 82, "OFF" , color4 );
+/* to be translated */				ED_Text( 40+hc[0], 400+48+hc[1], "桃姫「とどめが三角縁神獣鏡だよー」", frame, size, 82, "ON" , color6 );
+			}
+			case( 7 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "霊夢「って、あんたらの所までで客が帰って行くだけじゃないー！」", frame, size, 82, "ON" , color1 );
+			}
+			case( 8 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "霊夢「って、あんたらの所までで客が帰って行くだけじゃないー！」", frame, size, 82, "OFF" , color1 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "桃姫「知らんよ、折角罪滅ぼしに神社の宣伝に力を貸しているのに」", frame, size, 82, "ON" , color6 );
+			}
+			case( 9 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "魔理沙「いいじゃないか、[r]　　　　お前らに剣を取られて枯れ果ててた香霖も最近は元気だぜ。", frame, size, 82, "ON" , color3 );
+			}
+			case( 10 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "魔理沙「いいじゃないか、[r]　　　　お前らに剣を取られて枯れ果ててた香霖も最近は元気だぜ。", frame, size, 82, "OFF" , color3 );
+/* to be translated */				ED_Text( 40+hc[0], 400+48+hc[1], "　　　　処分に困ってたゴミ…[r]　　　　いや、貴重な歴史的アイテムの売り上げが上がったからな」", frame, size, 82, "ON" , color3 );
+			}
+			case( 11 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "宗教ブームの次に幻想郷に訪れたのは歴史ブームであった。", frame, size, 82, "ON" , color );
+			}
+			case( 12 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "宗教ブームの次に幻想郷に訪れたのは歴史ブームであった。", frame, size, 82, "OFF" , color );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "過去を捨て去る事で作られた幻想郷。[r]その住人にとって、忘れられかけていた古の記憶は新鮮に映ったのだ。", frame, size, 82, "ON" , color );
+			}
+			case( 13 ){
+				ED_BackGround( path[1], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "言うまでも無く桃姫一行は、当人達が意図せずとも、その火付け役である。", frame, size, 82, "ON" , color );
+			}
+			case( 14 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "霊夢「大体ね、用が済んだらとっとと帰りなさいよ。[r]　　　あんたら外の世界でも有名なんでしょ？」", frame, size, 82, "ON" , color1 );
+			}
+			case( 15 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「ふふ、それもまた良いのではなくて？", frame, size, 82, "ON" , color2 );
+			}
+			case( 16 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「ふふ、それもまた良いのではなくて？", frame, size, 82, "OFF" , color2 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "　　皆が昔の事を語り継ぎ、忘れない。[r]　　それはとても素敵で尊い事だと思うわ。", frame, size, 82, "ON" , color2 );
+			}
+			case( 17 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「新しく幻想郷にやって来る神様も、これならきっと安心出来るもの。", frame, size, 82, "ON" , color2 );
+			}
+			case( 18 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「新しく幻想郷にやって来る神様も、これならきっと安心出来るもの。", frame, size, 82, "OFF" , color2 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "　　でも、それで終わりでは決してない。[r]　　そう、ここは忘れられた存在の墓場ではないわ。", frame, size, 82, "ON" , color2 );
+			}
+			case( 19 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「幻想郷——これから始まる楽園なのよ。", frame, size, 82, "ON" , color2 );
+			}
+			case( 20 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "紫「幻想郷——これから始まる楽園なのよ。", frame, size, 82, "OFF" , color2 );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "　　あっ、これは賢者としての願いであって、[r]　　海の幻想入りが阻止出来たから何でも良いやって事では——」", frame, size, 82, "ON" , color2 );
+			}
+			case( 21 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "過去を受け入れ、現在を認識し、そして未来を見据える——", frame, size, 82, "ON" , color );
+			}
+			case( 22 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "寿命も短く、心も弱い我々人類には難しい事だが、[r]その積み重ねこそが、やがては誇れる歴史となるのではないだろうか。", frame, size, 82, "ON" , color );
+			}
+			case( 23 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "少女達が強く生き抜いた幻想郷の歴史も、[r]やがてどこかで誰かに語り継がれて行く。", frame, size, 82, "ON" , color );
+			}
+			case( 24 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "年月の波に呑まれても、少女達は誰かの心の中できっと生き続けて行くのだ。", frame, size, 82, "ON" , color );
+			}
+			case( 25 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.02　まあ、本人達は見れないんだけどね", frame, size, 82, "ON" , [32,128,32] );
+			}
+			case( 26 ){
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.02　まあ、本人達は見れないんだけどね", frame, size, 82, "OFF" , [32,128,32] );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "オールクリアです。すごいぞー！", frame, size, 82, "ON" , [32,128,32] );
+			}
+			others{
+				ED_BackGround( path[2], frame, 81, "OFF", "OFF" );
+/* to be translated */				ED_Text( 40+hc[0], 400+hc[1], "Ending　No.02　まあ、本人達は見れないんだけどね", frame, size, 82, "OFF" , [32,128,32] );
+/* to be translated */				ED_Text( 40+hc[0], 400+24+hc[1], "オールクリアです。すごいぞー！", frame, size, 82, "OFF" , [32,128,32] );
+				FadeOut_Utility();
+			}
+		}
+		yield;
+	}
+}

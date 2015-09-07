@@ -1,0 +1,275 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　静通常01"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	#include "./lib_enm08_family.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 55;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 96, 96, 96 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	task MainThread{
+		let r = 1 - 2 * round( rand( 0, 1 ) );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+		Wait( 150 );
+		Pattern2;
+		while( !Obj_IsDeleted(enm) ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( Wait( 60 ) ){ return; }
+			local{
+				let wide = rand( 50, 160 );
+				let angle = GetAngleToPlayer( enm ) + 180 - wide / 2;
+				loop( 2 ){
+					Pattern1( 7, angle, r );
+					angle += wide;
+					r = -r;
+				}
+			}
+			ObjSound_Play( CreateShotSE[1] );
+			
+			if( Wait( 90 ) ){ return; }
+			
+			EnemyMove( enm, 2, 8 );
+			
+			if( Wait( 240 ) ){ return; }
+
+			r = -r;
+			yield;
+		}
+	}
+
+	task Pattern1( speed, angle, r ){
+		let state = 0;
+		let obj = CreateEnemy_Sikigami( 90, 6, true, true );
+		let pos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		ObjMove_SetPosition( obj, pos[0], pos[1] );
+		State;
+		Move;
+		if( Wait( 90 ) ){ return; }
+		Set;
+		while( state == 0 ){ if( Wait( 1 ) ){ return; } }
+		if( Wait( 90 ) ){ return; }
+		loop( 1 ){
+			Set;
+			if( Wait( 180 ) ){ return; }
+		}
+		if( !Obj_IsDeleted( obj ) ){
+			ObjSound_Play( CreateShotSE[ 3 ] );
+			let shote = BGW_PURPLE_27;
+			let way = 30;
+			let rd = 4;
+			let speed = [ 2, 1 ];
+			let angle = GetAngleToPlayer( obj );
+			loop( way ){
+				let v = 24;
+				let spos = [ pos[0] + v * cos( angle ), pos[1] + v * sin( angle ) ];
+				ascent( a in 0..length( speed ) ){
+					CreateShot01( spos, 0, angle + round(rand(-1,1))*rd, speed[a] / 120, speed[a], shote, 16 );
+				}
+				angle += 360 / way;
+			}
+		}
+		Obj_Delete( obj );
+
+		task Set{
+			if( Obj_IsDeleted( obj ) ){ return; }
+			let way = 3;
+			let wide = 80;
+			let angle = ObjMove_GetAngle( obj ) - wide / 2;
+			loop( way ){
+				SetShot( angle, 0.4 * r );
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[0] );
+		}
+
+		task Move{
+
+			let count = 0;
+			while( !Obj_IsDeleted( obj ) ){
+				let toAngle = atan2( GetPlayerY - pos[1], GetPlayerX - pos[0] );
+				
+				let dangle = absolute( 6 - speed );
+				let dmax = 1;
+				if( state != 0 && dangle > dmax ){ dangle = dmax; }
+				let ret = toAngle - angle;
+				if( ( ret > 0 && ret <= 180 ) || ( ret < 0 && ret <= -180 ) ){ angle += dangle; }
+				else if( ( ret > 0 && ret > 180 ) || ( ret < 0 && ret > -180 ) ){ angle += -dangle; }
+				if( angle >= 180 ){ angle += -360; }
+				if( angle < -180 ){ angle += 360; }
+
+				alternative( state )
+				case( 0 ){
+					speed /= 1.04;
+					if( speed <= 0.01 ){ state = 1; }
+				}
+				case( 1 ){
+					speed = 0.5 + 0.5 * sin( count * 2 );
+					count++;
+				}
+
+				ObjMove_SetX( obj, pos[0] + speed * cos( angle ) );
+				ObjMove_SetY( obj, pos[1] + speed * sin( angle ) );
+				ObjMove_SetAngle( obj, angle );
+				yield;
+			}
+		}
+
+		task State{
+			while( !Obj_IsDeleted( obj ) ){
+				pos = [ ObjMove_GetX( obj ), ObjMove_GetY( obj ) ];
+				yield;
+			}
+		}
+	
+	
+		task SetShot( angle, av ){
+			let sht = CreateLaserC( pos[0], pos[1], angle, 0, 0, 0, 10, [ 255, 32, 255 ], 0.04, 1, ADD_BGW_WHITE_30 );
+
+			let frame	= 0;
+			let avc		= 0;
+			let d		= 2;
+			
+			ObjShot_SetAutoDelete( sht, true );
+			ObjShot_SetSpellResist( sht, true );
+			
+			while( !Obj_IsDeleted(sht) ){
+				let gpos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+				
+				ObjMove_SetSpeed( sht, 2 + 1 * sin( frame*4 ) );
+				ObjMove_SetAngle( sht, (angle+avc) );
+				if( frame%9 == 0 ){
+					let shote = BGB_PURPLE_08;
+					let ag = ObjMove_GetAngle( sht ) + round( rand( -2, 2 ) ) * 8;
+					let obj = CreateShot01( gpos, 0, ag, 0.01, 1, shote, 16 );
+					ObjSound_Play( CreateShotSE[12] );
+				}
+				frame++;
+				if( frame < 180 ){
+					avc += av;
+				}
+				
+				if( Wait( 1 ) ){ return; }
+			}
+			Obj_Delete(sht);
+		}
+	}
+
+	task Pattern2{
+		Wait( 160 );
+		loop{
+			let way = 28;
+			let p = GetAngleToPlayer( enm );
+
+			let speed = 2;
+			let angle = p;
+			let shote = BGW_PURPLE_12;
+			let delay = 10;
+			loop( way ){
+				let v = 24;
+				let sx = ObjMove_GetX( enm ) + v * cos( angle );
+				let sy = ObjMove_GetY( enm ) + v * sin( angle );
+				
+				let sht = CreateShotA2( sx, sy, 0, angle, speed / 90, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+			if( Wait( 60 ) ){ return; }
+		}
+	}
+	

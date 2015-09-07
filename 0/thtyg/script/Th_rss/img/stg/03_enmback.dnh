@@ -1,0 +1,163 @@
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//　瑠璃背景　通常
+task SetBackGroundEffect_03(ID){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let cc			= 0;
+	let i			= 0;
+	
+	ObjPrim_SetTexture(id[0], spell_tex[9] );
+	ObjPrim_SetTexture(id[1], spell_tex[10] );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(id[1], BLEND_SUBTRACT );
+	
+	loop( length(id) ){
+		ObjRender_SetPosition(id[i], CenX, CenY, 0 );
+		Obj_SetRenderPriorityI(id[i], 29 );
+		ObjRender_SetScaleXYZ(id[i], 1, 1, 0 );
+		ObjPrim_SetVertexCount(id[i], 4 );
+		ObjPrim_SetVertexPosition(id[i], 0, 384/-2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 1, 384/-2, 448/2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 2, 384/2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 3, 384/2, 448/2, 0 );
+		ObjPrim_SetVertexUVT(id[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[i], 1, 0, 448 );
+		ObjPrim_SetVertexUVT(id[i], 2, 384, 0 );
+		ObjPrim_SetVertexUVT(id[i], 3, 384, 448 );
+		i++;
+	}
+	i = 0;
+	
+	ObjPrim_SetVertexPosition(id[1], 0, 512/-2, 512/-2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 1, 512/-2, 512/2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 2, 512/2, 512/-2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 3, 512/2, 512/2, 0 );
+	ObjPrim_SetVertexUVT(id[1], 0, 0, 0 );
+	ObjPrim_SetVertexUVT(id[1], 1, 0, 512 );
+	ObjPrim_SetVertexUVT(id[1], 2, 512, 0 );
+	ObjPrim_SetVertexUVT(id[1], 3, 512, 512 );
+	
+	ObjRender_SetScaleXYZ(id[1], 1.2, 1.2, 0 );
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjRender_SetAngleXYZ(id[1], 0, 0, cc/-8 );
+		
+		ascent( i in 0..( length(id) ) ){
+			ObjPrim_SetVertexAlpha(id[i], 0, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[i], 1, alpha2*255 );
+			ObjPrim_SetVertexAlpha(id[i], 2, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[i], 3, alpha2*255 );
+		}
+		
+		ascent( i in 0..4 ){
+			ObjPrim_SetVertexColor(id[0], i, 128 + 64*sin(cc/2), 128 + 64*sin(cc/2), 192 );
+			ObjPrim_SetVertexColor(id[1], i, 192, 128 + 64*sin(cc/2), 128 + 64*sin(cc/2) );
+		}
+		
+		let hc = 255;
+		let hm = 64;
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 >= 0.5 ){ alphaB += 5; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(id) ) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　瑠璃背景　逆転
+task SetBackGroundEffect_03_R(ID){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let cc			= 0;
+	let i			= 0;
+	
+	ObjPrim_SetTexture(id[0], spell_tex[9] );
+	ObjPrim_SetTexture(id[1], spell_tex[10] );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(id[1], BLEND_SUBTRACT );
+	
+	loop( length(id) ){
+		ObjRender_SetPosition(id[i], CenX, CenY-1, 0 );
+		Obj_SetRenderPriorityI(id[i], 29 );
+		ObjRender_SetScaleXYZ(id[i], 1, 1, 0 );
+		ObjRender_SetAngleXYZ(id[i], 180, 0, 0 );
+		ObjPrim_SetVertexCount(id[i], 4 );
+		ObjPrim_SetVertexPosition(id[i], 0, 384/-2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 1, 384/-2, 448/2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 2, 384/2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 3, 384/2, 448/2, 0 );
+		ObjPrim_SetVertexUVT(id[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[i], 1, 0, 448 );
+		ObjPrim_SetVertexUVT(id[i], 2, 384, 0 );
+		ObjPrim_SetVertexUVT(id[i], 3, 384, 448 );
+		i++;
+	}
+	i = 0;
+	
+	ObjPrim_SetVertexPosition(id[1], 0, 512/-2, 512/-2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 1, 512/-2, 512/2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 2, 512/2, 512/-2, 0 );
+	ObjPrim_SetVertexPosition(id[1], 3, 512/2, 512/2, 0 );
+	ObjPrim_SetVertexUVT(id[1], 0, 0, 0 );
+	ObjPrim_SetVertexUVT(id[1], 1, 0, 512 );
+	ObjPrim_SetVertexUVT(id[1], 2, 512, 0 );
+	ObjPrim_SetVertexUVT(id[1], 3, 512, 512 );
+	
+	ObjRender_SetScaleXYZ(id[1], 1.2, 1.2, 0 );
+	
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjRender_SetAngleXYZ(id[1], 0, 0, cc/-8 );
+		
+		ascent( i in 0..( length(id) ) ){
+			ObjPrim_SetVertexAlpha(id[i], 0, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[i], 1, alpha2*255 );
+			ObjPrim_SetVertexAlpha(id[i], 2, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[i], 3, alpha2*255 );
+		}
+		
+		ascent( i in 0..4 ){
+			ObjPrim_SetVertexColor(id[0], i, 128 + 64*sin(cc/2), 128 + 64*sin(cc/2), 192 );
+			ObjPrim_SetVertexColor(id[1], i, 192, 128 + 64*sin(cc/2), 128 + 64*sin(cc/2) );
+		}
+		
+		let hc = 255;
+		let hm = 64;
+		
+		cc--;
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 >= 0.5 ){ alphaB += 5; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(id) ) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}

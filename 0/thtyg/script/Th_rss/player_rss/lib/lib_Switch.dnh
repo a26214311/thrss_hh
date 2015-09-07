@@ -1,0 +1,96 @@
+
+task CallSwitch_OnGame(wait,lay,rgb_h,blend){
+	let bg		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					];
+	let sca		= 8;
+	let sca1	= 0;
+	let scaA	= 0;
+	let sca2	= 0;
+	let scaB	= 0;
+	let i		= 0;
+	
+	ObjRender_SetPosition(bg, CenX, CenY, 0 );
+	ObjPrim_SetTexture(bg, GetCurrentScriptDirectory ~ "../img/eff/Effect_White.png" );
+	Obj_SetRenderPriorityI(bg, lay + 1 );
+	ObjRender_SetBlendType(bg, blend );
+	ObjRender_SetScaleXYZ(bg, 1, 1, 0 );
+	ObjRender_SetColor(bg, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(bg, 0, 0, 384, 448 );
+	ObjSprite2D_SetDestCenter(bg);
+	
+	loop( length(ID) ){
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory ~ "../img/eff/eff_change.png" );
+		Obj_SetRenderPriorityI(ID[i], lay );
+		ObjRender_SetBlendType(ID[i], blend );
+		ObjRender_SetScaleXYZ(ID[i], sca/2, sca1*sca, 0 );
+		ObjRender_SetColor(ID[i], rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 2, 256, 128 );
+		ObjSprite2D_SetDestRect(ID[i], -64, -120, 64, 8 );
+		i++;
+	}
+	i = 0;
+	
+	while( sca2 < 1 ){
+		ObjRender_SetAlpha(bg, sca2*255 );
+		
+		ObjRender_SetPosition(ID[0], 0 - 128+sca1*128, 240, 0 );
+		ObjRender_SetPosition(ID[1], 384 + 128-sca1*128, 240, 0 );
+		ObjRender_SetPosition(ID[2], 0 - 128+sca1*128, 480, 0 );
+		ObjRender_SetPosition(ID[3], 384 + 128-sca1*128, 480, 0 );
+		ObjRender_SetAngleXYZ(ID[0], 0, 0, 64+8 );
+		ObjRender_SetAngleXYZ(ID[1], 0, 0, -64-8 );
+		ObjRender_SetAngleXYZ(ID[2], 0, 0, 64+8 );
+		ObjRender_SetAngleXYZ(ID[3], 0, 0, -64-8 );
+		
+		loop( length(ID)/2 ){
+			ObjRender_SetScaleXYZ(ID[i], sca/2, sca2*sca, 0 );
+			ObjRender_SetScaleXYZ(ID[2+i], sca/2, sca1*sca, 0 );
+			i++;
+		}
+		i = 0;
+		
+		if( sca1 < 1 ){ scaA += 3; }
+		sca1 = 1 * sin( scaA );
+		if( sca1 >= 0.8 ){ scaB += 3; }
+		sca2 = 1 * sin( scaB );
+		
+		yield;
+	}
+	loop( wait ){ yield; }
+	while( sca1 > 0 ){
+		ObjRender_SetAlpha(bg, sca2*255 );
+		
+		ObjRender_SetPosition(ID[0], 0 - 128-sca1*128, 80, 0 );
+		ObjRender_SetPosition(ID[1], 384 + 128+sca1*128, 80, 0 );
+		ObjRender_SetPosition(ID[2], 0 - 128-sca1*128, 480, 0 );
+		ObjRender_SetPosition(ID[3], 384 + 128+sca1*128, 480, 0 );
+		ObjRender_SetAngleXYZ(ID[0], 180, 0, 64+8 );
+		ObjRender_SetAngleXYZ(ID[1], 180, 0, -64-8 );
+		ObjRender_SetAngleXYZ(ID[2], 180, 0, 64+8 );
+		ObjRender_SetAngleXYZ(ID[3], 180, 0, -64-8 );
+		
+		loop( length(ID)/2 ){
+			ObjRender_SetScaleXYZ(ID[i], sca/2, sca2*sca, 0 );
+			ObjRender_SetScaleXYZ(ID[2+i], sca/2, sca1*sca, 0 );
+			i++;
+		}
+		i = 0;
+		
+		if( sca2 <= 0.98 ){ scaA += 3; }
+		sca1 = 1 * sin( scaA );
+		if( sca2 > 0 ){ scaB += 3; }
+		sca2 = 1 * sin( scaB );
+		
+		yield;
+	}
+	Obj_Delete(bg);
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}

@@ -1,0 +1,294 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5　宝珠「潮干珠」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 256, 256, 256, 256 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 5, 1 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b( enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "宝珠「潮干珠」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "引潮「シヲフルポイフル」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "干魃「バックドラウト」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "干魃「バックドラウト」";
+		}
+		
+		SpellCounter( GetDifficult, 5, 1 );
+		let sct = GetSpellCounter( GetDifficult, 5, 1 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_05b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		let j		= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		
+		//　弾種類
+		let shote	=[
+			[ ADD_BGW_GREEN_21, ADD_BGW_AQUA_21, ADD_BGW_BLUE_21 ],
+			[ ADD_BGW_PURPLE_18, ADD_BGW_RED_18, ADD_BGW_ORANGE_18 ],
+		];
+		//　way数
+		let lp		= [ 0, 0 ];
+
+		let wt		= 12;
+		//　角度
+		let sap		= 0.3;
+		let agp		= 8;
+		let av		= 5;
+		let angle1	= 0;
+		let angle2	= 0;
+
+		let agc		= 1;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp			= [ 6, 0 ];
+			sap = 0.2;
+		}
+		case( "Normal" ){
+			lp			= [ 10, 0 ];
+		}
+		case( "Hard" ){
+			lp			= [ 8, 0 ];
+			agc = 1.5;
+			agp = 1.25;
+			wt  = 9;
+		}
+		case( "Lunatic" ){
+			lp			= [ 16, 0 ];
+			agp = 6;
+			wt = 12;
+		}
+		case( "OverDrive" ){
+			lp			= [ 18, 0 ];
+		}
+		
+		let type		= 0;
+		let distance	= 380;
+		let shot_frame	= 4;
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			move1 = 1 * sin( moveA );
+			
+			//　パワー溜め
+			if( count == 300 ){
+				Concentration03_Main(enm, power_rgb, 60 );
+			}
+			
+			//　外からくるやつ
+			if( frame > 30 && frame%shot_frame == 0 ){
+				
+				let spin = 0 + sap * sin( angle2 );
+				
+				if( move1 < 1 ){ spin = 0; }
+				
+				loop( lp[0] ){
+					let angle = angle1+180 + round( rand( -1, 1 ) ) * av;
+					if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+						CreateShot( gpos, move1*distance, angle1+180, spin, shote[ 0 ][ type%3 ], 16 );
+					}
+					else{
+						CreateShot( gpos, move1*distance, angle1+180, spin, shote[ 1 ][ type%3 ], 16 );
+					}
+					angle1 += 360 / lp[0];
+					angle2 += 360 / lp[0] / agc;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				if( move1 < 1 ){ moveA += 5; }
+				else{
+					shot_frame = wt;
+					angle2 += agp;
+					type++;
+				}
+			}
+			
+			count++;
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task CreateShot( pos, distance, angle, spin, shote, delay ){
+		let sht		= CreateShotA2(
+			pos[0] + distance * cos( angle ),
+			pos[1] + distance * sin( angle ), 0, angle, 0, 0, shote, delay
+		);
+		let move1	= 0;
+		let moveA	= 90;
+		
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		
+		while( !Obj_IsDeleted(sht) ){
+			
+			move1 = 1 * sin( moveA );
+			
+			let spos = [
+				pos[0] + move1*distance * cos( angle ),
+				pos[1] + move1*distance * sin( angle ),
+			];
+			
+			ObjMove_SetPosition( sht, spos[0], spos[1] );
+			ObjMove_SetAngle( sht, angle+90 );
+			
+			angle += spin;
+			if( move1 > 0 ){ moveA += 0.2; }
+			else{ break; }
+			
+			yield;
+		}
+		//　削除エフェクトだけ出るようにする
+		Obj_SetValue( sht, "Item_Off", true );
+		//　アイテムとして削除
+		ObjShot_ToItem( sht );
+	}

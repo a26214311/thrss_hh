@@ -1,0 +1,272 @@
+
+
+
+
+//　Stage5　桃源宮の海
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+task SetWorld05a(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj1		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D)
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	
+	let kaku		= 8;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= [0,0];
+	//　円の太さ
+	let wight		= [20,14];
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	let IsActive	= GetAreaCommonData( "StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData( "StageTrance", "trance", [false,false,false,false] );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	ascent( i in 0..( length(obj1) ) ){
+		ObjPrim_SetPrimitiveType(obj1[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjRender_SetBlendType(obj1[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj1[i], world_layer );
+		ObjPrim_SetVertexCount(obj1[i], ten );
+	}
+	
+	ObjPrim_SetTexture(obj1[0], world05_texture_path[0] );
+	
+	ObjPrim_SetTexture(obj1[1], world05_texture_path[1] );
+	ObjRender_SetBlendType(obj1[1], BLEND_ADD_ARGB );
+	
+	ObjPrim_SetTexture(obj1[2], world05_texture_path[2] );
+	ObjRender_SetBlendType(obj1[2], BLEND_ADD_ARGB );
+	ObjRender_SetAlpha(obj1[2], 128 );
+	
+	let val = [32,64,128,256,32,64,128,256];
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 5 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( !IsActive[0] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			SetFogParam( 512-move2*512, 1024+250+200*move1, 8-move1*8, 16-move1*16, 32-move1*32 );
+			SetCameraFocusX( 0 );
+			SetCameraFocusY( 0 );
+			SetCameraFocusZ( 0 );
+			SetCameraAzimuthAngle( 0 );
+			SetCameraElevationAngle( 0 );
+			
+			let rgb = 128 - move2*128;
+			
+			loop( ten/2 ){
+				ObjPrim_SetVertexPosition(obj1[0], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj1[0], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj1[0], i, 0 + _rect[0], 0 - cc*2 );
+				ObjPrim_SetVertexUVT(obj1[0], i2, 0 + _rect[0], 2048 - cc*2 );
+				ObjPrim_SetVertexAlpha(obj1[0], i, 255 - move2*128 );
+				ObjPrim_SetVertexAlpha(obj1[0], i2, 255 );
+				ObjPrim_SetVertexColor(obj1[0], i, rgb, rgb, rgb );
+				ObjPrim_SetVertexColor(obj1[0], i2, 255, 255, 255 );
+				
+				ObjPrim_SetVertexPosition(obj1[1], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj1[1], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj1[1], i, 0 + _rect[0] + cc*1.2, 0 + cc*2 );
+				ObjPrim_SetVertexUVT(obj1[1], i2, 0 + _rect[0] + cc*1.2, 2048 + cc*2 );
+				ObjPrim_SetVertexColor(obj1[1], i, rgb, rgb, rgb );
+				ObjPrim_SetVertexColor(obj1[1], i2, 255, 255, 255 );
+				
+				ObjPrim_SetVertexPosition(obj1[2], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj1[2], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj1[2], i, 0 + _rect[0] - cc*1.2, 0 + cc*2 );
+				ObjPrim_SetVertexUVT(obj1[2], i2, 0 + _rect[0] - cc*1.2, 2048 + cc*2 );
+				ObjPrim_SetVertexColor(obj1[2], i, rgb, rgb, rgb );
+				ObjPrim_SetVertexColor(obj1[2], i2, 255, 255, 255 );
+				
+				pc			+= 360/kaku;
+				i			+= 2;
+				i2			+= 2;
+				_rect[0]	= _rect[0] + 512;
+				_rect[1]	= _rect[1] + 512;
+			}
+			pc			= -32;
+			i			= 0;
+			i2			= 1;
+			_rect[0]	= 0;
+			_rect[1]	= 0;
+			
+			ObjRender_SetAngleXYZ(obj1[0], -70+move2*12, 90, 0 );
+			ObjRender_SetAngleXYZ(obj1[1], -70+move2*12, 90, (360/kaku) );
+			ObjRender_SetAngleXYZ(obj1[2], -70+move2*12, 90, 0 );
+			
+			//　泡の作成
+			if( cc%2 == 0 ){
+				let x	= 384 - move1*384;
+				let RG	= rand(128,255);
+				CreateBubble( [rand(-256+move2*256,-512+move2*256),rand(-512,512),rand(-512,512)],
+									[rand(-4+move2*2,2),rand(2,4),rand(-0.4,0.4)], rand(0.06,0.14), rand(96,128)-move2*32, 60+rand(0,240),
+									[RG,RG,255] );
+			}
+			
+			cc++;
+			if( move1 < 1 && cc > 240 ){ moveA += 0.05; }
+			if( move1 >= 1 && move2 < 1 ){ moveB += 0.1; }
+			if( move2 >= 1 ){ count++; }
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete( def );
+	ascent( i in 0..( length(obj1) ) ){
+		Obj_Delete( obj1[i] );
+	}
+}
+
+//　深海古墳
+task SetWorld05b(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj2		= ObjMesh_Create();
+	let obj1		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D)
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	
+	let kaku		= 8;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= [0,0];
+	//　円の太さ
+	let wight		= [20,14];
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	let IsActive	= GetAreaCommonData( "StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData( "StageTrance", "trance", [false,false,false,false] );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	ascent( i in 0..length(obj1) ){
+		ObjRender_SetPosition(obj1[i], 0, -128 + i*96, 0 );
+		ObjPrim_SetTexture(obj1[i], world05_texture_path[0] );
+		ObjRender_SetBlendType(obj1[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj1[i], world_layer );
+		ObjRender_SetAngleXYZ(obj1[i], 90+i*180, 0, 0 );
+		ObjSprite3D_SetSourceDestRect(obj1[i], 0, 0, 1024, 1024 );
+		ObjRender_SetAlpha(obj1[i], 255 - i*32 );
+	}
+	
+	ObjRender_SetPosition( obj2, -64, 0, 0 );
+	ObjMesh_Load( obj2, world_mesh_path[3] );
+	Obj_SetRenderPriorityI( obj2, world_layer );
+	ObjMesh_SetColor( obj2, 255, 255, 255 );
+	ObjMesh_SetAlpha( obj2, 255 );
+	
+	let val = [32,64,128,256,32,64,128,256];
+	
+	SetFogParam( 96, 640, 4, 8, 16 );
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 5 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( !IsActive[1] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			SetCameraFocusXYZ( 0, 0, 0 );
+			SetCameraRadius( 384 + 64 * sin( cc/8 ) );
+			SetCameraAzimuthAngle( 64 * sin( cc/12 ) );
+			SetCameraElevationAngle( 45 + 16 * sin( cc/16 ) );
+			
+			ObjSprite3D_SetSourceDestRect(obj1[0], 0 - cc/2, 0, 1024 - cc/2, 1024 );
+			ObjSprite3D_SetSourceDestRect(obj1[1], 0 - cc/3, 0-cc, 1024 - cc/3, 1024-cc );
+			ObjSprite3D_SetSourceDestRect(obj1[2], 0 - cc/4, 0, 1024 - cc/4, 1024 );
+			
+			//　泡の作成
+			if( cc%4 == 0 ){
+				let x	= 384 - move1*384;
+				let RG	= rand(128,255);
+				CreateBubble( [rand(-256,256),rand(0,128),rand(-256,256)],
+									[rand(-0.1,0.1),rand(0.5,1),rand(-0.1,0.1)], rand(0.01,0.06), rand(64,96), 60+rand(0,240),
+									[RG,RG,255] );
+			}
+			
+			cc++;
+			if( move1 < 1 && cc > 240 ){ moveA += 0.05; }
+			if( move1 >= 1 && move2 < 1 ){ moveB += 0.1; }
+			if( move2 >= 1 ){ count++; }
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete( def );
+	ascent( i in 0..( length(obj1) ) ){
+		Obj_Delete( obj1[i] );
+	}
+	Obj_Delete( obj2 );
+}

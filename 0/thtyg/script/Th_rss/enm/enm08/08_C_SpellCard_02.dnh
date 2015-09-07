@@ -1,0 +1,267 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stagePh spell2"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./../enm03/lib_IceShot.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, true );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,64,64,64);
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 1 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path_c );
+	}
+	
+	task CallSpellCard( ID ){
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "凍風「オルタネイトブリザード」";
+		
+		SpellCounter( GetDifficult, 8, 1 );
+		let sct = GetSpellCounter( GetDifficult, 8, 1 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path1, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_03_R(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task MainThread{
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		ObjMove_SetDestAtWeight(enm, CenX, CenY, 8, 8 );
+		Wait( 160 );
+		Concentration03_Main( enm, power_rgb_c, 60 );
+		Wait( 60 );
+		Pattern1;
+		Pattern2;
+		State;
+		task Pattern1{
+			ObjSound_Play( CreateShotSE[ 1 ] );
+			let way = 8;
+			local{
+				let roundway = 18;
+				let wide = 800;
+				let leng = -wide / 2;
+				let p = rand( 0, 360 );
+				loop( way ){
+					let angle = p;
+					loop( roundway ){
+						Shot( leng, angle, 2, -r );
+						Shot( leng, angle, 5, r );
+						angle += 360 / roundway;
+					}
+					p += 360 / way;
+					leng += wide / way;
+				}
+			}
+			task Shot( let dist, let ag, let col, let r ){
+				let bx = CenX;
+				let by = CenY;
+				let leng = dist;
+				let rot = 90 - 45 * r;
+				let disp = rot;
+				let gra = BGW_RED_16 + col % 8;
+				let um = 100;
+				let vm = 250;
+				let u = 0;
+				let v = 0;
+				let ap = -0.2 * r;
+				let alpha = 255;
+				let wt = 300;
+				let obj = CreateShotA1( bx, by, 0, 0, gra, 10 );
+				NotifyEventAll( EV_USER + 40, [ obj, 10 ] );
+				ObjShot_SetAutoDelete( obj, false );
+				ObjShot_SetSpellResist( obj, true );
+				State;
+				loop{
+					bx = CenX + leng * cos( rot );
+					by = CenY + leng * sin( rot );
+					let sx = bx + u * cos( ag ) * cos( disp ) - v * sin( ag ) * sin( disp );
+					let sy = by + u * cos( ag ) * sin( disp ) + v * sin( ag ) * cos( disp );
+					ObjMove_SetPosition( obj, sx, sy );
+					ObjMove_SetAngle( obj, disp );
+					ObjRender_SetAlpha( obj, alpha );
+					if( ag < 80 || ag > 280 ){
+						if( alpha < 255 ){ alpha += 24; }
+						else{ alpha = 255; }
+						ObjShot_SetIntersectionEnable( obj, true );
+					}else{
+						if( alpha > 24 ){ alpha -= 24; }
+						else{ alpha = 24; }
+						ObjShot_SetIntersectionEnable( obj, false );
+					}
+					if( u < um ){ u += um / wt; }
+					if( v < vm ){ v += vm / wt; }
+					ag += ap;
+					if( ag > 360 ){ ag -= 360; }
+					if( ag < 0 ){ ag += 360; }
+					
+					if( Wait( 1 ) ){ return; }
+				}
+				task State{
+					let dp = dist / wt;
+					let rp = -0.025 + 0.2 * r;
+					loop( wt ){
+					//	leng += dp;
+					//	rot += rp;
+					//	disp += rp;
+						yield;
+					}
+					loop{
+						rot += rp;
+						disp += rp;
+						leng += 1;
+						if( leng > 400 ){ leng -= 800; }
+						if( Wait( 1 ) ){ return; }
+					}
+				}
+			}
+		}
+
+		task Pattern2{
+			Wait( 180 );
+			let way = 11;
+			loop{
+				loop( 5 ){
+					SetShot( round( way ) );
+					if( Wait( 60 ) ){ return; }
+				}
+				EnemyMove( enm, 2, 8 );
+				if( Wait( 60 ) ){ return; }
+				way+=0.5;
+			}
+			task SetShot( way ){
+				local{
+					let p = GetAngleToPlayer( enm );
+					let speed =  [ 1, 2.1 ];
+					let angle = p;
+					let shote = BGW_WHITE_02;
+					let delay = 20;
+					loop( way ){
+						let sx = gpos[0] + 36 * cos( angle );
+						let sy = gpos[1] + 36 * sin( angle );
+						ascent( idx in 0..length( speed ) ){
+							let sht = CreateShotA2( sx, sy, 0, angle, speed[idx] / 30, speed[idx], shote, delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						}
+						angle += 360 / way;
+					}
+					ObjSound_Play( CreateShotSE[0] );
+				}
+			}
+		}
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+
+	

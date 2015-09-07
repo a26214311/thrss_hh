@@ -1,0 +1,264 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage3　瑠璃通常03"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm03_setting.dnh"
+	#include "./lib_IceShot.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(128,128,128,128);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　正面取りやすいので1700
+			SetScriptResult( 1700 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "EndSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 3, 0 ];
+		//　ショット画像
+		let shote	= [ BGW_YELLOW_20, BGW_ORANGE_20 ];
+		//　角度
+		let angle	= 0;
+		//　発射間隔
+		let wtA		= 64;
+		let wtB		= 24;
+
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 4, 8 ];
+		}
+		case( "Normal" ){
+			lp		= [ 8, 12 ];
+		}
+		case( "Hard" ){
+			lp		= [ 8, 16 ];
+			wtA		= 48;
+		}
+		case( "Lunatic" ){
+			lp		= [ 10, 20 ];
+			wtA		= 32;
+		}
+		case( "OverDrive" ){
+			lp		= [ 12, 24 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( frame == 180 ){
+				Concentration01_Main(ID, power_rgb, 60 );
+			}
+			
+			//　ワインダー的なやつ
+			if( frame == 0 ){
+				ascent( i in 0..(lp[0]) ){
+					CreateCircleShot( ID, i*(360/lp[0]), 0.3, 0, 240, ADD_BGW_BLUE_03 );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			
+			//　ばら撒き
+			if( frame > 280 && frame%wtA == 0 ){
+				let rang = rand(0,360);
+				ascent( i in 0..(lp[1]) ){
+					let sht1 = CreateShotA2( gpos[0], gpos[1], 0, rang + i*(360/lp[1]), 0.01, 1.8, BGW_WHITE_16, 8 );
+					NotifyEventAll( EV_USER + 40, [ sht1, 8 ] );
+				}
+				if( GetDifficult != "Easy" && GetDifficult != "Normal" ){
+					ascent( i in 0..(lp[1]) ){
+						let sht2 = CreateShotA2( gpos[0], gpos[1], 1, 90 + i*(360/lp[1]), 0.01, 2.8, BGW_WHITE_13, 8 );
+						NotifyEventAll( EV_USER + 40, [ sht2, 8 ] );
+					}
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			
+			if( GetObjectDistance( ID, GetPlayerObjectID() ) < 240 && frame%wtB == 0 ){
+				let rang = GetAngleToPlayer( ID );
+				ascent( i in 0..(lp[1]) ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 0, rang + i*(360/lp[1]), 0.01, 1.2, BGB_WHITE_11, 8 );
+					NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	
+	function CreateCircleShot( CallID, angle, spin, disD, disM, shote ){
+		let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let sht		= CreateShotA2( gpos[0], gpos[1], 0, angle, 0, 0, shote, 0 );
+		NotifyEventAll( EV_USER + 40, [ sht, 0 ] );
+		
+		ObjShot_SetAutoDelete( sht, true );
+		ObjShot_SetSpellResist( sht, true );
+		
+		UpDate( CallID, sht, angle, spin, disD, disM );
+		
+		return sht;
+	}
+	
+	task UpDate( CallID, ObjID, angle, spin, disD, disM ){
+		let count	= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		
+		ObjShot_SetIntersectionEnable(ObjID, false );
+		
+		while( !Obj_IsDeleted(CallID) ){
+			let gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			
+			move1 = 1 * sin( moveA );
+			
+			angle = angle + spin;
+			
+			let distance = disD + move1*disM;
+			ObjMove_SetPosition(ObjID, gpos[0] + distance * cos( angle ), gpos[1] + distance * sin( angle ) );
+			ObjRender_SetScaleXYZ(ObjID, move1, move1, 0 );
+			
+			if( move1 < 1 ){ moveA += 0.5; }
+			else{
+				if( count == 0 ){
+					IceEffect( CallID, ObjID, rand(0.8,1) );
+				}
+				ObjShot_SetIntersectionEnable(ObjID, true );
+				count++;
+			}
+			
+			if( count > 0 && count%8 == 0 ){
+				let spos = [
+					ObjMove_GetX( ObjID ),
+					ObjMove_GetY( ObjID ),
+				];
+				let sht = CreateShotA2( spos[0], spos[1], 1.8, angle, 0, 10, ADD_BGW_WHITE_01, 8 );
+				NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+				IceEffect( CallID, sht, rand(0.4,0.6) );
+				ObjSound_Play( CreateShotSE[2] );
+			}
+			
+			yield;
+		}
+		Obj_Delete( ObjID );
+	}

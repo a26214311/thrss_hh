@@ -1,0 +1,713 @@
+
+
+
+
+//　スペプラ用の関数書いてあるよ
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　テクスチャでステージセレクト表示
+task Draw_StageSelect( pos, num, char_text, scale ){
+	let stc			= GetAreaCommonData("System","select",0);
+	let stc2		= GetAreaCommonData("System","select2",0);
+	let slt			= GetAreaCommonData("System","select",0);
+	let slt2		= GetAreaCommonData("System","select2",0);
+	let Ssector		= GetAreaCommonData("System","S_sector",0);
+	let eflg		= GetAreaCommonData("System","title_end",false);
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let move3		= 0;
+	let moveC		= 0;
+	let move4		= [ 0, 0 ];
+	let moveD		= [ 0, 90 ];
+	let cc			= 0;
+	let obj			= ObjPrim_Create(OBJ_SPRITE_2D);
+	
+	ObjPrim_SetTexture(obj, path );
+	Obj_SetRenderPriorityI(obj, 35 );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(obj, scale[0], scale[1], 0 );
+	
+	let _rect = [ 0, 0 ];
+	alternative( char_text )
+	case( "STAGE1" ){ _rect[1] = 0; }
+	case( "STAGE2" ){ _rect[1] = 1; }
+	case( "STAGE3" ){ _rect[1] = 2; }
+	case( "STAGE4" ){ _rect[1] = 3; }
+	case( "STAGE5" ){ _rect[1] = 4; }
+	case( "STAGE6" ){ _rect[1] = 5; }
+	case( "EXTRA" ){ _rect[1] = 6; }
+	case( "PHANTASM" ){ _rect[1] = 7; }
+	case( "OVERDRIVE" ){ _rect[0] = 1; _rect[1] = 6; }
+	
+	ObjSprite2D_SetSourceRect(obj, 0 + _rect[0]*256, 0 + _rect[1]*64, 256 + _rect[0]*256, 64 + _rect[1]*64 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	if( char_text == "OVERDRIVE" ){ _rect[0] = 0; _rect[1] = 8; }
+	
+	while( !eflg ){
+		slt2	= GetAreaCommonData("System","select2",0);
+		Ssector	= GetAreaCommonData("System","S_sector",0);
+		eflg	= GetAreaCommonData("System","title_end",false);
+		
+		if( Ssector == 3 ){ break; }
+		
+		alpha1 = 1 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		move3 = 1 * sin( moveC );
+		move4[0] = 1 * sin( moveD[0] );
+		move4[1] = 1 * sin( moveD[1] );
+		
+		alternative( Ssector )
+		case( 0 ){
+			slt = GetAreaCommonData("System", "select", 0 );
+			
+			if( num == slt ){
+				ObjRender_SetPosition(obj, pos[0] + move3*16, pos[1] - (_rect[1]*24) + move2*(_rect[1]*24), 0 );
+				ObjRender_SetColor(obj, 255, 255, 255 );
+			}
+			else{
+				ObjRender_SetPosition(obj, pos[0], pos[1] - (_rect[1]*24) + move2*(_rect[1]*24), 0 );
+				ObjRender_SetColor(obj, 96, 96, 96 );
+				moveC = 0;
+			}
+			
+			ObjRender_SetAlpha(obj, alpha1*255 );
+			
+			moveA = 0;
+			if( move2 < 1 ){ moveB += 10; }
+			else if( move3 < 1 ){ moveC += 15; }
+		}
+		case( 1 ){
+			if( num == slt ){
+				ObjRender_SetPosition(
+					obj,
+					pos[0] + move3*16 - move1*16 + (256-move4[1]*256),
+					pos[1] - move1*(_rect[1]*24) + (300-move4[1]*300),
+					0
+				);
+				ObjRender_SetAlpha(obj, alpha1*255 );
+			}
+			else{
+				ObjRender_SetAlpha(obj, 255 - move1*255 );
+			}
+			
+			moveB = 0;
+			if( move1 < 1 ){ moveA += 5; }
+			moveD[0] = 0;
+			if( move4[1] < 1 ){ moveD[1] = moveD[1] + 5; }
+		}
+		case( 4 ){
+			ObjRender_SetPosition(
+				obj,
+				pos[0] + move3*16 - move1*16 + move4[0]*256,
+				pos[1] - move1*(_rect[1]*24) + move4[0]*300,
+				0
+			);
+			moveD[1] = 0;
+			if( move4[0] < 1 ){ moveD[0] = moveD[0] + 5; }
+		}
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		
+		yield;
+	}
+	while( alpha1 > 0 && !eflg ){
+		eflg	= GetAreaCommonData("System","title_end",false);
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, alpha1*255 );
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+
+//　テクスチャでスペルセレクト表示
+task Draw_SpellSelect( pos, num, rect_num, scale ){
+	let stc			= GetAreaCommonData("System","select",0);
+	let stc2		= GetAreaCommonData("System","select2",0);
+	let slt			= GetAreaCommonData("System","select",0);
+	let slt2		= GetAreaCommonData("System","select2",0);
+	let Ssector		= GetAreaCommonData("System","S_sector",0);
+	let eflg		= GetAreaCommonData("System","title_end",false);
+	let state		= GetCommonData("STATE",0);
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let move3		= 0;
+	let moveC		= 0;
+	let move4		= [ 0, 0 ];
+	let moveD		= [ 0, 90 ];
+	let cc			= 0;
+	let obj			= ObjPrim_Create(OBJ_SPRITE_2D);
+	
+	ObjPrim_SetTexture(obj, path );
+	Obj_SetRenderPriorityI(obj, 35 );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(obj, scale[0], scale[1], 0 );
+	
+	let _rect = [ 0, 0 ];
+	
+	if( rect_num < 8 ){
+		_rect[1] = rect_num;
+	}
+	else{
+		_rect[0] = 1;
+		_rect[1] = rect_num - 8;
+	}
+	
+	ObjSprite2D_SetSourceRect(obj, 0 + _rect[0]*512, 512 + _rect[1]*64, 512 + _rect[0]*512, 576 + _rect[1]*64 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	//　位置ズレ防止
+	if( rect_num >= 8 ){ _rect[1] = _rect[1] + 8; }
+	
+	while( !eflg ){
+		slt2	= GetAreaCommonData("System", "select2", 0 );
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		state	= GetCommonData("STATE", 0 );
+		
+		if( Ssector == 0 ){ break; }
+		if( Ssector == 1 ){
+			slt = GetAreaCommonData("System", "select", 0 );
+		}
+		
+		alpha1 = 1 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		move3 = 1 * sin( moveC );
+		move4[0] = 1 * sin( moveD[0] );
+		move4[1] = 1 * sin( moveD[1] );
+		
+		alternative( state )
+		case( 0 ){
+			//　スペル選択時
+			if( num == slt ){
+				ObjRender_SetPosition(obj, pos[0] + move3*16, pos[1] - (rect_num*24) + move2*(rect_num*24), 0 );
+				ObjRender_SetColor(obj, 255, 255, 255 );
+			}
+			else{
+				ObjRender_SetPosition(obj, pos[0], pos[1] - (rect_num*24) + move2*(rect_num*24), 0 );
+				ObjRender_SetColor(obj, 96, 96, 96 );
+				moveC = 0;
+			}
+			
+			ObjRender_SetAlpha(obj, alpha1*255 );
+			
+			moveA = 0;
+			if( move2 < 1 ){ moveB += 10; }
+			else if( move3 < 1 ){ moveC += 15; }
+		}
+		case( 1 ){
+			//　難易度選択時
+			if( num == slt ){
+				ObjRender_SetPosition(
+					obj,
+					pos[0] + move3*16 - move1*16 + (256-move4[1]*256),
+					pos[1] - move1*(rect_num*24) + (300-move4[1]*300),
+					0
+				);
+			}
+			else{
+				ObjRender_SetAlpha(obj, 255 - move1*255 );
+			}
+			
+			moveB = 0;
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		
+		//　自機選択時
+		if( Ssector == 4 ){
+			ObjRender_SetPosition(
+				obj,
+				pos[0] + move3*16 - move1*16 + move4[0]*256,
+				pos[1] - move1*(_rect[1]*24) + move4[0]*300,
+				0
+			);
+			moveD[1] = 0;
+			if( move4[0] < 1 ){ moveD[0] = moveD[0] + 5; }
+		}
+		else{
+			moveD[0] = 0;
+			if( move4[1] < 1 ){ moveD[1] = moveD[1] + 5; }
+		}
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		
+		yield;
+	}
+	//　消す処理
+	while( alpha1 > 0 && !eflg ){
+		eflg	= GetAreaCommonData("System","title_end",false);
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, alpha1*255 );
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+
+//　テクスチャで難易度表示
+task Draw_RankSelect( pos, num, rect_num, scale ){
+	let stc			= GetAreaCommonData("System","select",0);
+	let stc2		= GetAreaCommonData("System","select2",0);
+	let slt			= GetAreaCommonData("System","select",0);
+	let slt2		= GetAreaCommonData("System","select2",0);
+	let Ssector		= GetAreaCommonData("System","S_sector",0);
+	let eflg		= GetAreaCommonData("System","title_end",false);
+	let state		= GetCommonData("STATE",0);
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let move3		= 0;
+	let moveC		= 0;
+	let move4		= [ 0, 0 ];
+	let moveD		= [ 0, 90 ];
+	let cc			= 0;
+	let obj			= ObjPrim_Create(OBJ_SPRITE_2D);
+	
+	ObjPrim_SetTexture(obj, path );
+	Obj_SetRenderPriorityI(obj, 35 );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(obj, scale[0], scale[1], 0 );
+	
+	let _rect = [ 0, rect_num ];
+	
+	ObjSprite2D_SetSourceRect(obj, 256, 0 + _rect[1]*64, 512, 64 + _rect[1]*64 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	//　位置ズレ防止
+	if( rect_num >= 4 ){ rect_num = 0; }
+	
+	while( !eflg ){
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		state	= GetCommonData("STATE", 0 );
+		
+		if( state == 0 ){ break; }
+		
+		alpha1 = 1 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		move3 = 1 * sin( moveC );
+		move4[0] = 1 * sin( moveD[0] );
+		move4[1] = 1 * sin( moveD[1] );
+		
+		alternative( Ssector )
+		case( 1 ){
+			//　難易度選択
+			slt2 = GetAreaCommonData("System", "select2", 0 );
+			if( num == slt2 ){
+				ObjRender_SetPosition(obj, pos[0] + move3*16, pos[1] - (rect_num*24) + move2*(rect_num*24), 0 );
+				ObjRender_SetColor(obj, 255, 255, 255 );
+			}
+			else{
+				ObjRender_SetPosition(obj, pos[0], pos[1] - (rect_num*24) + move2*(rect_num*24), 0 );
+				ObjRender_SetColor(obj, 96, 96, 96 );
+				moveC = 0;
+			}
+			
+			ObjRender_SetAlpha(obj, alpha1*255 );
+			
+			moveA = 0;
+			if( move2 < 1 ){ moveB += 10; }
+			else if( move3 < 1 ){ moveC += 15; }
+			moveD[0] = 0;
+			if( move4[1] < 1 ){ moveD[1] = moveD[1] + 5; }
+		}
+		case( 4 ){
+			//　自機選択時
+			if( num == slt2 ){
+				ObjRender_SetPosition(
+					obj,
+					pos[0] + move3*16 - move1*16 + move4[0]*256,
+					pos[1] - move1*(rect_num*24) + move4[0]*300,
+					0
+				);
+			}
+			else{
+				ObjRender_SetAlpha(obj, 255 - move1*255 );
+			}
+			
+			moveB = 0;
+			if( move1 < 1 ){ moveA += 5; }
+			moveD[1] = 0;
+			if( move4[0] < 1 ){ moveD[0] = moveD[0] + 5; }
+		}
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 10; }
+		
+		yield;
+	}
+	while( alpha1 > 0 && !eflg ){
+		eflg	= GetAreaCommonData("System","title_end",false);
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(obj, alpha1*255 );
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+
+//　spell選択用
+//　点滅するフォント表示　メイリオ
+task DrawText( pos, rgb_array, num, char_text, size, counter ){
+	let ID				= ObjText_Create();
+	let stc				= GetAreaCommonData("System", "select", 0 );
+	let stc2			= GetAreaCommonData("System", "select2", 0 );
+	let slt				= GetAreaCommonData("System", "select", 0 );
+	let slt2			= GetAreaCommonData("System", "select2", 0 );
+	let Ssector			= GetAreaCommonData("System", "S_sector", 0 );
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let cc				= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	
+	//　渡されたプレイカウンタ 0 なら自動で？表示
+	if( counter == 0 ){
+		ObjText_SetText(ID, "？？？？？？？？" );
+	}
+	else{
+		ObjText_SetText(ID, char_text );
+	}
+	
+	ObjText_SetFontType(ID, "メイリオ" );
+	ObjText_SetFontSize(ID, size );
+	ObjText_SetHorizontalAlignment(ID, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(ID, 450 );
+	ObjText_SetFontBorderWidth(ID, 2 );
+	ObjText_SetFontBorderType(ID, BORDER_FULL );
+	ObjText_SetFontBorderColor(ID, 24, 24, 24 );
+	Obj_SetRenderPriorityI(ID, 35 );
+	
+	while( !eflg ){
+		slt		= GetAreaCommonData("System", "select", 0 );
+		slt2	= GetAreaCommonData("System", "select2", 0 );
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( stc != slt || stc2 != slt2 || Ssector == 2 || Ssector == 3 || Ssector == 4 ){
+			break;
+		}
+		
+		if( num == slt ){
+			ObjText_SetFontColorTop(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjText_SetFontColorBottom(ID, 128+64*sin(cc), 255, 255 );
+		}
+		else{
+			ObjText_SetFontColorTop(ID, 128, 128, 128 );
+			ObjText_SetFontColorBottom(ID, 64, 64, 64 );
+		}
+		
+		cc += 4;
+		
+		yield;
+	}
+	while( alpha1 < 1 && !eflg ){
+		if( Ssector != 3 && Ssector != 2 ){ break; }
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(ID, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　点滅しないフォント表示
+task DrawText2( pos, rgb_array, num, char_text, size, font ){
+	let ID				= ObjText_Create();
+	let stc				= GetAreaCommonData("System", "select", 0 );
+	let stc2			= GetAreaCommonData("System", "select2", 0 );
+	let slt				= GetAreaCommonData("System", "select", 0 );
+	let slt2			= GetAreaCommonData("System", "select2", 0 );
+	let Ssector			= GetAreaCommonData("System", "S_sector", 0 );
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let state			= GetCommonData("STATE",0);
+	let alpha1			= 0;
+	let alphaA			= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjText_SetText(ID, char_text );
+	ObjText_SetFontType(ID, font );
+	ObjText_SetFontSize(ID, size );
+	ObjText_SetHorizontalAlignment(ID, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(ID, 1000 );
+	ObjText_SetFontBorderWidth(ID, 2 );
+	ObjText_SetFontBorderType(ID, BORDER_FULL );
+	ObjText_SetFontBorderColor(ID, 24, 24, 24 );
+	ObjText_SetFontColorTop(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjText_SetFontColorBottom(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	Obj_SetRenderPriorityI(ID, 35 );
+	
+	while( !eflg ){
+		slt		= GetAreaCommonData("System", "select", 0 );
+		slt2	= GetAreaCommonData("System", "select2", 0 );
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		state	= GetCommonData("STATE", 0 );
+		
+		if( stc != slt || stc2 != slt2 || Ssector == 2 || Ssector == 3 || Ssector == 4 || state == 0 ){
+			break;
+		}
+		
+		yield;
+	}
+	while( alpha1 < 1 && !eflg ){
+		if( Ssector != 3 && Ssector != 2 ){ break; }
+		
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetAlpha(ID, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　ページ送りの矢印表示
+task DrawPage( pos, sca, rgb_array, num, char_v ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+	let cc		= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, path );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, 35 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjRender_SetAlpha(ID, 255 );
+	ObjSprite2D_SetSourceRect(ID, 512, 0, 640, 128 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !eflg ){
+		let slt		= GetAreaCommonData("System", "select2", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		
+		if( num != slt || Ssector == 2 || Ssector == 3 || Ssector == 4 ){
+			break;
+		}
+		
+		if( char_v == "LEFT" ){
+			ObjRender_SetPosition(ID, pos[0] - 2 * sin(cc), pos[1], 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, -90 );
+		}
+		else if( char_v== "RIGHT" ){
+			ObjRender_SetPosition(ID, pos[0] + 2 * sin(cc), pos[1], 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, 90 );
+		}
+		
+		cc += 8;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　キャラアイコ表示
+task DrawTexture( pos, scale_base, texture, counter ){
+	let ID				= [ ObjPrim_Create(OBJ_SPRITE_2D), ObjPrim_Create(OBJ_SPRITE_2D) ];
+	let stc				= GetAreaCommonData("System", "select", 0 );
+	let stc2			= GetAreaCommonData("System", "select2", 0 );
+	let slt				= GetAreaCommonData("System", "select", 0 );
+	let slt2			= GetAreaCommonData("System", "select2", 0 );
+	let Ssector			= GetAreaCommonData("System", "S_sector", 0 );
+	let eflg			= GetAreaCommonData("System", "title_end", false );
+	let i				= 0;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	
+	ObjPrim_SetTexture(ID[0], texture );
+	ObjPrim_SetTexture(ID[1], texture );
+	ObjRender_SetPosition(ID[0], pos[0], pos[1], 0 );
+	ObjRender_SetPosition(ID[1], pos[0], pos[1], 0 );
+	
+	let sca = [ scale_base+0.04, scale_base ];
+	ascent( i in 0..( length(ID) ) ){
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(ID[i], 35 );
+		ObjRender_SetScaleXYZ(ID[i], sca[i], sca[i], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 512, 512 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetColor(ID[0], 0, 32, 64 );
+	ObjRender_SetColor(ID[1], 255, 255, 255 );
+	
+	while( !eflg ){
+		slt		= GetAreaCommonData("System", "select", 0 );
+		slt2	= GetAreaCommonData("System", "select2", 0 );
+		Ssector	= GetAreaCommonData("System", "S_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( stc != slt || stc2 != slt2 || GetCommonData( "STATE", 0 ) != 1 || Ssector == 4 ){
+			break;
+		}
+		
+		yield;
+	}
+	while( alpha1 < 1 && eflg ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetAlpha(ID[i], 255 - alpha1*255 );
+		}
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　グラフ作成
+task CreatePieChart( pos, rgb_array, num, dist, vector ){
+	let obj				= ObjPrim_Create(OBJ_PRIMITIVE_2D);
+	let stc				= GetAreaCommonData( "System", "select", 0 );
+	let stc2			= GetAreaCommonData( "System", "select2", 0 );
+	let slt				= GetAreaCommonData( "System", "select", 0 );
+	let slt2			= GetAreaCommonData( "System", "select2", 0 );
+	let Ssector			= GetAreaCommonData( "System", "S_sector", 0 );
+	let efg				= GetAreaCommonData( "System", "title_end", false );
+	let state			= GetCommonData( "STATE", 0 );
+	let frame			= 0;
+	let alpha			= 0;
+	let move1			= 0;
+	let moveA			= 0;
+	
+	ObjPrim_SetPrimitiveType( obj, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount( obj, num + 2 );
+	ObjPrim_SetTexture( obj, GetCurrentScriptDirectory() ~ "./../img/front/Effect_White.png" );
+	
+	//　中央の頂点
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjPrim_SetVertexPosition( obj, 0, 0, 0, 0 );
+	ObjPrim_SetVertexUVT( obj, 0, 0, 0 );
+	ObjPrim_SetVertexColor( obj, 0, 255, 255, 255 );
+	
+	while( !efg ){
+		slt		= GetAreaCommonData( "System", "select", 0 );
+		slt2	= GetAreaCommonData( "System", "select2", 0 );
+		Ssector	= GetAreaCommonData( "System", "S_sector", 0 );
+		efg		= GetAreaCommonData( "System", "title_end", false );
+		state	= GetCommonData( "STATE", 0 );
+		
+		if( stc != slt || stc2 != slt2 || Ssector == 2 || Ssector == 3 || Ssector == 4 || state == 0 ){
+			break;
+		}
+		
+		move1 = 1 * sin( moveA );
+		
+		alpha = 192 + 32 * sin( frame*8 );
+		
+		//　周囲に配置する頂点
+		ascent( let i in 0..(num+1) ){
+			let ag = move1 * ( i * (360/100) );
+			if( vector == 0 ){
+				//　右回りで配置
+				ObjPrim_SetVertexPosition( obj, 1+i, dist * cos( 270 + ag ), dist * sin( 270 + ag ), 0 );
+			}
+			else{
+				//　左回りで配置
+				ObjPrim_SetVertexPosition( obj, 1+i, dist * cos( 270 - ag ), dist * sin( 270 - ag ), 0 );
+			}
+			ObjPrim_SetVertexUVT( obj, 1+i, dist, 0 );
+			ObjPrim_SetVertexColor( obj, 1+i, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjPrim_SetVertexAlpha( obj, 1+i, move1*alpha );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		frame++;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 && !efg ){
+		if( Ssector != 3 && Ssector != 2 ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( let i in 0..(num+1) ){
+			ObjPrim_SetVertexAlpha( obj, 1+i, alpha - move1*alpha );
+		}
+		
+		moveA += 10;
+		frame++;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　プレイヤーセレクト呼び出し
+task CallPlayerSelect( num ){
+	let csd 			= GetCurrentScriptDirectory();
+	let pathScript		= csd ~ "./Package_PlayerSelectScene.dnh";
+	
+	SetSpellPlactice();
+	
+	//　起動許可
+	SetAreaCommonData("System", "stflg", true );
+	//　起動スペル
+	SetAreaCommonData("System", "spell_ST", num );
+	
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+}
+
+//　ゲームシーン以降前の選択位置を保存しておく
+//　１はstage practiceで使用中
+task SetSelectPlace2( num2 ){
+	SetCommonData("SelectPlace2", num2 );
+}
+task SetSelectPlace3( num3 ){
+	SetCommonData("SelectPlace3", num3 );
+}
+//　プラクティスから帰ってきて、プラクティス画面を起動する為の共通変数
+task SetSpellPlactice(){
+	SetCommonData("SetSpellPlacticeFrag", true );
+}

@@ -1,0 +1,216 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage2　桜木霊　通常01"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm02_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 30;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(128,128,128,128);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		if( timer > 190 ){
+			SetIntersection(enm, true, true );
+		}
+		
+		//　弾幕
+		if( timer == 190 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		ObjMove_SetPosition(enm, CenX, CenY-96 );
+		Concentration02( enm, [CenX,CenY-96] );
+		ExplotionBlur( [255,255,255] );
+		
+		loop( 90 ){ yield; }
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [true,true] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb_C[0], aura_rgb_C[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path_C[0] );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　発射間隔
+		let wtA		= 8;
+		let wtB		= 64;
+		//　角度補正
+		let agp		= 16;
+		//　ショット画像
+		let shote	= [ BGW_PURPLE_11, BGB_PURPLE_11 ];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 2, 0 ];
+			wtA 	= 9;
+			agp		= 24;
+		}
+		case( "Normal" ){
+			lp		= [ 3, 8 ];
+		}
+		case( "Hard" ){
+			lp		= [ 4, 13 ];
+			wtA		= 6;
+			wtB		= 48;
+		}
+		case( "Lunatic" ){
+			lp		= [ 6, 15 ];
+			wtA		= 6;
+			wtB		= 24;
+		}
+		case( "OverDrive" ){
+			lp		= [ 10, 17 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( frame%wtA == 0 ){
+				ascent( i in 0..(lp[0]) ){
+					let ang = i*(360/lp[0]) + angle;
+					let spos = [
+						gpos[0] + 16 * cos( ang ),
+						gpos[1] + 16 * sin( ang ),
+					];
+					CreateShot( spos, 1.6, ang, 0, 10, shote[ angle/agp%2 ], 8 );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				angle += agp;
+			}
+			
+			//　Normal以上 nway 中玉
+			if( frame%wtB == 0 && GetDifficult != "Easy" ){
+				ascent( i in 0..(lp[1]) ){
+					let ang = i*(360/lp[1]) + angle + (360/lp[1]/2);
+					let spos = [
+						gpos[0] + 32 * cos( ang ),
+						gpos[1] + 32 * sin( ang ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 1, ang, 0.01, 2, BGW_RED_02, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			
+			//　移動
+			if( frame%120 == 0 ){
+				EnemyMove(enm, 2, 8 );
+			}
+			
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task CreateShot( pos, speed, angle, acc, mx, shote, delay ){
+		let i = 0;
+		
+		let sht1 = CreateShotA2( pos[0], pos[1], speed, angle-1, acc, mx, shote, delay );
+		let sht2 = CreateShotA2( pos[0], pos[1], speed-0.1, angle, acc, mx, shote, delay );
+		let sht3 = CreateShotA2( pos[0], pos[1], speed, angle+1, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht1, delay ] );
+		NotifyEventAll( EV_USER + 40, [ sht2, delay ] );
+		NotifyEventAll( EV_USER + 40, [ sht3, delay ] );
+	}

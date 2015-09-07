@@ -1,0 +1,166 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　やと通常05"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 51;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( frame == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( frame == 280 ){
+			ShotMain(enm);
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1500 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,true] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let p = 0;
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		let rb = 1;
+		while( !Obj_IsDeleted(ID) ){
+			let speed = 4;
+			let wt = 120;
+			loop( 10 ){
+				let angle = GetAngleToPlayer( enm ) + 180 + 100 * cos( p );
+				Shot01( ID, speed, angle, -speed/40, 0, [ ADD_BGW_BLUE_02, BGW_BLUE_31 ], 32, wt, rb );			
+				ObjSound_Play( CreateShotSE[1] );
+				p += 17 * r;
+				rb = -rb;
+				if( Wait( 16 ) ){ return; }
+			}
+			EnemyMove( ID, 2, 8 );
+		}
+	}
+	
+	task Shot01( ID, speed, angle, acc, maxspeed, shote, delay, wait, r ){
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let sht		= CreateShot01( gpos, speed, angle, acc, maxspeed, shote[0], delay );
+		ObjShot_SetSpellResist( sht, true );
+		if( Wait( wait ) ){ return; }
+		
+		if( Obj_IsDeleted(sht) ){ return; }
+		ObjSound_Play( CreateShotSE[0] );
+		local{
+			let spos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+			let p = angle;
+			let speed = 2.25;
+			ascent( let i in 0..5 ){
+				if( Obj_IsDeleted(sht) ){ break; }
+				let way = 12;
+				let ag = 270 + p;
+				loop( way ){
+					CreateShot01( spos, speed, ag, 0, 10, shote[1], 0 );
+					ag += 360 / way;
+				}
+				p += 2.2 * r;
+				speed -= 0.05;
+				if( Wait( 2 ) ){ return; }
+			}
+		}
+		
+		Obj_Delete( sht );
+	}
+	

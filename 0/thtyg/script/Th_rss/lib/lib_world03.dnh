@@ -1,0 +1,276 @@
+
+
+
+
+//　Stage3　氷結の異界
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　異界 active 1
+task SetWorld03a(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D)
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let i			= 0;
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	let CreateIce_frag = true;
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	loop( length(obj2) ){
+		ObjPrim_SetTexture(obj2[i], world03_texture_path[i] );
+		ObjRender_SetBlendType(obj2[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj2[i], world_layer );
+		ObjSprite3D_SetSourceDestRect(obj2[i], 0, 0, 2048, 2048 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetColor(obj2[0], 42, 92, 170 );
+	ObjRender_SetColor(obj2[1], 0, 0, 128 );
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( !IsActive[0] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			SetFogParam(256, 1024 + move2*512, 42, 92, 170 );
+			SetCameraFocusX( 256 );
+			SetCameraFocusY( 64 - 128+move2*128 + 64*sin( count/3 ) );
+			SetCameraFocusZ( 0 );
+			SetCameraAzimuthAngle( 32 - move1*32 + 8*sin( count/2 ) );
+			SetCameraElevationAngle( 32 - move1*32 );
+			
+			ObjRender_SetPosition(obj2[0], -256, -128, 0 );
+			ObjRender_SetPosition(obj2[1], -256, 0, 0 );
+			ObjRender_SetAngleXYZ(obj2[0], -70, 90, 0 );
+			ObjRender_SetAngleXYZ(obj2[1], -70, 90, 0 );
+			
+			ObjSprite3D_SetSourceDestRect(obj2[0], 0, 0 + cc*3.2, 2048, 2048 + cc*3.2 );
+			ObjSprite3D_SetSourceDestRect(obj2[1], 0, 0 + cc*1.6, 2048, 2048 + cc*1.6 );
+			
+			//　雲の作成
+			if( cc%32 == 0 ){
+				if( CreateIce_frag ){
+					CreateCloud( [move2*-128+rand(0,-512),64-128+move2*128,rand(-384,384)], [rand(1,4),-1,rand(-1,1)], rand(2,3), 60 + rand(0,120),
+									[128,192,255] );
+				}
+				else{
+					CreateCloud( [move2*-128+rand(0,-512),-64,rand(-384,384)], [rand(1,4),-1,rand(-1,1)], rand(1,2), 60 + rand(0,120),
+									[128,192,255] );
+				}
+			}
+			
+			//　雪の作成
+			if( cc%2 == 0 ){
+				let x = 384 - move1*384;
+				CreateFlashLight( [x-256-rand(0,512),rand(-512,512),rand(-512,512)],
+									[rand(0.1,8),rand(-0.1,0.1),rand(-0.2,0.2)], rand(0.1,0.14), rand(64,255), 60+rand(0,240),
+									[255,255,255] );
+			}
+			
+			//　氷塊
+			if( cc%120 == 0 && CreateIce_frag ){
+				CreateIceMesh( [rand(-1024,-1024-512),rand(0,256),rand(-512,512)],
+									[rand(2,6),rand(0.4,2),rand(2-4*move1,2)], [rand(0.6,1.6),rand(0.6,1.6),rand(0.6,1.6)],
+									96, 300, [rand(64,192),255,255] );
+			}
+			
+			cc++;
+			if( move1 < 1 && cc > 240 ){ moveA += 0.05; }
+			if( move1 >= 1 && move2 < 1 ){ moveB += 0.1; }
+			if( move2 >= 1 ){ count++; }
+		}
+		else{
+			CreateIce_frag = false;
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete(def);
+	loop( length(obj2) ){
+		Obj_Delete(obj2[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　異界への門　active 2
+task SetWorld03b(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D)
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	
+	let kaku		= 8;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= [0,0];
+	//　円の太さ
+	let wight		= [20,14];
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	loop( length(obj2) ){
+		ObjPrim_SetPrimitiveType(obj2[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj2[i], world03_texture_path[i] );
+		ObjRender_SetBlendType(obj2[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj2[i], world_layer );
+		ObjPrim_SetVertexCount(obj2[i], ten );
+		i++;
+	}
+	i = 0;
+	
+	ObjPrim_SetTexture(obj2[2], world03_texture_path[2] );
+	ObjRender_SetAlpha(obj2[2], 48 );
+	ObjRender_SetColor(obj2[2], 128, 0, 128 );
+	
+	let val = [32,64,128,256,32,64,128,256];
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 1 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( !IsActive[1] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			SetFogParam(512, 1024+250+200*move1, 64 - 16*move1, 64 - 32*move1, 128 - 64*move1 );
+			SetCameraFocusX( 0 );
+			SetCameraFocusY( 0 );
+			SetCameraFocusZ( 0 );
+			SetCameraAzimuthAngle( 0 );
+			SetCameraElevationAngle( 0 );
+			
+			loop( ten ){
+				ObjPrim_SetVertexPosition(obj2[0], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj2[0], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj2[0], i, 0 + _rect[0] + cc/2, 0 - cc );
+				ObjPrim_SetVertexUVT(obj2[0], i2, 0 + _rect[0] + cc/2, 2048 - cc );
+				
+				ObjPrim_SetVertexPosition(obj2[1], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj2[1], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj2[1], i, 0 + _rect[0] - cc/2, 0 - cc );
+				ObjPrim_SetVertexUVT(obj2[1], i2, 0 + _rect[0] - cc/2, 2048 - cc );
+				
+				ObjPrim_SetVertexPosition(obj2[2], i, (384+val[i%8]*cos( cc )) * cos(pc), (384+val[i%8]*sin( cc )) * sin(pc), -1048 );
+				ObjPrim_SetVertexPosition(obj2[2], i2, (1024-val[i%8]*cos( cc )) * cos(pc), (1024-val[i%8]*sin( cc )) * sin(pc), 1048 );
+				ObjPrim_SetVertexUVT(obj2[2], i, 0 + _rect[0], 0 + cc );
+				ObjPrim_SetVertexUVT(obj2[2], i2, 0 + _rect[0], 2048 + cc );
+				
+				pc			+= 360/kaku;
+				i			+= 2;
+				i2			+= 2;
+				_rect[0]	= _rect[0] + 512;
+				_rect[1]	= _rect[1] + 512;
+			}
+			pc			= -32;
+			i			= 0;
+			i2			= 1;
+			_rect[0]	= 0;
+			_rect[1]	= 0;
+			
+			
+			ObjRender_SetAngleXYZ(obj2[0], -70+70*move2, 90, 0 );
+			ObjRender_SetAngleXYZ(obj2[1], -70+70*move2, 90, (360/kaku) );
+			ObjRender_SetAngleXYZ(obj2[2], -70+70*move2, 90, 0 );
+			
+			//　雲の作成
+			if( cc%16 == 0 && move1 < 1 ){
+				CreateCloud( [rand(-0,-1024),-256,rand(-384,384)], [rand(4,8),-1,rand(-1,1)], rand(1,2), 60 + rand(0,120),
+								[rand(224,255),255,255] );
+			}
+			
+			//　雪の作成
+			if( cc%8 == 0 ){
+				let x = 384 - move1*384;
+				CreateSnow( [rand(-1024,-2048),rand(-512,512),rand(-512,512)],
+									[rand(2,4),rand(0.2,2),rand(2-4*move1,2)], rand(0.2,0.6), 128, 60+rand(0,240),
+									[255,255,255] );
+			}
+			
+			cc++;
+			if( move1 < 1 && cc > 240 ){ moveA += 0.05; }
+			if( move1 >= 1 && move2 < 1 ){ moveB += 0.1; }
+			if( move2 >= 1 ){ count++; }
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete(def);
+	loop( length(obj2) ){
+		Obj_Delete(obj2[i]);
+		i++;
+	}
+	i = 0;
+}

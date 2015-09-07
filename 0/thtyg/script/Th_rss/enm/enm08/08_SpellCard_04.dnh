@@ -1,0 +1,343 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　四式「不動金縛返しの法」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 66;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 128, 192, 128, 128 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 6 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "四式「不動金縛返しの法」";
+		
+		SpellCounter( GetDifficult, 8, 6 );
+		let sct = GetSpellCounter( GetDifficult, 8, 6 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_08b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		
+		State;
+		
+		Wait( 160 );
+		SetEffect( enm, 1 );
+		Sub;
+		while( !Obj_IsDeleted( enm ) ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( Wait( 100 ) ){ return; }
+			Pattern1;
+			if( Wait( 300 ) ){ return; }
+			EnemyMove( enm, 2, 8 );
+			if( Wait( 100 ) ){ return; }
+			r = -r;
+		}
+
+		task Pattern1{
+			let p = rand( 0, 360 );
+			let leng = 36;
+			let way = 3;
+			let cnt = 0;
+			while( leng <= 400 ){
+				ObjSound_Play( CreateShotSE[ 0 ] );
+				loop( 2 ){
+					let speed = 1.5;
+					let ag = p;
+					loop( way ){
+						let sx = gpos[0] + leng * cos( ag );
+						let sy = gpos[1] + leng * sin( ag );
+						let angle = ag + cnt * 180;
+						let shote = [ BGW_YELLOW_24, BGW_ORANGE_24 ];
+						let delay = 40;
+
+						let sht = CreateShotA2( sx, sy, 0, angle, speed / 200, speed, shote[ cnt % 2 ], delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						ag += 360 / way;
+					}
+					p += 3.05 * r;
+					leng += 1.6;
+					cnt++;
+				}
+				if( Wait( 1 ) ){ return; }
+			}
+		}
+		
+		task Sub{
+			Wait( 200 );
+			let p = GetAngleToPlayer( enm );
+			let rb = 1;
+			while( !Obj_IsDeleted( enm ) ){
+				let way = 2;
+				let angle = p;
+				loop( way ){
+					Bind( gpos, angle, 0, 108, 3, rb );
+					angle += 360 / way;
+				}
+				if( Wait( 90 ) ){ return; }
+				p += 60;
+				rb = -rb;
+			}
+		}
+
+		task Bind( ppos, langle, rot, radius, c, r ){
+			let ag = [ -90, 0, 90, 180 ];
+			let lag = [ 45, 135, -135, -45 ];
+			let delay = 24;
+			let wt = 600;
+			let rad = radius;
+			Border;
+			State;
+			task Border{
+
+				ObjSound_Play( CreateShotSE[13] );
+				ascent( idx in 0..4 ){
+					
+					let lmax = radius * cos( 45 ) * 2;
+					
+					LSet( idx );
+					task LSet( idx ){
+						let delay = 21400;
+						let shote = ADD_BGW_YELLOW_12;
+						let sht = CreateStraightLaserA1( ppos[0], ppos[1], 0, lmax, 480, delay, shote, delay );
+						ObjStLaser_SetSource( sht, false );
+						ObjRender_SetAlpha( sht, 92 );
+						//CreateStraightLaser01(CallID,gpos,angle,length_,width,color,bool_regist,delay,kill)
+						loop( wt ){
+							let pag = rot + ag[ idx ];
+							let pos = [ ppos[0] + ( radius - rad ) * cos( pag ), ppos[1] + ( radius - rad ) * sin( pag ) ];
+							let leng = ( radius - rad ) * cos( 45 ) * 2;
+							let angle = rot + lag[ idx ];
+							ObjMove_SetPosition( sht, pos[0], pos[1] );
+							ObjLaser_SetLength( sht, leng*1.07 );
+							ObjStLaser_SetAngle( sht, angle );
+							if( Wait( 1 ) ){ return; }
+						}
+						Obj_Delete( sht );
+					}
+				}
+			}
+			task State{
+				let px = GetPlayerX;
+				let py = GetPlayerY;
+				let bflg = false;
+				let speed = 0.8;
+				loop( wt ){
+					ppos[0] = ppos[0] + speed * cos( langle );
+					ppos[1] = ppos[1] + speed * sin( langle );
+					rot += 0.7 * r;
+					rad *= 0.99;
+					local{
+						if( GetHit && GetPlayerInvincibilityFrame == 0 ){
+							Slow;
+							task Slow{
+								let ply = GetPlayerObjectID;
+								ObjMove_SetX( ply, px );
+								ObjMove_SetY( ply, py );
+								if( !bflg ){
+									BindEffect( 1 );
+									BindEffect( -1 );
+								}
+								bflg = true;
+							}
+						}else{
+							bflg = false;
+							px = GetPlayerX;
+							py = GetPlayerY;
+						}
+						function GetHit{
+							let rect = [];
+							ascent( idx in 0..4 ){
+								let pag = rot + ag[ idx ];
+								let pos = [ ppos[0] + ( radius - rad ) * cos( pag ), ppos[1] + ( radius - rad ) * sin( pag ) ];
+								rect = rect ~ [ pos ];
+							}
+							let ans = 0;
+							ascent( idx in 0..4 ){
+								let x1 = rect[ ( idx + 1 ) % 4 ][0] - rect[ idx ][0];
+								let y1 = rect[ ( idx + 1 ) % 4 ][1] - rect[ idx ][1];
+								let x2 = GetPlayerX - rect[idx][0];
+								let y2 = GetPlayerY - rect[idx][1];
+								if( x1 * y2 - x2 * y1 < 0 ){
+									ans++;
+								}else{
+									ans--;
+								}
+							}
+							return ( ans == 4 || ans == -4 );
+						}
+					}
+					if( Wait( 1 ) ){ return; }
+				}
+
+				task BindEffect( r ){
+					ObjSound_Play( CreateShotSE[5] );
+					yield;
+					let radius = 60;
+					let rad = radius / 2;
+					let rot = 0;
+					let alpha = 244;
+					Set;
+					task Set{
+						ascent( idx in 0..4 ){
+							let lmax = radius * cos( 45 ) * 2;
+							
+							LSet( idx );
+							task LSet( idx ){
+								let delay = 21400;
+								let shote = ADD_BGW_YELLOW_26;
+								let sht = CreateStraightLaserA1( ppos[0], ppos[1], 0, lmax, 214, delay, shote, delay );
+								ObjStLaser_SetSource( sht, false );
+								while( alpha > 10 ){
+									let pag = rot + ag[ idx ];
+									let pos = [ GetPlayerX + ( radius - rad ) * cos( pag ), GetPlayerY + ( radius - rad ) * sin( pag ) ];
+									let leng = ( radius - rad ) * cos( 45 ) * 2;
+									let angle = rot + lag[ idx ];
+									ObjMove_SetPosition( sht, pos[0], pos[1] );
+									ObjLaser_SetLength( sht, leng );
+									ObjStLaser_SetAngle( sht, angle );
+									ObjRender_SetColor( sht, alpha, alpha, alpha );
+									if( Wait( 1 ) ){ return; }
+								}
+								Obj_Delete( sht );
+							}
+						}
+					}
+					while( bflg ){
+						rot += 2 * r;
+						rad *= 0.9;
+						if( Wait( 1 ) ){ return; }
+					}
+					loop( 60 ){
+						radius *= 1.1;
+						alpha *= 0.9;
+						if( Wait( 1 ) ){ return; }
+					}
+				}
+			}
+		}
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+	
+	

@@ -1,0 +1,432 @@
+
+/*このファイルにある関数
+
+	//　残機かけら表示
+	Fragment_Player(pos,lay);
+	
+	//　ボムかけら表示
+	Fragment_Bomb(pos,lay);
+	
+	座標調整とレイヤー指定
+	
+	EnemyMarker();
+*/
+
+task Fragment_Player(pos,lay){
+	let kef1		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let kef2		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let kef3		= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i			= 0;
+	let rgb			= [255,200,255];
+	let swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	//　ライフエクステンドライン段階
+	let ExtendLine	= 8;
+	//　段階カウンタ
+	let sector		= 0;
+	//　初期ラインセット
+	let nel			= ExtendLine;
+	
+	//　数値画像スケール
+	let sca			= 0.48;
+	
+	//　(かけら)
+	ObjPrim_SetTexture(kef1, path_front01 );
+	Obj_SetRenderPriorityI(kef1, lay );
+	ObjRender_SetBlendType(kef1, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(kef1, 1, 1, 0 );
+	ObjRender_SetColor(kef1, rgb[0], rgb[1], rgb[2] );
+	ObjSprite2D_SetSourceRect(kef1, 0, 224, 128, 256 );
+	ObjSprite2D_SetDestCenter(kef1 );
+	
+	//　／
+	ObjPrim_SetTexture(kef2, path_front01 );
+	Obj_SetRenderPriorityI(kef2, lay );
+	ObjRender_SetBlendType(kef2, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(kef2, sca, sca,0 );
+	ObjRender_SetColor(kef2, rgb[0], rgb[1], rgb[2] );
+	ObjSprite2D_SetSourceRect(kef2, 0 + 24*uv[15], 488, 24 + 24*uv[15], 512 );
+	ObjSprite2D_SetDestCenter(kef2);
+	
+	//　数値
+	loop( length(kef3) ){
+		ObjPrim_SetTexture(kef3[i], path_front01 );
+		Obj_SetRenderPriorityI(kef3[i], lay );
+		ObjRender_SetBlendType(kef3[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(kef3[i], sca, sca, 0 );
+		ObjRender_SetAlpha(kef3[i], 0 );
+		ObjRender_SetColor(kef3[i], rgb[0], rgb[1], rgb[2] );
+		ObjSprite2D_SetSourceRect(kef3[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(kef3[i]);
+		i++;
+	}
+	i = 0;
+	
+	//　一の位は表示
+	ObjRender_SetAlpha(kef3[1], 255 );
+	ObjRender_SetAlpha(kef3[3], 255 );
+	
+	while( !swb ){
+		let pf		= GetAreaCommonData("Trance", "player_fragment", 0 );
+		swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+		
+		//　ライフかけら
+		let pf1		= truncate(pf%10);
+		let pf2		= truncate((pf%100)/10);
+		
+		//　エクステンドライン
+		let el1		= truncate(nel%10);
+		let el2		= truncate((nel%100)/10);
+		
+		if( pf >= nel ){
+			//　エクステンド
+			SetPlayerLife( GetPlayerLife() + 1 );
+			//　エクステンドラインアップ
+			if( ExtendLine < 99 ){ ExtendLine++; }
+			//　かけら初期化
+			SetAreaCommonData("Trance", "player_fragment", 0 );
+			//　効果音
+			ObjSound_Play( UtilitySE[11] );
+			//　テキスト
+			let data1 = [
+				["L","I","F","E"," "," "," ","E","X","T","E","N","D"],
+				[" "," "," "],
+			];
+			NotifyEventAll( EV_USER + 37, data1 );
+		}
+		
+		//　エクステンドライン更新
+		nel = ExtendLine;
+		SetAreaCommonData("Trance", "next_life", nel );
+		
+		//　(かけら)
+		ObjRender_SetPosition(kef1, MaxX+129+32 + pos[0], CenY-113+16 + pos[1], 0 );
+		//　／
+		ObjRender_SetPosition(kef2, MaxX+186+32 + pos[0], CenY-112+16 + pos[1], 0 );
+		//　現在数
+		ObjRender_SetPosition(kef3[0], MaxX+172+32 + pos[0], CenY-112+16 + pos[1], 0 );	//　十の位
+		ObjRender_SetPosition(kef3[1], MaxX+180+32 + pos[0], CenY-112+16 + pos[1], 0 );	//　一の位
+		ObjSprite2D_SetSourceRect(kef3[0], 0 + 24*uv[pf2], 488, 24 + 24*uv[pf2], 512 );
+		ObjSprite2D_SetSourceRect(kef3[1], 0 + 24*uv[pf1], 488, 24 + 24*uv[pf1], 512 );
+		//　要求数
+		ObjRender_SetPosition(kef3[2], MaxX+194+32 + pos[0], CenY-112+16 + pos[1], 0 );	//　十の位
+		ObjSprite2D_SetSourceRect(kef3[2], 0 + 24*uv[el2], 488, 24 + 24*uv[el2], 512 );
+		ObjSprite2D_SetSourceRect(kef3[3], 0 + 24*uv[el1], 488, 24 + 24*uv[el1], 512 );
+		
+		//　現在数 < 10　なら　1桁目のみ表示
+		if( pf < 10 ){
+			ObjRender_SetAlpha(kef3[0], 0 );	//　十の位　非表示
+		}
+		else{
+			ObjRender_SetAlpha(kef3[0], 255 );
+		}
+		
+		//　要求数 < 10　なら　1桁目のみ表示 + 位置微調整
+		if( nel < 10 ){
+			ObjRender_SetAlpha(kef3[2], 0 );	//　十の位　非表示
+			ObjRender_SetPosition(kef3[3], MaxX+202+32 - 8 + pos[0], CenY-112+16 + pos[1], 0 );	//　一の位　座標調整
+		}
+		else{
+			ObjRender_SetAlpha(kef3[2], 255 );
+			ObjRender_SetPosition(kef3[3], MaxX+202+32 + pos[0], CenY-112+16 + pos[1], 0 );
+		}
+		
+		yield;
+	}
+	
+	//　おわり
+	Obj_Delete(kef1);
+	Obj_Delete(kef2);
+	loop( length(kef3) ){
+		Obj_Delete(kef3[i]);
+		i++;
+	}
+	i = 0;
+}
+
+task Fragment_Bomb(pos,lay){
+	let kef1		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let kef2		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let kef3		= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i			= 0;
+	let rgb			= [200,255,255];
+	let swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	//　ボムエクステンドライン
+	let bf_max		= 6;
+	if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+		bf_max		= 8;
+	}
+	
+	//　数値画像スケール
+	let sca			= 0.48;
+	
+	//　(かけら)
+	ObjPrim_SetTexture(kef1, path_front01 );
+	Obj_SetRenderPriorityI(kef1, lay );
+	ObjRender_SetBlendType(kef1, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(kef1, 1, 1, 0 );
+	ObjRender_SetColor(kef1, rgb[0], rgb[1], rgb[2] );
+	ObjSprite2D_SetSourceRect(kef1, 0, 224, 128, 256 );
+	ObjSprite2D_SetDestCenter(kef1 );
+	
+	//　／
+	ObjPrim_SetTexture(kef2, path_front01 );
+	Obj_SetRenderPriorityI(kef2, lay );
+	ObjRender_SetBlendType(kef2, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(kef2, sca, sca,0 );
+	ObjRender_SetColor(kef2, rgb[0], rgb[1], rgb[2] );
+	ObjSprite2D_SetSourceRect(kef2, 0 + 24*uv[15], 488, 24 + 24*uv[15], 512 );
+	ObjSprite2D_SetDestCenter(kef2);
+	
+	//　数値
+	loop( length(kef3) ){
+		ObjPrim_SetTexture(kef3[i], path_front01 );
+		Obj_SetRenderPriorityI(kef3[i], lay );
+		ObjRender_SetBlendType(kef3[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(kef3[i], sca, sca, 0 );
+		ObjRender_SetAlpha(kef3[i], 0 );
+		ObjRender_SetColor(kef3[i], rgb[0], rgb[1], rgb[2] );
+		ObjSprite2D_SetSourceRect(kef3[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(kef3[i]);
+		i++;
+	}
+	i = 0;
+	
+	//　一の位は表示
+	ObjRender_SetAlpha(kef3[1], 255 );
+	ObjRender_SetAlpha(kef3[3], 255 );
+	
+	while( !swb ){
+		let bf		= GetAreaCommonData("Trance", "bomb_fragment", 0 );
+		swb			= GetAreaCommonData("System", "StgWorldBreak", false );
+		
+		//　ボムかけら
+		let bf1		= truncate(bf%10);
+		let bf2		= truncate((bf%100)/10);
+		
+		//　エクステンドライン
+		let el1		= truncate(bf_max%10);
+		let el2		= truncate((bf_max%100)/10);
+		
+		if( bf >= bf_max ){
+			//　ボムエクステンド
+			SetPlayerSpell( GetPlayerSpell() + 1 );
+			//　かけら初期化
+			SetAreaCommonData("Trance", "bomb_fragment", 0 );
+			//　効果音
+			ObjSound_Play( UtilitySE[12] );
+			//　テキスト
+			let data2 = [
+				[" "," "," "],
+				["S","P","E","L","L"," "," ","E","X","T","E","N","D"],
+			];
+			NotifyEventAll( EV_USER + 37, data2 );
+		}
+		
+		//　ライン更新　数値固定だけど
+		SetAreaCommonData("Trance", "next_bomb", bf_max );
+		
+		//　(かけら)
+		ObjRender_SetPosition(kef1, MaxX+129+32 + pos[0], CenY-76+16 + pos[1], 0 );
+		//　／
+		ObjRender_SetPosition(kef2, MaxX+186+32 + pos[0], CenY-75+16 + pos[1], 0 );
+		//　現在数
+		ObjRender_SetPosition(kef3[0], MaxX+172+32 + pos[0], CenY-75+16 + pos[1], 0 );	//　十の位
+		ObjRender_SetPosition(kef3[1], MaxX+180+32 + pos[0], CenY-75+16 + pos[1], 0 );	//　一の位
+		ObjSprite2D_SetSourceRect(kef3[0], 0 + 24*uv[bf2], 488, 24 + 24*uv[bf2], 512 );
+		ObjSprite2D_SetSourceRect(kef3[1], 0 + 24*uv[bf1], 488, 24 + 24*uv[bf1], 512 );
+		//　要求数
+		ObjRender_SetPosition(kef3[2], MaxX+194+32 + pos[0], CenY-75+16 + pos[1], 0 );	//　十の位
+		ObjSprite2D_SetSourceRect(kef3[2], 0 + 24*uv[el2], 488, 24 + 24*uv[el2], 512 );
+		ObjSprite2D_SetSourceRect(kef3[3], 0 + 24*uv[el1], 488, 24 + 24*uv[el1], 512 );
+		
+		//　現在数 < 10　なら　1桁目のみ表示
+		if( bf < 10 ){
+			ObjRender_SetAlpha(kef3[0], 0 );	//　十の位　非表示
+		}
+		else{
+			ObjRender_SetAlpha(kef3[0], 255 );
+		}
+		
+		//　要求数 < 10　なら　1桁目のみ表示 + 位置微調整
+		if( bf < 10 ){
+			ObjRender_SetAlpha(kef3[2], 0 );	//　十の位　非表示
+			ObjRender_SetPosition(kef3[3], MaxX+202+32 - 8 + pos[0], CenY-75+16 + pos[1], 0 );	//　一の位　座標調整
+		}
+		else{
+			ObjRender_SetAlpha(kef3[2], 255 );
+			ObjRender_SetPosition(kef3[3], MaxX+202+32 + pos[0], CenY-75+16 + pos[1], 0 );
+		}
+		
+		yield;
+	}
+	
+	//　おわり
+	Obj_Delete(kef1);
+	Obj_Delete(kef2);
+	loop( length(kef3) ){
+		Obj_Delete(kef3[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　エネミーマーカー
+task EnemyMarker(layer){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+	let rgb		= [255,32,32];
+	
+	ObjPrim_SetTexture(id, path_front03 );
+	Obj_SetRenderPriorityI(id, layer );
+	ObjRender_SetBlendType(id, BLEND_ADD_ARGB );
+	ObjRender_SetScaleX(id, 1.4 );
+	ObjRender_SetColor(id, rgb[0], rgb[1], rgb[2] );
+	ObjSprite2D_SetSourceRect(id, 128, 16, 160, 32 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !swb ){
+		swb = GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		let enm		= GetEnemyBossObjectID();
+		//　ボスが1体以上いる
+		if( length(enm) > 0 ){
+			let enx		= ObjMove_GetX(enm[0]);
+			let eny		= ObjMove_GetY(enm[0]);
+			
+			//　座標
+			ObjRender_SetPosition(id, enx+32, MaxY+32-7, 0 );
+			
+			if( enx > MinX && enx < MaxX && eny > MinY-64 && eny < MaxY ){
+				if( GetPlayerX<enx+24 && GetPlayerX>enx-24 ){
+					ObjRender_SetColor(id, rgb[0]/2, rgb[1]/2, rgb[2]/2 );
+				}
+				else{
+					ObjRender_SetColor(id, rgb[0], rgb[1], rgb[2] );
+				}
+				ObjRender_SetAlpha(id, 255 );
+			}
+			else{
+				ObjRender_SetAlpha(id, 0 );
+			}
+		}
+		else{
+			//　ボス無し
+			ObjRender_SetAlpha(id, 0 );
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　難易度表記
+task DisplayDifficulty(pos,layer,wait){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　難易度
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	ObjPrim_SetTexture(ID, path_front03 );
+	Obj_SetRenderPriorityI(ID, layer );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 0, 128, 32 );
+	}
+	case( "Normal" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 32, 128, 64 );
+	}
+	case( "Hard" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 64, 128, 96 );
+	}
+	case( "Lunatic" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 96, 128, 128 );
+	}
+	case( "Extra" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 128, 128, 160 );
+	}
+	case( "Phantasm" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 160, 128, 196 );
+	}
+	case( "OverDrive" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 196, 128, 224 );
+	}
+	case( "LastWord" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 224, 128, 256 );
+	}
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !swb && count < 90 ){
+		swb = GetAreaCommonData("System", "StgWorldBreak", true );
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, 32 + 384/2, MinY+64 - 32+move1*32, 0 );
+		ObjRender_SetScaleY(ID, move1 );
+		
+		if( count > 20 && count < 70 ){
+			if( count%4 == 0 ){
+				ObjRender_SetColor(ID, 0, 0, 0 );
+			}
+			else{
+				ObjRender_SetColor(ID, 255, 255, 255 );
+			}
+		}
+		
+		if( move1 >= 1 ){ count++; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	ObjRender_SetColor(ID, 255, 255, 255 );
+	while( !swb && move1 < 1 ){
+		swb = GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleY(ID, 1 - move1 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	ObjRender_SetColor(ID, 255, 255, 255 );
+	while( !swb ){
+		swb = GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+		ObjRender_SetScaleY(ID, move1 );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+

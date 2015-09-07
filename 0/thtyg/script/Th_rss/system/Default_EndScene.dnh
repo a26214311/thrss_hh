@@ -1,0 +1,1011 @@
+
+/*
+#東方弾幕風[Package]
+#Title["ポーズ"]
+#Image[""]
+#Text["ver 0.01a"]
+*/
+
+//　こっちは多分ゲームオーバー用になる
+//　一時停止中スクリプト
+	let csd		= GetCurrentScriptDirectory();
+	let menu_on	= true;
+	let IsReplaySave = false;
+	
+	//　セレクト変数
+	let selectIndex1	= 0;	//　選択位置
+	let selectIndex2	= 0;	//　0:いいえ　1:はい
+	let selectMode		= 0;	//　セレクトモード
+
+#include "./../system/Load_AllTexture.dnh"
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	TBackground();
+	TMenu();
+	
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+		SetAreaCommonData("Trance", "BGM_Delete", true );
+		SetAreaCommonData("Trance"," BGM_Play", -1 );
+	}
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	//ClosePackage();
+}
+
+task PlaySEsP(path){
+	let sid		= ObjSound_Create();
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	ObjSound_Play(sid);
+}
+
+task TBackground
+{
+	task TVertex(var index, var left, var top, var right, var bottom)
+	{
+		ObjPrim_SetVertexPosition(obj, index + 0, left, top, 0);
+		ObjPrim_SetVertexPosition(obj, index + 1, left, bottom, 0);
+		ObjPrim_SetVertexPosition(obj, index + 2, right, top, 0);
+		ObjPrim_SetVertexPosition(obj, index + 3, right, top, 0);
+		ObjPrim_SetVertexPosition(obj, index + 4, left, bottom, 0);
+		ObjPrim_SetVertexPosition(obj, index + 5, right, bottom, 0);
+		
+		ObjPrim_SetVertexUVT(obj, index + 0, left, top);
+		ObjPrim_SetVertexUVT(obj, index + 1, left, bottom);
+		ObjPrim_SetVertexUVT(obj, index + 2, right, top);
+		ObjPrim_SetVertexUVT(obj, index + 3, right, top);
+		ObjPrim_SetVertexUVT(obj, index + 4, left, bottom);
+		ObjPrim_SetVertexUVT(obj, index + 5, right, bottom);
+		
+		//STGシーン内のみアニメーション
+		if(left >= 32 && right <= 416 && top >=16 && bottom <= 464)
+		{
+			let alpha = 255;
+			while(alpha >= 128)
+			{
+				ObjPrim_SetVertexAlpha(obj, index + 0, alpha/4);
+				ObjPrim_SetVertexAlpha(obj, index + 1, alpha/4);
+				ObjPrim_SetVertexAlpha(obj, index + 2, alpha/4);
+				ObjPrim_SetVertexAlpha(obj, index + 3, alpha/4);
+				ObjPrim_SetVertexAlpha(obj, index + 4, alpha/4);
+				ObjPrim_SetVertexAlpha(obj, index + 5, alpha/4);
+				alpha -= 255 / frame;
+
+				yield;
+			}
+		}
+	}
+
+	//分割設定
+	let frame = 30;
+	let countH = 20; //分割数
+	let countV = 30; 
+	let width = 640 / countH;
+	let height = 480 / countV;
+	let target = GetTransitionRenderTargetName();
+	let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D); //2D頂点ブジェクト生成
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLELIST);
+	ObjPrim_SetVertexCount(obj, countH * countV * 6);
+	Obj_SetRenderPriorityI(obj, 0); //描画優先度を設定
+	ObjPrim_SetTexture(obj, target); //テクスチャを設定
+
+	ascent(ix in 0.. countH)
+	{
+		ascent(iy in 0.. countV)
+		{
+			let index = (ix + iy * countH) * 6;
+			let left = ix * width;
+			let right = left + width;
+			let top = iy * height;
+			let bottom = top + height;
+			TVertex(index, left, top, right, bottom);
+		}
+	}
+
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+task TMenu{
+	//メニュー配置
+	let mode			= GetAreaCommonData("System", "PlayMode", "NULL" );
+	let clear			= GetAreaCommonData("System", "ClearSpellPractice", false );
+	let continue		= GetAreaCommonData("System", "Continue", false );
+	let ctr				= 0;
+	let cc				= 0;
+	let frameKeyHold	= 0;	//　キー押しっぱなしフレーム数
+	let mx				= 128;
+	let my				= 304;
+	let texts			= [ "リプレイを保存する", "タイトルに戻る", "最初から始める" ];
+	let texts_yn		= [ "はい", "いいえ" ];
+	let listResult		= [ RESULT_SAVE_REPLAY, RESULT_END, RESULT_RETRY ];
+	let rgb				= [ 64, 160, 160 ];
+	
+	
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	//　リプレイの時
+	if( IsReplay ){
+		texts		= [ "タイトルに戻る", "最初から始める" ];
+		listResult	= [ RESULT_END, RESULT_RETRY ];
+	}
+	else{
+		//　リプレイじゃない時
+		//　本編
+		if( mode == "Story" ){
+			if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "Extra" ||
+				GetAreaCommonData("System", "Difficulty", "NULL" ) == "Phantasm" ||
+				GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+				texts		= [ "再挑戦", "リプレイを保存する", "タイトルに戻る" ];
+				listResult	= [ RESULT_RETRY, RESULT_SAVE_REPLAY, RESULT_END ];
+			}
+			else{
+				if( continue ){
+					//　コンティニューしてるとリプレイ保存できない
+					texts		= [ "再挑戦", "タイトルに戻る", "最初から始める" ];
+					listResult	= [ RESULT_RETRY, RESULT_END, RESULT_RETRY ];
+				}
+				else{
+					texts		= [ "再挑戦", "リプレイを保存する", "タイトルに戻る", "最初から始める" ];
+					listResult	= [ RESULT_RETRY, RESULT_SAVE_REPLAY, RESULT_END, RESULT_RETRY ];
+				}
+			}
+		}
+		//　スペプラの時
+		if( mode == "Spell" ){
+			texts		= [ "再挑戦", "リプレイを保存する", "タイトルに戻る" ];
+			listResult	= [ RESULT_RETRY, RESULT_SAVE_REPLAY, RESULT_END ];
+		}
+	}
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	
+	var countMenu = length(texts);
+	
+	//　メニュータイトル作成
+	if( IsReplay ){
+		TMenuItem( countMenu+1, mx-16, my-64-16, "再生終了", 0 );
+	}
+	else if( !clear ){
+		TMenuItem( countMenu+1, mx-16, my-64-16, "満身創痍", 0 );
+		rgb = [ 160, 64, 64 ];
+	}
+	else{
+		TMenuItem( countMenu+1, mx-16, my-64-16, "鉄杵成針", 0 );
+		rgb = [ 160, 160, 64 ];
+	}
+	//　メニュー項目作成
+	ascent( var iText in 0 .. countMenu ){
+		TMenuItem( iText, mx+32, my-32, texts[iText], 0 );
+		my += 32;
+	}
+	
+	SetWakame( 128, 304, rgb );
+	
+	//CreateAurora_Pause( 8 );
+	
+	//　8フレーム待機
+	loop( 8 ){ yield; }
+	
+	//キー状態がリセットされるまで待機
+	while( GetVirtualKeyState(VK_OK) != KEY_FREE ){ yield; }
+	
+	//　イシュア
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+		SetAreaCommonData("Trance"," BGM_Play", 19 );
+	}
+	
+	loop{
+		//　エフェクト
+		if( cc%4 == 0 ){
+			let rgb_array	= [
+				[255,255,255],	//　白
+				[64,255,255],	//　水
+				[64,255,128],	//　青緑
+				[64,128,255],	//　青
+			];
+			CreateIceCrystal( [rand(32,32+384),rand(16,16+448)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.6), rand(60,120), rand(96,128), rgb_array, 9 );
+		}
+		
+		if( selectMode == 1 && ctr == 1 ){
+			//　メニュータイトル
+			TMenuItem( countMenu+1, mx+192, 224, "本当に？", 1 );
+			//　メニュー項目
+			ascent( let i in 0..( length(texts_yn) ) ){
+				TMenuItem( i, mx + 192, 256+15 + i*32, texts_yn[i], 1 );
+			}
+		}
+		
+		//------------------------------------------------------------------------------------------------
+		//------------------------------------------------------------------------------------------------
+		//決定
+		if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 8 ){
+			alternative( texts[selectIndex1] )
+			case( "タイトルに戻る", "最初から始める" ){
+				if( selectMode == 0 ){
+					//　項目
+					selectMode = 1;
+					PlaySEsP( csd ~ "../se/menudecide.ogg" );
+				}
+				else{
+					//　本当に？
+					if( texts_yn[selectIndex2] == "いいえ" ){
+						//　いいえ
+						selectMode = 0;
+						selectIndex2 = 0;
+						PlaySEsP( csd ~ "../se/menucancel.ogg" );
+					}
+					else{
+						//　はい
+						
+						//　リザルトセット
+						SetScriptResult( listResult[selectIndex1] );
+						//　非リプレイ
+						if( !IsReplay ){
+							//　再挑戦 Story
+							if( mode == "Story" && selectIndex1 == 0 ){
+								CallDefault();
+								let gd = GetAreaCommonData( "System", "Difficulty", "NULL" );
+								if( gd != "Extra" && gd != "Phantasm" && gd != "OverDrive" ){
+									SetAreaCommonData("System", "Continue", true );
+								}
+							}
+							//　最初から始める Story
+							if( mode == "Story" && selectIndex1 == 3 ){
+								CallDefault();
+							}
+							//　最初から始める Stage
+							if( mode == "Stage" && selectIndex1 == 2 ){
+								CallDefault();
+							}
+							//　タイトルに戻る Spell
+							if( mode == "Spell" && selectIndex1 == 2 ){
+								CallDefault();
+							}
+						}
+						else{
+							//　リプレイ
+							//　最初から始める Story
+							if( mode == "Story" && selectIndex1 == 1 ){
+								CallDefault();
+							}
+							//　最初から始める Spell
+							if( mode == "Spell" && selectIndex1 == 1 ){
+								CallDefault();
+							}
+						}
+						if( texts[ selectIndex1 ] == "リプレイを保存する" ){
+							selectMode = 0;
+							selectIndex2 = 0;
+							PlaySEsP( csd ~ "../se/menudecide.ogg" );
+							CallReplaySaveScene();
+						}
+						else{
+							//　得点リセット
+							AddScore( -GetScore() );
+							menu_on = false;
+							PlaySEsP( csd ~ "../se/menudecide.ogg" );
+							loop( 12 ){ yield; }
+							CloseScript( GetOwnScriptID() );
+							return;
+						}
+					}
+				}
+			}
+			others{
+				//　リザルトセット
+				SetScriptResult( listResult[selectIndex1] );
+				//　非リプレイ
+				if( !IsReplay ){
+					//　再挑戦 Story
+					if( mode == "Story" && selectIndex1 == 0 ){
+						CallDefault();
+						SetAreaCommonData("System", "Continue", true );
+					}
+					//　再挑戦 Spell
+					if( mode == "Spell" && selectIndex1 == 0 ){
+						CallDefault();
+					}
+					//　最初から始める Story
+					if( mode == "Story" && selectIndex1 == 3 ){
+						CallDefault();
+					}
+					//　最初から始める Stage
+					if( mode == "Stage" && selectIndex1 == 2 ){
+						CallDefault();
+					}
+				}
+				else{
+					//　リプレイ
+					//　最初から始める Story
+					if( mode == "Story" && selectIndex1 == 1 ){
+						CallDefault();
+					}
+				}
+				if( texts[ selectIndex1 ] == "リプレイを保存する" ){
+					selectMode = 0;
+					selectIndex2 = 0;
+					PlaySEsP( csd ~ "../se/menudecide.ogg" );
+					CallReplaySaveScene();
+				}
+				else{
+					//　得点リセット
+					AddScore( -GetScore() );
+					menu_on = false;
+					PlaySEsP( csd ~ "../se/menudecide.ogg" );
+					loop( 12 ){ yield; }
+					CloseScript( GetOwnScriptID() );
+					return;
+				}
+			}
+			ctr = 0;
+		}
+		//------------------------------------------------------------------------------------------------
+		//------------------------------------------------------------------------------------------------
+		
+		
+		//　キャンセル
+		if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 8 ){
+			if( selectMode == 1 ){
+				selectMode = 0;
+				selectIndex2 = 0;
+				PlaySEsP( csd ~ "../se/menucancel.ogg" );
+			}
+			ctr = 0;
+		}
+		
+		//カーソル移動
+		if( GetVirtualKeyState(VK_UP) == KEY_PUSH ){
+			if( selectMode == 0 ){
+				selectIndex1--;
+			}
+			else{
+				selectIndex2--;
+			}
+			PlaySEsP( csd ~ "../se/menuselect.ogg" );
+		}
+		else if( GetVirtualKeyState(VK_DOWN) == KEY_PUSH ){
+			if( selectMode == 0 ){
+				selectIndex1++;
+			}
+			else{
+				selectIndex2++;
+			}
+			PlaySEsP( csd ~ "../se/menuselect.ogg" );
+		}
+		else if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+			//　上長押し
+			frameKeyHold++;
+			if(frameKeyHold == 30 || (frameKeyHold > 30 && (frameKeyHold % 6 == 0))){
+				if( selectMode == 0 ){
+					selectIndex1--;
+				}
+				else{
+					selectIndex2--;
+				}
+				PlaySEsP( csd ~ "../se/menuselect.ogg" );
+			}
+		}
+		else if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+			//　下長押し
+			frameKeyHold++;
+			if(frameKeyHold == 30 || (frameKeyHold > 30 && (frameKeyHold % 6 == 0))){
+				if( selectMode == 0 ){
+					selectIndex1++;
+				}
+				else{
+					selectIndex2++;
+				}
+				PlaySEsP( csd ~ "../se/menuselect.ogg" );
+			}
+		}
+		else{
+			frameKeyHold = 0;
+		}
+		
+		
+		//　selectIndex1のループ
+		if( selectIndex1 < 0 ){
+			selectIndex1 = countMenu - 1;
+		}
+		else{
+			selectIndex1 %= countMenu;
+		}
+		
+		//　selectIndex2のループ
+		if( selectIndex2 < 0 ){
+			selectIndex2 = length(texts_yn) - 1;
+		}
+		else{
+			selectIndex2 %= length(texts_yn);
+		}
+		
+		ctr++;
+		cc++;
+		
+		yield;
+	}
+}
+
+
+
+
+//　エフェクト
+//----------------------------------------------------------------
+//----------------------------------------------------------------
+//　雪の結晶
+task CreatePauseEffect(pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.02,0.08);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, csd ~ "./../img/effect/ice01a.png" );
+	Obj_SetRenderPriorityI(ID, 10 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 128, 192, 192, 256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(ID) && frame < kill ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+function CallReplaySaveScene(){
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "./Default_ReplaySaveScene.dnh";
+	let idScript	= LoadScript(pathScript);
+	let cc			= 0;
+	
+	IsReplaySave = true;
+	
+	StartScript(idScript);
+	
+	while( !IsCloseScript(idScript) ){
+		if( cc%2 == 0 ){
+			CreatePauseEffect([rand(0,640),rand(0,480)], 90+rand(-32,32), 0.4, 0, 10,
+								[255,255,255], rand(32,128), rand(32,128) );
+		}
+		cc++;
+		yield;
+	}
+	
+	IsReplaySave = false;
+}
+
+task CallDefault(){
+	let GetMode	= GetAreaCommonData("System", "PlayMode", "NULL" );
+	let GetRank	= GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	//　難易度EXなら
+	if( GetRank == "Extra" ){
+		//　インデックスはEXのまま
+		SetAreaCommonData("System", "Stage_Index", 7 );
+	}
+	else if( GetRank == "Phantasm" ){
+		//　インデックスはPHのまま
+		SetAreaCommonData("System", "Stage_Index", 8 );
+	}
+	else if( GetRank == "OverDrive" ){
+		//　無常なる1面巻き戻し
+		SetAreaCommonData("System", "Stage_Index", 1 );
+	}
+	else if( GetMode == "Story" ){
+		//　インデックスを1面に
+		if( selectIndex1 != 0 ){
+			SetAreaCommonData("System", "Stage_Index", 1 );
+		}
+	}
+	else if( GetMode == "Stage" ){
+		let idx = GetCommonData( "StageIndex_OLD", 0 );
+		SetAreaCommonData("System", "Stage_Index", idx );
+	}
+	
+	// スコア初期化　今のスコア - 今のスコア
+	AddScore( -GetScore() );
+	
+	//　コンティニューリセット　ｽﾍﾟﾌﾟﾗクリアフラグリセット　かけら系リセット　点符リセット
+	SetAreaCommonData("System", "Continue", false );
+	SetAreaCommonData("System", "ClearSpellPractice", false );
+	SetAreaCommonData("Trance", "player_fragment", 0 );
+	SetAreaCommonData("Trance", "bomb_fragment", 0 );
+	SetAreaCommonData("Trance", "max_score", 0 );
+	
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) != "Spell" ){
+		SetAreaCommonData("Trance", "BGM_Delete", true );
+		SetAreaCommonData("Trance"," BGM_Play", -1 );
+	}
+}
+
+//　メニュー作成関数
+task TMenuItem( Index, mx, my, text, type ){
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let move	= 32;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let move3	= 0;
+	let moveC	= 0;
+	let count	= 0;
+	
+	function CreateTextObject( mx, my, text ){
+		let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let sca		= 0.5;
+		let sca2	= 0.54;
+		
+		ObjRender_SetPosition(obj, mx, my, 0 );
+		ObjPrim_SetTexture(obj, csd ~ "./../img/front/pause.png" );
+		ObjRender_SetBlendType(obj, BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(obj, sca, sca, 0 );
+		ObjRender_SetColor(obj, 64, 64, 64 );
+		Obj_SetRenderPriorityI(obj, 11 );
+		
+		alternative( text )
+		case( "一時停止" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 0, 1024, 128 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "満身創痍" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 128, 1024, 256 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再開" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 0, 512, 128 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再生終了" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 256, 1024, 384 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "タイトルに戻る" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 128, 512, 256 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "再挑戦" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 512, 512, 640 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "最初から始める" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 256, 512, 384 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "リプレイを保存する" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 384, 512, 512 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "本当に？" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 768, 1024, 896 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "はい" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 640, 512, 768 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "いいえ" ){
+			ObjSprite2D_SetSourceRect(obj, 0, 768, 512, 896 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		case( "鉄杵成針" ){
+			ObjRender_SetScaleXYZ(obj, sca2, sca2, 0 );
+			ObjRender_SetColor(obj, 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(obj, 512, 384, 1024, 512 );
+			ObjSprite2D_SetDestCenter(obj);
+		}
+		return obj;
+	}
+	
+	let objText		= CreateTextObject( mx, my, text );
+	let objSelect	= CreateTextObject( mx, my, text );
+	
+	let selectIndex = 0;
+	
+	loop{
+		if( type == 1 && selectMode != 1 ){ break; }
+		if( type == 1 && IsReplaySave ){ break; }
+		
+		if( type == 0 ){
+			selectIndex = selectIndex1;
+		}
+		else{
+			selectIndex = selectIndex2;
+		}
+		
+		alpha1 = 255 * sin( alphaA );
+		move3 = 1 * sin( moveC );
+		
+		//　選択中は横に移動
+		if( Index == selectIndex ){
+			move2 = 0;
+			moveB = 0;
+			move1 = move * sin( moveA );
+			ObjRender_SetPosition(objText, mx+255/2-alpha1/2+move1, my, 0 );
+			ObjRender_SetPosition(objSelect, mx+255/2-alpha1/2+move1, my, 0 );
+			if( move1 < move ){ moveA += 15; }
+		}
+		else{
+			move1 = 0;
+			moveA = 0;
+			move2 = move * sin( moveB );
+			ObjRender_SetPosition(objText, mx+255/2-alpha1/2+move-move2, my, 0 );
+			ObjRender_SetPosition(objSelect, mx+255/2-alpha1/2+move-move2,my, 0 );
+			if( move2 < move ){ moveB += 15; }
+		}
+		
+		if( IsReplaySave ){
+			ObjRender_SetAlpha(objText, 255 - move3*255 );
+			ObjRender_SetAlpha(objSelect, 255 - move3*255 );
+			if( move3 < 1 ){ moveC += 15; }
+		}
+		else{
+			ObjRender_SetAlpha(objText, alpha1 );
+			ObjRender_SetAlpha(objSelect, alpha1 );
+			moveC = 0;
+		}
+		
+		Obj_SetVisible(objSelect, Index == selectIndex );
+		ObjRender_SetColor(objSelect, 255, 128, 128 );
+		
+		count += 8;
+		if( alpha1 < 255 ){ alphaA += 10; }
+		
+		yield;
+	}
+	Obj_Delete( objText );
+	Obj_Delete( objSelect );
+}
+
+//　わかめ
+task SetWakame( mx, my, color ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let sca			= [0.9,0.9];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let count		= 0;
+	
+	//　わかめ配置
+	ObjPrim_SetTexture(id, csd ~ "../img/front/pause2.png" );
+	ObjRender_SetBlendType(id, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(id, 0, 0, -45+alpha1/255*45 );
+	ObjRender_SetScaleXYZ(id, sca[0], sca[1], 0 );
+	ObjRender_SetColor(id, color[0], color[1], color[2] );
+	ObjRender_SetAlpha(id, alpha1 );
+	Obj_SetRenderPriorityI(id, 10 );
+	ObjSprite2D_SetSourceRect(id, 0, 0, 128, 256 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( true ){
+		alpha1 = 255 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		if( IsReplaySave ){
+			ObjRender_SetAlpha(id, 0 );
+		}
+		else{
+			ObjRender_SetAlpha(id, alpha1 );
+		}
+		ObjRender_SetAngleXYZ(id, 0, 0, (-45+alpha1/255*45)+4*sin(count*4) );
+		
+		count++;
+		if( alpha1 < 255 ){ alphaA += 5; }
+		
+		if( selectMode == 0 ){
+			ObjRender_SetPosition(id, mx - 24 + 160 - move1*160, my, 0 );
+			if( move1 < 1 ){ moveA += 15; }
+			moveB = 0;
+		}
+		else{
+			ObjRender_SetPosition(id, mx - 24 + move2*160, my, 0 );
+			if( move2 < 1 ){ moveB += 15; }
+			moveA = 0;
+		}
+		
+		yield;
+	}
+}
+
+//　オーロラ
+task CreateAurora_Pause( layer ){
+	let obj			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	let ang			= rand(0,360);
+	let kaku		= 96;
+	let pc			= 0;
+	let i			= 0;
+	let j			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= 0;
+	//　円の太さ
+	let wight		= 32;
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	ObjRender_SetPosition(obj, 0, 0, 0 );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "./../img/effect/aurora01a.png" );
+	ObjRender_SetBlendType(obj, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetVertexCount(obj, ten );
+	ObjRender_SetAngleXYZ(obj, 90, 0, 0 );
+	ObjSprite3D_SetBillboard(obj, true );
+	ObjRender_SetFogEnable(obj, false );
+	
+	let move	= [];
+	let alpha	= [];
+	let color	= [];
+	ascent( i in 0..( ten ) ){
+		move	= move ~ [0];
+		alpha	= alpha ~ [0];
+		color	= color ~ [ [0,0,0] ];
+	}
+	ascent( i in 0..( ten ) ){
+		move[i]		= rand(-128,128);
+		alpha[i]	= rand(64,255);
+		color[i]	= [ 128, 64 + rand(-64,64), 191 ];
+	}
+	i = 0;
+	
+	//　下の処理あるから要らんけど、一応
+	move[0]		= move[ length(move)-1 ];
+	color[0]	= color[ length(color)-1 ];
+	
+	//　最初の頂点と最後の頂点はくっついてる様でくっついてないので、a値を 0 にしてごまかす
+	alpha[ 0 ]	= 0;
+	alpha[ 1 ]	= 0;
+	alpha[ length(alpha)/2 - 2 ] = 0;
+	alpha[ length(alpha)/2 - 1 ] = 0;
+	
+	//　オーロラ下方向への変化量　カメラの関係でz軸
+	let z2 = 512 + rand(0,256);
+	
+	while( true ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAngleXYZ(obj, 90, 0, 0 );
+		
+		let ct = 0;
+		
+		loop( ten/2 ){
+			let dis = [
+				[ 448, 256, 0 ],
+				[ 512, 384, z2 ],
+			];
+			
+			ObjPrim_SetVertexPosition(obj, i, dis[0][0] * cos(pc+count/16), dis[0][1] * sin(pc+count/16), dis[0][2] );
+			ObjPrim_SetVertexPosition(obj, j, dis[1][0] * cos(pc+count/16), dis[1][1] * sin(pc+count/16), dis[1][2] + move[ct] * sin( count*(move[ct]/64) ) );
+			ObjPrim_SetVertexUVT(obj, i, 0 + _rect + count, 0 );
+			ObjPrim_SetVertexUVT(obj, j, 0 + _rect + count, 512 );
+			ObjPrim_SetVertexAlpha(obj, i, 0 );
+			if( j == 0 || j == 1 || j == length(alpha) - 2 || j == length(alpha) - 1 ){
+				ObjPrim_SetVertexAlpha(obj, j, 0 );
+			}
+			else{
+				ObjPrim_SetVertexAlpha(obj, j, move1*alpha[ct] + 64*sin( count*(move[ct]/32) ) );
+			}
+			ObjPrim_SetVertexColor(obj, i, color[ct][0], color[ct][1], color[ct][2] + 64*cos(count*2) );
+			ObjPrim_SetVertexColor(obj, j, color[ct*2][0], color[ct*2][1], color[ct*2][2] + 64*sin(count*2) );
+			
+			pc			+= 360/kaku;
+			i			+= 2;
+			j			+= 2;
+			_rect		+= 128;
+			ct++;
+		}
+		pc			= 0;
+		i			= 0;
+		j			= 1;
+		_rect		= 0;
+		
+		count++;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　蝶のエフェクト
+task ButterflyL( pos, sca, dis, angle, plus, rgb_h ){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let csd			= GetCurrentScriptDirectory();
+	let sca1		= 0;
+	let scaA		= 0;
+	let dis1		= 0;
+	let disA		= 0;
+	let sp			= rand(16,32);
+	let cc			= 0;
+	let i			= 0;
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../img/effect/bt.png" );
+		Obj_SetRenderPriorityI(ID[i], 9 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ(ID[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 128 );
+		ObjSprite2D_SetDestRect(ID[i], 0, -64, 64, 64 );
+		ObjRender_SetColor(ID[i], rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjRender_SetAlpha(ID[i], sca1*255 );
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID[0]) && !Obj_IsDeleted(ID[1]) && sca < 1 ){
+		dis1 = 1 * sin( disA );
+		sca1 = 1 * sin( scaA );
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca - sca1*sca + sca/4 * sin(cc*sp), sca - sca1*sca, 0 );
+			ObjRender_SetAlpha(ID[i], sca1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetAngleXYZ(ID[0], 0, 0, 90+angle );
+		ObjRender_SetAngleXYZ(ID[1], 0, 180, (90+angle)*-1 );
+		
+		angle += plus;
+		
+		cc++;
+		if( dis1 < 1 ){ disA += 1; }
+		if( sca1 < 1 ){ scaA += 1; }
+		else{ break; }
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　氷クリスタルっぽいもの
+task CreateIceCrystal( pos, speed, angle, scale, kill, alpha, rgb_array, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let r_type	= 2;
+	let count	= 0;
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "../img/effect/ice01b.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(obj, scale, scale, 0 );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, -32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, -32, 32, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 32, 32, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 64 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(obj, 2, 64, 64 );
+	ObjPrim_SetVertexUVT(obj, 3, 64, 128 );
+	
+	while( count < kill ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0], rgb_array[w][1], rgb_array[w][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(1,2)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				ObjPrim_SetVertexColor(obj, i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*alpha );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0]/1.4, rgb_array[w][1]/1.4, rgb_array[w][2]/1.4 );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(2,4)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}

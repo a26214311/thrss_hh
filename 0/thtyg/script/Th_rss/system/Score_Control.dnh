@@ -1,0 +1,156 @@
+
+
+//　初期化用　実装時は呼ばなければおｋ
+task ScoreDefault(){
+	//　何回プレイしたかカウンタ
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_easy", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_normal", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_hard", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_lunatic", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_extra", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl01_phantasm", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_easy", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_normal", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_hard", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_lunatic", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_extra", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl02_phantasm", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_easy", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_normal", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_hard", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_lunatic", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_extra", 0 );
+	SetAreaCommonData("Score", "GamePlayCountD_pl03_phantasm", 0 );
+	//　自機別スコア
+	let default_score = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+	ascent( let i in 0..( length(default_score) ) ){
+		default_score[i] = 1000000 - i*100000;
+	}
+	SetAreaCommonData("Score", "high_score_data_pl01_easy", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl01_normal", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl01_hard", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl01_lunatic", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl02_easy", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl02_normal", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl02_hard", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl02_lunatic", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl03_easy", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl03_normal", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl03_hard", default_score );
+	SetAreaCommonData("Score", "high_score_data_pl03_lunatic", default_score );
+	//　百億超える時
+	SetAreaCommonData("Score", "high_score_data_pl01_easy2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl01_normal2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl01_hard2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl01_lunatic2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_easy2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_normal2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_hard2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_lunatic2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_easy2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_normal2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_hard2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_lunatic2", [0,0,0,0,0,0,0,0,0,0] );
+	//　遊んだ回数
+	SetAreaCommonData("Score", "GamePlayCount_pl01_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl01_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl01_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl01_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	//　進行度云々
+	SetAreaCommonData("Score", "StageNumD", 0 );
+	//　自機別ステージ進行度
+	SetAreaCommonData("Score", "StageNum_pl01_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl01_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl01_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl01_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	//　上からExtraハイスコア、Extraプレイ回数、Extra進行度
+	let default_scoreEX = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+	ascent( i in 0..( length(default_scoreEX) ) ){
+		default_scoreEX[i] = 1000000 - i*100000;
+	}
+	SetAreaCommonData("Score", "high_score_data_pl01_extra", default_scoreEX );
+	SetAreaCommonData("Score", "high_score_data_pl02_extra", default_scoreEX );
+	SetAreaCommonData("Score", "high_score_data_pl03_extra", default_scoreEX );
+	SetAreaCommonData("Score", "high_score_data_pl01_extra2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_extra2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_extra2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl01_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl01_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_extra", [0,0,0,0,0,0,0,0,0,0] );
+	//　上からPhantasmハイスコア、Phantasmプレイ回数、Phantasm進行度
+	let default_scorePH = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+	ascent( i in 0..( length(default_scorePH) ) ){
+		default_scorePH[i] = 1000000 - i*100000;
+	}
+	SetAreaCommonData("Score", "high_score_data_pl01_phantasm", default_scorePH );
+	SetAreaCommonData("Score", "high_score_data_pl02_phantasm", default_scorePH );
+	SetAreaCommonData("Score", "high_score_data_pl03_phantasm", default_scorePH );
+	SetAreaCommonData("Score", "high_score_data_pl01_phantasm2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl02_phantasm2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "high_score_data_pl03_phantasm2", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl01_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl02_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "GamePlayCount_pl03_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl01_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl02_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageNum_pl03_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	//　裏か表か
+	SetAreaCommonData("Score", "StageHidden_pl01_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl01_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl01_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl01_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl01_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl01_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl02_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_easy", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_normal", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_hard", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_extra", [0,0,0,0,0,0,0,0,0,0] );
+	SetAreaCommonData("Score", "StageHidden_pl03_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+	//　自機のタイプ
+	SetAreaCommonData("Score", "TypeData_pl01_easy", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl01_normal", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl01_hard", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl01_lunatic", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl01_extra", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl01_phantasm", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_easy", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_normal", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_hard", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_lunatic", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_extra", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl02_phantasm", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_easy", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_normal", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_hard", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_lunatic", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_extra", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	SetAreaCommonData("Score", "TypeData_pl03_phantasm", [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1] );
+	
+	SaveCommonDataAreaA1( "Score" );
+}

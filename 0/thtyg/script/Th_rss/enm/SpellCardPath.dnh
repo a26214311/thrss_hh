@@ -1,0 +1,210 @@
+
+
+//　各スペルカードへのパス
+//--------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------
+
+let SpellCardPath_stage01 = [
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm01/01_SpellCard_03.dnh",
+];
+
+let SpellCardPath_stage02 = [
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_A.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_A.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_A.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_A.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_B.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_B.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_B.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_B.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_C.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_C.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_C.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_SpellCard_01_C.dnh",//　11
+	
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_01.dnh",//　12
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_02.dnh",//　16
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_03.dnh",//　20
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_SpellCard_03.dnh",//　23
+];
+
+let SpellCardPath_stage03 = [
+	GetCurrentScriptDirectory() ~ "./enm03/03_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm03/03_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_C_SpellCard_01.dnh",
+
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_02.dnh",//　8
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_03.dnh",//　12
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_04.dnh",//　16
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm03/03_SpellCard_04.dnh",
+];
+
+let SpellCardPath_stage04 = [
+	GetCurrentScriptDirectory() ~ "./enm04/04_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm04/04_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_C_SpellCard_01.dnh",
+
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_02.dnh",//　8
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_03.dnh",//　12
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_04.dnh",//　16
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_05.dnh",//　20
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_SpellCard_05.dnh",
+];
+
+let SpellCardPath_stage05 = [
+	GetCurrentScriptDirectory() ~ "./enm05/05_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm05/05_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_C_SpellCard_01.dnh",
+
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_02.dnh",//　8
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_03.dnh",//　12
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_04.dnh",//　16
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_SpellCard_04.dnh",
+];
+
+let SpellCardPath_stage06 = [
+	GetCurrentScriptDirectory() ~ "./enm06/06_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm06/06_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_C_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_C_SpellCard_01.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_01.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_01.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_02.dnh",//　8
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_02.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_03.dnh",//　12
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_03.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_04.dnh",//　16
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_04.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_05.dnh",//　20
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_05.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_06.dnh",//　24
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_06.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_06.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_SpellCard_06.dnh",
+];
+
+let SpellCardPath_stage07 = [
+	GetCurrentScriptDirectory() ~ "./enm07/07_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm07/07_C_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_C_SpellCard_03.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_06.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_07.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_08.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_09.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_SpellCard_10.dnh",
+];
+
+let SpellCardPath_stage08 = [
+	GetCurrentScriptDirectory() ~ "./enm08/08_C_SpellCard_01.dnh",//　中
+	GetCurrentScriptDirectory() ~ "./enm08/08_C_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_C_SpellCard_03.dnh",
+	
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_01.dnh",//　4
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_02.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_03.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_04.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_05.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_06.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_07.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_08.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_09.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_10.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_SpellCard_11.dnh"
+];
+
+let SpellCardPath_OverDrive = [
+	GetCurrentScriptDirectory() ~ "./enm01/01_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_C_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm02/02_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm04/04_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_C_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm05/05_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm06/06_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_C_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm07/07_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_C_OverDrive.dnh",
+	GetCurrentScriptDirectory() ~ "./enm08/08_OverDrive.dnh"
+];

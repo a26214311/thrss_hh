@@ -1,0 +1,531 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　二十一面相「顔の無い黒い怪神」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	
+	let enm;
+	let dummy;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 99;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　オーラ描画用ダミー敵
+		dummy = ObjEnemy_Create( OBJ_ENEMY );
+		ObjEnemy_SetDamageRate( dummy, 0, 0 );
+		ObjEnemy_Regist( dummy );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 64, 96, 96 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 5600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 10 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( dummy, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+
+		SetDummy;
+		task SetDummy{
+			loop{
+				ObjMove_SetPosition( dummy, ObjMove_GetX( enm ), ObjMove_GetY( enm ) );
+				if( GetAreaCommonData( "anime", "alpha", 255 ) == 0 ){ break; }
+				yield;
+			}
+			Obj_Delete( dummy );
+		}
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "二十一面相「顔の無い黒い怪神」";
+
+		
+		SpellCounter( GetDifficult, 8, 10 );
+		let sct = GetSpellCounter( GetDifficult, 8, 10 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_08b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-138, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		
+		Wait( 160 );
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait( 100 );
+		CreateWaveEffect( enm, [255,255,255], 32 );
+		let enm_d = CreateEnemy_Dragon( 500, 120 );
+		let life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+		State;
+		ObjMove_SetPosition( enm_d, gpos[0], gpos[1] );
+		SetAreaCommonData("anime", "alpha", 0 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-64, 16, 0.7 );
+		ObjSound_Play( CreateShotSE[7] );
+		ObjSound_Play( CreateShotSE[6] );
+
+		Wait( 80 );
+
+
+		let pos_x = [ 0, -75, 102, 115, -87, -148, 144 ];
+		let pos_y = [ 0, 15, -78, 105, 71, 3, 9 ];
+		let flg = [ 0, 0, 0, 0, 0, 0, 0 ];
+		let sflg = [ 0, 0, 0, 0, 0, 0, 0, 0 ];
+
+		let wt = 160;
+		while( !Obj_IsDeleted( enm ) ){
+			let time = ObjEnemyBossScene_GetInfo( spl, INFO_TIMERF ) / 60;
+			Set;
+			if( Wait( wt ) ){ return; }
+			if( life <= 4800 || time < 85 ){ wt = 140; }
+			if( life <= 4000 || time < 70 ){ wt = 120; }
+			if( life <= 3200 || time < 55 ){ wt = 100; }
+			if( life <= 2400 || time < 40 ){ wt = 80; }
+			if( time < 12 ){ wt = 50; }
+			r = -r;
+		}
+
+		task Set{
+			let ans = false;
+			let idx = round( rand( 0, length( flg ) - 1 ) );
+			loop( length( flg ) ){
+				if( !flg[ idx ] ){ ans = true; break; }
+				idx = ( idx + 1 ) % length( flg );
+			}
+			if( ans ){
+				let pattern = round( rand( 0, 7 ) );
+				let res = false;
+				loop( length( sflg ) ){
+					if( !sflg[ pattern ] ){ res = true; break; }
+					pattern = ( pattern + 1 ) % length( sflg );
+				}
+				if( res ){
+					alternative( pattern )
+					case( 0 ){ SetShot1( idx, r ); }
+					case( 1 ){ SetShot2( idx ); }
+					case( 2 ){ SetShot3( idx, r ); }
+					case( 3 ){ SetShot4( idx, r ); }
+					case( 4 ){ SetShot5( idx, r ); }
+					case( 5 ){ SetShot6( idx, r ); }
+					case( 6 ){ SetShot7( idx ); }
+					case( 7 ){ SetShot8( idx, r ); }
+				}
+			}
+		}
+
+		task SetShot1( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 0 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let speed = 1.4;
+			let p = GetAngleToPlayer( enm_d );
+			let shote = [ BGW_WHITE_13, BGW_PURPLE_13 ];
+			let delay = 16;
+			loop( 50 ){
+				let way = 4;
+				let angle = p;
+				loop( way ){
+					let sht = CreateShotA1( sx, sy, speed, angle, shote[ idx % 2 ], delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[ 0 ] );
+				speed += 0.02;
+				p += 14 * r;
+				if( Wait( 6 ) ){ return; }
+			}
+
+			flg[ idx ] = 0;
+			sflg[ 0 ] = 0;
+		}
+
+		task SetShot2( let idx ){
+			flg[ idx ] = 1;
+			sflg[ 1 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let way = 9;
+			let speed = 2;
+			let shote = [ BGW_WHITE_24, BGW_PURPLE_24 ];
+			let delay = 16;
+			loop( 2 ){
+				let wide = 720;
+				let p = atan2( GetPlayerY - sy, GetPlayerX - sx );
+				loop( 8 ){
+					let ag = p;
+					loop( way ){
+						let angle = ag - wide / 2;
+						loop( 2 ){
+							let sht = CreateShotA2( sx, sy, 0, angle, speed / 60, speed, shote[ idx % 2 ] , delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+							angle += wide;
+						}
+						ag += 360 / way;
+						
+					}
+					wide += 3;
+					ObjSound_Play( CreateShotSE[ 1 ] );
+					if( Wait( 6 ) ){ return; }
+				}
+				if( Wait( 60 ) ){ return; }
+			}
+			flg[ idx ] = 0;
+			sflg[ 1 ] = 0;
+		}
+
+		task SetShot3( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 2 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let p = GetAngleToPlayer( enm );
+			let way = 3;
+			let line = 5;
+			let shote = [ BGB_WHITE_11, BGB_PURPLE_11 ];
+			let delay = 10;
+			loop( 16 ){
+				let ag = p;
+				loop( way ){
+					let angle = ag;
+					let speed = 3;
+					loop( line ){
+						let sht = CreateShotA1( sx, sy, speed, angle, shote[ idx % 2 ], delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += -5.5 * r;
+						speed /= 1.15;
+					}
+					ag += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				p += 17 * r;
+				if( Wait( 16 ) ){ return; }
+			}
+
+			flg[ idx ] = 0;
+			sflg[ 2 ] = 0;
+		}
+
+		task SetShot4( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 3 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+			let way = 2;
+			let wide = 1;
+			let v = 6;
+			let shote = [ BGW_WHITE_06, BGW_PURPLE_06 ];
+			let delay = 10;
+			let count = 90;
+			loop( 3 ){
+				let speed = 2;
+				let px = GetPlayerX;
+				let py = GetPlayerY;
+				let p = atan2( py - sy, px - sx );
+				loop( 40 ){
+					let ag = p - wide / 2;
+					loop( way ){
+						let angle = ag + ( v * r ) * cos( count * 4 );
+						let sht = CreateShotA1( sx, sy, speed, angle, shote[ idx % 2 ], delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						ag += wide / ( way - 1 );
+					}
+					ObjSound_Play( CreateShotSE[ 0 ] );
+					speed += 0.04;
+					count++;
+					if( Wait( 2 ) ){ return; }
+				}
+				v += 6;
+			}
+			if( Wait( 60 ) ){ return; }
+			flg[ idx ] = 0;
+			sflg[ 3 ] = 0;
+		}
+
+		task SetShot5( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 4 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+			let p = GetAngleToPlayer( enm );
+
+			let way = 6;
+			let radius = 180;
+			loop( 2 ){
+				loop( 3 ){
+					ObjSound_Play( CreateShotSE[ 12 ] );
+					let angle = p;
+					loop( way ){
+						Set( radius, angle );
+						angle += 360 / way;
+					}
+					p += 2 * r;
+					if( Wait( 10 ) ){ return; }
+				}
+				if( Wait( 120 ) ){ return; }
+				r = -r;
+			}
+			task Set( radius, p ){
+				let bx = sx + radius * cos( p );
+				let by = sy + radius * sin( p );
+				let ag = p + 120;
+				let way = 6;
+				let shote = [ BGW_WHITE_27, BGW_PURPLE_27 ];
+				let delay = 16;
+				let leng = 0;
+				loop( way ){
+					let tx = bx + leng * cos( ag );
+					let ty = by + leng * sin( ag );
+					let speed = GetDistance( [ sx, sy ], [ tx, ty ] ) / 80;
+					let angle = GetGapAngle( [ sx, sy ], [ tx, ty ] );
+					CreateShot01( [ sx, sy ], 0, angle, speed / 120, speed, shote[ idx % 2 ], delay );
+					leng += radius / ( way - 1 );
+				}
+			}
+			flg[ idx ] = 0;
+			sflg[ 4 ] = 0;
+		}
+
+		task SetShot6( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 5 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let p = GetAngleToPlayer( enm );
+			let line = 2;
+			let shote = [ BGW_WHITE_16, BGW_PURPLE_16 ];
+			let delay = 10;
+			loop( 60 ){
+				let speed = 2.7;
+				let angle = p;
+				loop( line ){
+					let sht = CreateShotA1( sx, sy, speed, angle, shote[ idx % 2 ], delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += -1.2 * r;
+					speed /= 1.3;
+				}
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				p -= 17 * r;
+				if( Wait( 5 ) ){ return; }
+			}
+
+			flg[ idx ] = 0;
+			sflg[ 5 ] = 0;
+		}
+
+		task SetShot7( let idx ){
+			flg[ idx ] = 1;
+			sflg[ 6 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let shote = [ ADD_BGW_WHITE_27, ADD_BGW_PURPLE_27 ];
+
+			let way = 3;
+			loop( 3 ){
+				let p = atan2( GetPlayerY - sy, GetPlayerX - sx );
+				loop( way ){
+					SetHormingLaser( sx, sy, p );
+					p += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[ 14 ] );
+				if( Wait( 60 ) ){ return; }
+			}
+
+			task SetHormingLaser( stx, sty, angle ){
+				let sht		= CreateLaserC( stx, sty, angle, 0, 0, 0, 30, [ 255, 255, 255 ], 0.06, 1.2, shote[ idx % 2 ] );
+				let count	= 0;
+				let speed	= 0;
+				ObjShot_SetAutoDelete( sht, false );
+				ObjShot_SetSpellResist( sht, true );
+				let sbase	= 6;
+				while( !Obj_IsDeleted(sht) ){
+					let spos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+					
+					let dangle = absolute( 6 - speed );
+					let dmax = 1;
+					if( dangle >= dmax ){ dangle = dmax; }
+					let toAngle = GetGapAngle( spos, [ GetPlayerX, GetPlayerY ] );
+					let ret = toAngle - angle;
+					if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ angle += dangle; }
+					else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ angle += -dangle; }
+					if( angle >= 180 ){ angle += -360; }
+					if( angle < -180 ){ angle += 360; }
+
+					if( sbase > 0 ){
+						sbase -= 0.15;
+						speed = sbase;
+					}else{
+						speed += 0.05;
+						let v = 164;
+						if( spos[0] < MinX-v || spos[0] > MaxX+v || spos[1] < MinY-v || spos[1] > MaxY+v ){
+							break;
+						}
+					}
+
+					let sx = spos[0] + speed * cos( angle );
+					let sy = spos[1] + speed * sin( angle );
+					ObjMove_SetPosition( sht, sx, sy );
+					ObjMove_SetAngle( sht, angle );
+					
+					count++;
+					if( Wait( 1 ) ){ return; }
+				}
+				Obj_Delete(sht);
+			}
+			if( Wait( 120 ) ){ return; }
+			flg[ idx ] = 0;
+			sflg[ 6 ] = 0;
+		}
+
+		task SetShot8( let idx, let r ){
+			flg[ idx ] = 1;
+			sflg[ 7 ] = 1;
+			let sx = ObjMove_GetX( enm ) + pos_x[ idx ];
+			let sy = ObjMove_GetY( enm ) + pos_y[ idx ];
+
+			let color = [ [ 255, 255, 255 ], [ 255, 16, 255 ] ];
+			loop( 2 ){
+				let p = atan2( GetPlayerY - sy, GetPlayerX - sx );
+				let way = 7;
+				let ag = p;
+				loop( way ){
+					let dis = 16;
+					let kill = 120;
+					let delay = 60;
+					let pos	= [ sx + dis * cos( ag ), sy + dis * sin( ag ) ];
+					CreateSwordLaser( pos, ag, 512, 24, kill, color[ idx % 2 ], delay );
+					ObjSound_Play( CreateShotSE[13] );
+					if( Wait( 4 ) ){ return; }
+					ag += 360 / way * r;
+				}
+				if( Wait( 120 ) ){ return; }
+				r = -r;
+			}
+			if( Wait( 80 ) ){ return; }
+			flg[ idx ] = 0;
+			sflg[ 7 ] = 0;
+		}
+		
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+				SetIntersection_( enm, true, false );
+				yield;
+			}
+		}
+	}
+	
+	task SetIntersection_(ID,IsShot,IsPlayer){
+		if( IsShot ){
+			ObjEnemy_SetIntersectionCircleToShot(enm, ObjMove_GetX(ID), ObjMove_GetY(ID) - 32, 168);
+		}
+		if( IsPlayer ){
+			ObjEnemy_SetIntersectionCircleToPlayer(enm, ObjMove_GetX(ID), ObjMove_GetY(ID) - 32, 96);
+		}
+	}
+	

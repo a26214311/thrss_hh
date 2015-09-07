@@ -1,0 +1,246 @@
+task PlayerOption(){
+	let i		= 0;
+	let slowF	= false;
+	let frame	= 0;
+	let count	= 0;
+	let shotF	= false;
+	
+	//　1個しか出さない系
+	CreateCommonDataArea("PlayerShot");
+	SetAreaCommonData("PlayerShot", "oonusa", 0 );
+	SetAreaCommonData("PlayerShot", "zabuton", 0 );
+	
+	let frame_oonusa	= 0;
+	let frame_zabuton	= 0;
+	let frame_pinholl	= 0;
+	
+	while( !Obj_IsDeleted( GetPlayerObjectID ) ){
+		//　低速フラグ
+		if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ){ slowF = true; }
+		else{ frame_zabuton = 0; }
+		
+		//　ショットフラグ
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD ){
+			shotF = true;
+			count = 0;
+		}
+		else if( shotF ){
+			count++;
+//			if( count > 32 ){
+				shotF = false;
+//			}
+		}
+		
+		if( GetVirtualKeyState(VK_SHOT) != KEY_HOLD ){
+			frame_oonusa	= 0;
+			frame_pinholl	= 0;
+		}
+		
+		let gpos = [GetPlayerX(),GetPlayerY()];
+		let GetEnemy = GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+		let GetAngleToEnemy = 270;
+		if( length(GetEnemy) > 0 ){
+			GetAngleToEnemy = atan2( GetEnemy[0][1] - gpos[1], GetEnemy[0][0] - gpos[0] );
+		}
+		
+		//　ショットメイン
+		if( shotF && GetPlayerState == STATE_NORMAL && IsPermitPlayerShot() ){
+			
+			//--------エクストラショット----------------------------------------------------------------
+			if( frame > 0 && frame%2 == 0 && IsEvolution ){
+				let ex_a = 255;
+				let spd = 32;
+				CreatePLExtraShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 32, 270, 0, 100, PL01_ShotPower_CommonEX, 1, 128 );
+				CreatePLExtraShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 32, 270, 0, 100, PL01_ShotPower_CommonEX, 1, 128 );
+				HyperAura( [255,32,32] );
+				ObjSound_Play( Player_SE[0] );
+			}
+			//------------------------------------------------------------------------
+			
+			if( !slowF ){
+				//　高速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame%4 == 0 && !IsEvolution ){
+					CreatePLShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 25, 270, 0, 100, PL01_ShotPower_Common, 1, [255,255,255] );
+					CreatePLShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 25, 270, 0, 100, PL01_ShotPower_Common, 1, [255,255,255] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------大幣ブレード----------------------------------------------------------------
+				if( frame_oonusa == 1 && GetAreaCommonData("PlayerShot", "oonusa", 0 ) == 0 ){
+					CreatePLShot05_REIMU([GetPlayerX,GetPlayerY], 192, 270, PL01_ShotPower_OONUSA, [255,255,255] );
+				}
+				if( frame_oonusa >= 1 && GetAreaCommonData("PlayerShot", "oonusa", 0 ) == 1 && IsEvolution ){
+					CreatePLShot05EX_REIMU([GetPlayerX,GetPlayerY], 256, 270-24, PL01_ShotPower_OONUSA, [255,255,255] );
+					CreatePLShot05EX_REIMU([GetPlayerX,GetPlayerY], 256, 270+24, PL01_ShotPower_OONUSA, [255,255,255] );
+				}
+				//------------------------------------------------------------------------
+			}
+			else{
+				//　低速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame%4 == 0 && !IsEvolution ){
+					CreatePLShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 30, 270, 0, 100, PL01_ShotPower_Common, 1, [255,128,128] );
+					CreatePLShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 30, 270, 0, 100, PL01_ShotPower_Common, 1, [255,128,128] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------ホーミング大座布団----------------------------------------------------------------
+				if( frame_zabuton == 1 && GetAreaCommonData("PlayerShot", "zabuton", 0 ) == 0 ){
+					CreatePLShot06_REIMU([GetPlayerX,GetPlayerY], 12, 270, -0.6 ,0, PL01_ShotPower_ZABUTON, [255,255,255] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------大幣ブレード----------------------------------------------------------------
+				if( frame_oonusa == 1 && GetAreaCommonData("PlayerShot", "oonusa", 0 ) == 0 ){
+					CreatePLShot05_REIMU([GetPlayerX,GetPlayerY], 192, 270, PL01_ShotPower_OONUSA, [255,255,255] );
+				}
+				if( frame_oonusa >= 1 && GetAreaCommonData("PlayerShot", "oonusa", 0 ) == 1 && IsEvolution ){
+					CreatePLShot05EX_REIMU([GetPlayerX,GetPlayerY], 256, 270-24, PL01_ShotPower_OONUSA, [255,255,255] );
+					CreatePLShot05EX_REIMU([GetPlayerX,GetPlayerY], 256, 270+24, PL01_ShotPower_OONUSA, [255,255,255] );
+				}
+				//------------------------------------------------------------------------
+			}
+			frame++;
+			frame_oonusa++;
+			frame_zabuton++;
+			frame_pinholl++;
+		}
+		else{
+			frame			= 0;
+			frame_oonusa	= 0;
+			frame_zabuton	= 0;
+			frame_pinholl	= 0;
+		}
+		
+		yield;
+	}
+}
+
+//　八雲ピンホール　オプション
+task AddOption01(addpos){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let scaX	= 0.6;
+	let scaY	= 0.4;
+	let move1	= 0;
+	let moveA	= 0;
+	let animC	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	
+	ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/opt_01a.png" );
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(ID, scaX*move1, scaY, 0 );
+	ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( GetVirtualKeyState(VK_SHOT) != KEY_FREE && IsEvolution ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+		ObjRender_SetScaleXYZ(ID, scaX*move1 + 0.01*sin( animC*8 ), scaY + 0.01*cos( animC*8 ), 0 );
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+		
+		if( animC%4 == 0 ){
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0], GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, 1, 1, [255,64,255] );
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0] - 8, GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, 1, 1, [255,64,255] );
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0] + 8, GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, 1, 1, [255,64,255] );
+		}
+		
+		if( animC%4 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){
+					anim2 = 0;
+				}
+			}
+		}
+		
+		animC++;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+		ObjRender_SetScaleXYZ(ID, scaX - scaX*move1 + 0.01*sin( animC*8 ), scaY + 0.01*cos( animC*8 ), 0 );
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+		
+		if( animC%4 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){
+					anim2 = 0;
+				}
+			}
+		}
+		
+		animC++;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　移動方向で角度変化
+function GetKeyAngle(){
+	let frag	= [false,false,false,false];
+	let angle	= 0;
+	
+	if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ){
+		frag[0] = true;
+	}
+	if( GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ){
+		frag[1] = true;
+	}
+	if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+		frag[2] = true;
+	}
+	if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+		frag[3] = true;
+	}
+	
+	if( frag[0] ){
+		angle = 0;
+	}
+	if( frag[1] ){
+		angle = 180;
+	}
+	if( frag[2] ){
+		angle = 90;
+	}
+	if( frag[3] ){
+		angle = 270;
+	}
+	
+	if( frag[0] && frag[2] ){
+		angle = 45;
+	}
+	if( frag[0] && frag[3] ){
+		angle = 315;
+	}
+	if( frag[1] && frag[2] ){
+		angle = 135;
+	}
+	if( frag[1] && frag[3] ){
+		angle = 225;
+	}
+	
+	return angle;
+}

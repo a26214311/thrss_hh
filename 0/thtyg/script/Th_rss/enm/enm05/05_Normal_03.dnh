@@ -1,0 +1,336 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5　垂神通常03"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1200 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{
+		DeleteCommonData( "R_count" );
+	}
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "EndSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b(enm, true, enemy_tex_path2 );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　way数
+		let way		= 7;
+		//　ショット画像
+		let shote	= [ BGW_AQUA_07, BGW_ORANGE_07 ];
+		
+		//　追尾力
+		let d		= 1.5;
+		let maxspd	= 2.4;
+		//　追尾時間
+		let wt		= 360;
+
+		//　発射間隔
+		let wtB		= 6;
+
+		//　待機時間
+		let loopcount = 200;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way = 5;
+			wt = 200;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			way = 9;
+			wtB = 2;
+			d = 2.1;
+		}
+		case( "Lunatic" ){
+			way = 13;
+			wtB = 2;
+			d = 2.1;
+			wt = 360;
+			loopcount = 150;
+		}
+		case( "OverDrive" ){
+		}
+		
+		SetCommonData( "R_count", 1 );
+		
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let r_count	= GetCommonData( "R_count", 0 );
+		State;
+		SetShot;
+		task State{
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				r_count	= GetCommonData( "R_count", 0 );
+				yield;
+			}
+		}
+
+		task SetShot{
+			loop{
+				let p = GetAngleToPlayer( ID );
+				let type = 0;
+				let w = wt;
+				loop( way ){
+					CallFamily( p, type, w );
+					p += 360 / way * 2;
+					type++;
+					w -= wtB;
+					if( Wait( wtB ) ){ return; }
+				}
+				if( Wait( 90 ) ){ return; }
+				SetCommonData( "R_count", 1 );
+				ChangeJewel( ID, 0.4, 0.1 );
+				JewelEffect( ID, [255,255,255], 8 );
+				ObjSound_Play( CreateShotSE[7] );
+				let spd = 0;
+				let angle = GetAngleToPlayer( ID );
+				loop( wt ){
+					let spos = [ ObjRender_GetX( GetPlayerObjectID ), ObjRender_GetY( GetPlayerObjectID ) ];
+
+					let toAngle = atan2( spos[ 1 ] - gpos[ 1 ], spos[ 0 ] - gpos[ 0 ] );
+					let ret = toAngle - angle;
+					if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ angle += d; }
+					else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ angle += -d; }
+					if( angle >= 180 ){ angle += -360; }
+					if( angle < -180 ){ angle += 360; }
+
+					if( spd < maxspd ){ spd += 0.01; }
+					
+					gpos[ 0 ] = gpos[ 0 ] + spd * cos( angle );
+					gpos[ 1 ] = gpos[ 1 ] + spd * sin( angle );
+
+					ObjMove_SetPosition( ID, gpos[ 0 ], gpos[ 1 ] );
+					if( Wait( 1 ) ){ return; }
+				}
+				ObjMove_SetSpeed( ID, 0 );
+				if( Wait( 80 ) ){ return; }
+				SetCommonData( "R_count", 0 );
+				ObjMove_SetDestAtWeight( ID, GetPlayerX, CenY-96, 24, 4 );
+				if( Wait( loopcount ) ){ return; }
+			}
+		}
+		
+	}
+
+	task CallFamily( angle, type, wt ){
+		let col		= [ "RED", "GREEN", "BLUE", "YELLOW", "PURPLE", "AQUA", "ORANGE", "WHITE" ];
+		let fam		= CreateEnemy_Jewel( col[type%length(col)], 0.2, 0, 2 );
+		let gpos	= [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+		ObjSound_Play( CreateShotSE[5] );
+		ObjMove_SetPosition(fam, gpos[0], gpos[1] );
+		
+		let way = 7;
+		let spl = wt*1.2;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way = 0;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+		}
+		case( "Lunatic" ){
+		}
+		
+		let state = 0;
+		Move;
+		if( Wait( 140 ) ){ return; }
+		state = 1;
+		SetShot;
+		task Move{
+			let speed = 0;
+			while( gpos[0] >MinX && gpos[0] < MaxX && gpos[1] > MinY && gpos[1] < MaxY ){
+				gpos[0] = gpos[0] + speed * cos( angle );
+				gpos[1] = gpos[1] + speed * sin( angle );
+				ObjMove_SetPosition(fam, gpos[0], gpos[1] );
+				speed += 0.1;
+				if( Wait( 1 ) ){ return; }
+			}
+			local{
+				let p = angle;
+				loop( way ){
+					let sx = gpos[0] + 24 * cos( p );
+					let sy = gpos[1] + 24 * sin( p );
+					let speed = 1;
+					let shote = ADD_BGW_RED_02 + type % length( col );
+					let delay = 16;
+					let sht = CreateShotA2( sx, sy, 0, p, speed / 90, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					p += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			while( state == 0 ){ yield; }
+			speed = 0;
+			angle = atan2( ObjMove_GetY(enm) - gpos[1], ObjMove_GetX(enm) - gpos[0] );
+			let epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+			let radius = GetDistance( gpos, [ ObjMove_GetX(enm), ObjMove_GetY(enm) ] );
+			let spd = radius / spl;
+			let lp = wt;
+			let l = 100;
+			loop( wt / l ){
+				epos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				angle = atan2( epos[1] - gpos[1], epos[0] - gpos[0] ); 
+				radius = GetDistance( gpos, epos );
+				spd = radius / spl;
+				loop( l ){
+					gpos[0] = gpos[0] + spd * cos( angle );
+					gpos[1] = gpos[1] + spd * sin( angle );
+					ObjMove_SetPosition( fam, gpos[0], gpos[1] );
+					lp--;
+					if( !GetCommonData( "R_count", 0 ) ){ break; }
+					if( Wait( 1 ) ){ return; }
+				}
+				if( !GetCommonData( "R_count", 0 ) ){ break; }
+				if( Wait( 1 ) ){ return; }
+			}
+			JewelEffect( fam, [255,255,255], 4 );
+			ObjSound_Play( CreateShotSE[6] );
+			Obj_Delete( fam );
+		}
+
+		task SetShot{
+			while( !Obj_IsDeleted( fam ) ){
+				let shote = BGB_RED_08 + type % length( col );
+				let delay = 16;
+				let sht = CreateShotA1( gpos[0], gpos[1], 0, angle, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				Set( sht );
+				task Set( obj ){
+					while( GetCommonData( "R_count", 0 ) >= 1 ){
+						if( Wait( 1 ) ){ return; }
+					}
+					if( Obj_IsDeleted( obj ) ){ return; }
+					let ag = atan2( GetPlayerY - gpos[1], GetPlayerX - gpos[0] );
+					ObjMove_SetAngle( obj, ag );
+					ObjMove_SetAcceleration( obj, 0.01 );
+					ObjMove_SetMaxSpeed( obj, 1 );
+				}
+				if( Wait( 5 ) ){ return; }
+			}
+			while( GetCommonData( "R_count", 0 ) >= 1 ){
+				if( Wait( 1 ) ){ return; }
+			}
+			ObjSound_Play( CreateShotSE[0] );
+		}
+	}
+	

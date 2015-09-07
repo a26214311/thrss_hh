@@ -1,0 +1,197 @@
+////#東方弾幕風[Plural]
+#ScriptVersion[3]
+#Title["桃源宮　スペプラ用　連続スクリプト"]
+#Text[""]
+#Image[""]
+#Background[""]
+#BGM[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+	
+	let csd			= GetCurrentScriptDirectory();
+	let objScene;
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	let stun		= GetAreaCommonData("System", "stg_ST", 0 );		//　どのステージ
+	let snun		= GetAreaCommonData("System", "spell_ST", 0 );		//　どのスペカ
+	
+	//　Plural用の便利そうなやつ色々
+	#include "./../lib/lib_Plural.dnh"
+	//　各スペルカードSingleスクリプトへのパス
+	#include "./SpellCardPath.dnh"
+	
+	@Initialize{
+		objScene = ObjEnemyBossScene_Create();
+		TPlural();
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Finalize{ }
+	
+	task TPlural(){
+		alternative( stun )
+		case( 1 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage01[ snun ] );
+		}
+		case( 2 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage02[ snun ] );
+		}
+		case( 3 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage03[ snun ] );
+		}
+		case( 4 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage04[ snun ] );
+		}
+		case( 5 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage05[ snun ] );
+		}
+		case( 6 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage06[ snun ] );
+		}
+		case( 7 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage07[ snun ] );
+		}
+		case( 8 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage08[ snun ] );
+		}
+		case( 9 ){
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_OverDrive[ snun ] );
+		}
+		others{
+			ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage01[ 0 ] );
+		}
+		
+		//　別スレッドでロード（？）
+		ObjEnemyBossScene_LoadInThread( objScene );
+		//　ボス出撃OKまで待機
+		while( !GetCommonData("RegistBoss", false ) ){ yield; }
+		//　出撃フラグをfalseに
+		SetCommonData("RegistBoss", false);
+		//　ボス出撃
+		ObjEnemyBossScene_Regist( objScene );
+		
+		let AllBoss		= GetEnemyBossObjectID();
+		
+		//　敵ボスの名前
+		alternative( stun )
+		case( 1 ){
+			//　幽々子
+			EnemyNameDisplay(objScene, [128,192,255], 1, -1 );
+		}
+		case( 2 ){
+			if( snun < 12 ){
+				//　木霊
+				EnemyNameDisplay(objScene, [128,192,255], 2, -1 );
+			}
+			else{
+				//　初名 3
+				EnemyNameDisplay(objScene, [128,192,255], 3, -1 );
+			}
+		}
+		case( 3 ){
+			//　瑠璃 4
+			EnemyNameDisplay(objScene, [128,192,255], 4, -1 );
+		}
+		case( 4 ){
+			if( snun < 4 ){
+				//　垂神 7
+				EnemyNameDisplay(objScene, [128,192,255], 7, -1 );
+			}
+			else{
+				//　皇女 5
+				EnemyNameDisplay(objScene, [128,192,255], 5, -1 );
+			}
+		}
+		case( 5 ){
+			if( snun < 4 ){
+				//　埴得 6
+				EnemyNameDisplay(objScene, [128,192,255], 6, -1 );
+			}
+			else{
+				//　垂神 7
+				EnemyNameDisplay(objScene, [128,192,255], 7, -1 );
+			}
+		}
+		case( 6 ){
+			if( snun < 4 ){
+				//　皇女 5
+				EnemyNameDisplay(objScene, [128,192,255], 5, -1 );
+			}
+			else{
+				//　桃姫 8
+				EnemyNameDisplay(objScene, [128,192,255], 8, -1 );
+			}
+		}
+		case( 7 ){
+			if( snun < 3 ){
+				//　無々夢 9
+				EnemyNameDisplay(objScene, [128,192,255], 9, -1 );
+			}
+			else{
+				//　やと 10
+				EnemyNameDisplay(objScene, [128,192,255], 10, -1 );
+			}
+		}
+		case( 8 ){
+			if( snun < 3 ){
+				EnemyNameDisplay(objScene, [128,192,255], 4, -1 );
+			}else{
+				EnemyNameDisplay(objScene, [128,192,255], 11, -1 );
+			}
+		}
+		case( 9 ){
+			alternative( snun )
+			case( 0 ){ EnemyNameDisplay(objScene, [128,192,255], 1, -1 ); }
+			case( 1 ){ EnemyNameDisplay(objScene, [128,192,255], 2, -1 ); }
+			case( 2 ){ EnemyNameDisplay(objScene, [128,192,255], 3, -1 ); }
+			case( 3 ){ EnemyNameDisplay(objScene, [128,192,255], 5, -1 ); }
+			case( 4 ){ EnemyNameDisplay(objScene, [128,192,255], 6, -1 ); }
+			case( 5 ){ EnemyNameDisplay(objScene, [128,192,255], 7, -1 ); }
+			case( 6 ){ EnemyNameDisplay(objScene, [128,192,255], 8, -1 ); }
+			case( 7 ){ EnemyNameDisplay(objScene, [128,192,255], 9, -1 ); }
+			case( 8 ){ EnemyNameDisplay(objScene, [128,192,255], 10, -1 ); }
+			case( 9 ){ EnemyNameDisplay(objScene, [128,192,255], 4, -1 ); }
+			case( 10 ){ EnemyNameDisplay(objScene, [128,192,255], 11, -1 ); }
+		}
+		
+		//　敵の持ってるスペカ量
+		ascent( let i in 0..ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT ) ){
+			EnemySpellDisplay(objScene, i );
+		}
+		
+		let pos;
+		
+		//敵ボスシーンが終了するまで待機
+		while( !Obj_IsDeleted(objScene) ){
+			AllBoss = GetEnemyBossObjectID();
+			if( length(AllBoss) > 0 ){
+				pos = [ObjMove_GetX(AllBoss[0]),ObjMove_GetY(AllBoss[0])];
+			}
+			yield;
+		}
+		
+		WorldShake( 60, 8 );	//　画面震動
+		
+		//　引数2に座標をセット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+		NotifyEventAll( EV_USER + 1, pos );
+		
+		wait( 90 );			//　待機
+		WorldShake( 60, 12 );	//　画面震動
+		
+		wait( 120 );			//　2秒待機
+		
+		//スクリプト終了
+		CloseScript( GetOwnScriptID() );
+	}

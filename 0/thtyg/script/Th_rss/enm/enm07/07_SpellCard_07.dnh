@@ -1,0 +1,296 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　十拳剣「恨剣トツカブレード」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let count		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 66;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		//　弾幕
+		if( count == 180 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		count++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1700 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 7, 9 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b( enm, true, enemy_tex_path );
+		//　敵位置初期化
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Extra" ){
+/* to be translated */			spell_text = "十拳剣「恨剣トツカブレード」";
+		}
+		others{
+/* to be translated */			spell_text = "十拳剣「恨剣トツカブレード」";
+		}
+		
+		SpellCounter( GetDifficult, 7, 9 );
+		let sct = GetSpellCounter( GetDifficult, 7, 9 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[1], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		State;
+		while( !Obj_IsDeleted( enm ) ){
+			Concentration03_Main( ID, power_rgb, 60 );
+			if( Wait( 100 ) ){ return; }
+			SetShot1;
+			if( Wait( 120 ) ){ return; }
+			SetShot2;
+			if( Wait( 160 ) ){ return; }
+			EnemyMove( ID, 2, 8 );
+			if( Wait( 120 ) ){ return; }
+		}
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+
+		task SetShot2{
+			WorldShake_Single( 60, 4 );
+			let wt = 4;
+			let way = 16;
+			let wide = 360;
+			let dbase = 100;
+			let d = 0;
+			let tx = CenX - wide / 2;
+			let ar_x = [];
+			loop( way ){
+				ar_x = ar_x~[ tx ];
+				tx += wide / ( way - 1 );
+			}
+			let w = dbase;
+			loop( way ){
+				let rd = 8;
+				let idx = round( rand( 0, length( ar_x ) ) ) % length( ar_x );
+				let pos = [ ar_x[ idx ], MinY-80 ];
+				let angle = 90 + rand( -rd, rd );
+				SetLaser( pos, angle, round( d ) );
+				d += 2.6;
+				if( Wait( wt ) ){ return; }
+				ar_x = erase( ar_x, idx );
+				w-= wt;
+			}
+			if( Wait( w ) ){ return; }
+			WorldShake_Single( 12, 8 );
+			task SetLaser( let pos, let ag, let wt ){
+				let delay = dbase - wt;
+				let del = 148;
+				CreateSwordLaser( pos, ag, 800, 16, del, [244,32,244], delay );
+				ObjSound_Play( CreateShotSE[ 13 ] );
+				if( Wait( delay ) ){ return; }
+				while( pos[1] < MaxY ){
+					pos[0] = pos[0] + 10 * cos( ag );
+					pos[1] = pos[1] + 10 * sin( ag );
+				}
+				ObjSound_Play( CreateShotSE[ 8 ] );
+				local{
+					let way = 16;
+					let p = atan2( GetPlayerY - pos[1], GetPlayerX - pos[0] );
+					let shote = BGW_PURPLE_27;
+					let delay = 36;
+					
+					let angle = p;
+					loop( way ){
+						let speed = rand( 0.7, 1.5 );
+						let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 100, speed, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += 360 / way;
+					}
+				}
+			}
+		}
+
+		task SetShot1{
+			loop( 18 ){
+				let pos = [ rand( MinX, MaxX ), MinY - 96 ];
+				let angle = 90 + rand( -10, 10 );
+				SetHormingLaser( pos, angle );
+				ObjSound_Play( CreateShotSE[ 3 ] );
+				if( Wait( 4 ) ){ return; }
+			}
+			if( Wait( 30 ) ){ return; }
+			let way = 16;
+			let line = 9;
+			let speed = 4;
+			let p = GetAngleToPlayer( enm );
+			let shote = BGW_WHITE_02;
+			let delay = 18;
+			loop( line ){
+				let angle = p;
+				loop( way ){
+					let sht = CreateShotA1( gpos[0], gpos[1], speed, angle, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+				speed /= 1.24;
+				p += 360 / way / 2;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+
+			task SetHormingLaser( mpos, angle ){
+				let sht		= CreateLaserC( gpos[0]+32*cos(angle), gpos[1]+32*sin(angle), angle, 0, 0, 0, 16, [ 224, 64, 224 ], 0.06, 1, ADD_BGW_WHITE_30 );
+				let count	= 0;
+				let speed	= 0;
+				ObjShot_SetAutoDelete( sht, false );
+				ObjShot_SetSpellResist( sht, true );
+				let sbase	= 2.6 + rand( 0, 4 );
+				while( !Obj_IsDeleted(sht) ){
+					let spos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+					
+					let dangle = absolute( 6 - speed );
+					let dmax = 2.8;
+					if( dangle >= dmax ){ dangle = dmax; }
+					let toAngle = GetGapAngle( spos, mpos );
+					let ret = toAngle - angle;
+					if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ angle += dangle; }
+					else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ angle += -dangle; }
+					if( angle >= 180 ){ angle += -360; }
+					if( angle < -180 ){ angle += 360; }
+
+					if( sbase > 0 ){
+						sbase -= 0.15;
+						speed = sbase;
+					}else{
+						speed += 0.1;
+						let v = 164;
+						if( spos[0] < MinX-v || spos[0] > MaxX+v || spos[1] < MinY-v || spos[1] > MaxY+v ){
+							break;
+						}
+					}
+
+					let sx = spos[0] + speed * cos( angle );
+					let sy = spos[1] + speed * sin( angle );
+					ObjMove_SetPosition( sht, sx, sy );
+					ObjMove_SetAngle( sht, angle );
+					
+					count++;
+					if( Wait( 1 ) ){ return; }
+				}
+				Obj_Delete(sht);
+			}
+		}
+
+
+	}
+	

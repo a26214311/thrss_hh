@@ -1,0 +1,464 @@
+
+
+//　進化（仮称）のゲージ表示とか
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+
+	//　共通データ
+	CreateCommonDataArea("MegaEvolutionGauge");
+	SetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+	SetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+
+	//　仮設置　ゲージ段階
+	let base_max	= 64;
+
+// 元締め
+task SetGauge(pos){
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+	let frag	= GetAreaCommonData("MegaEvolution", "Frag", false );
+	let S_Style	= GetAreaCommonData("Option", "StrongStyle", 0 );
+	let count	= 0;
+	
+	//　オーバードライブ時
+	if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+		S_Style = 1;
+	}
+	
+	//　ゲージ作成
+//	CreateGauge(pos);
+	
+	//　ストスタの時
+	if( S_Style == 1 ){
+		SetAreaCommonData("MegaEvolution", "Frag", true );
+	}
+	
+	while( !swb && S_Style == 0 ){
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		frag	= GetAreaCommonData("MegaEvolution", "Frag", false );
+		S_Style	= GetAreaCommonData("Option", "StrongStyle", 0 );
+		
+		//　ゲージ作成
+		if( count == 1 ){
+			SetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+			SetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+			CreateGauge(pos);
+		}
+		
+		if( frag ){
+			count = 0;
+		}
+		else{
+			count++;
+		}
+		
+		yield;
+	}
+}
+
+task CreateGauge(pos){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let ID2		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let sca		= [
+		[0.42,0.42],
+		[0.30,0.41],
+	];
+	let frame	= 0;
+	let anim1	= 0;
+	let i		= 0;
+	
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+	let now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], pos[0] + 106*i, pos[1], 0 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[i], front_tex[5] );
+		Obj_SetRenderPriorityI(ID[i], 81 );
+		ObjRender_SetAngleZ(ID[i], 90 );
+		ObjRender_SetScaleXYZ(ID[i], sca[i][0], sca[i][1], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0 + 256*i, 0, 256 + 256*i, 512 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjPrim_SetTexture(ID2[0], front_tex[6] );
+	ObjPrim_SetTexture(ID2[1], front_tex[7] );
+	
+	ascent( i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID2[i], pos[0], pos[1], 0 );
+		ObjRender_SetBlendType(ID2[i], BLEND_ADD_ARGB );
+		Obj_SetRenderPriorityI(ID2[i], 81 );
+		ObjRender_SetScaleXYZ(ID2[i], 0.19, 0.19, 0 );
+		ObjSprite2D_SetSourceRect(ID2[i], 0, 0 + anim1*64, 64*13, 64 + anim1*64 );
+		ObjSprite2D_SetDestCenter(ID2[i]);
+	}
+	
+	ObjRender_SetBlendType(ID2[1], BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(ID2[1], 1, 1, 0 );
+	ObjSprite2D_SetSourceRect(ID2[1], 0, 0, 128, 16 );
+	ObjSprite2D_SetDestCenter(ID2[1]);
+	
+	DisplayGauge_Key(pos);
+	DisplayGauge_KeySub(pos);
+	
+	//　削除フレームまで待機
+	while( !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+		now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		let rectY		= now_gauge*512/6 + gauge_base/base_max*512/6;
+		
+		ObjSprite2D_SetSourceRect(ID[1], 256, 512-rectY, 512, 512 );
+		ObjSprite2D_SetDestRect(ID[1], -128, 512-rectY, 128, 512 );
+		
+		ObjRender_SetColor(ID2[0], 64, 255, 128 - 127*sin( anim1*32 ) );
+		ObjSprite2D_SetSourceRect(ID2[0], 0, 0 + anim1*64, 64*13, 64 + anim1*64 );
+		ObjRender_SetColor(ID2[1], 64, 255, 128 + 127*sin( anim1*32 ) );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetScaleXYZ(ID[i], move1*sca[i][0], sca[i][1], 0 );
+		}
+		
+		if( now_gauge < 6 ){
+			ObjRender_SetColor(ID[1], 255, 255, 255 );
+			ObjRender_SetAlpha(ID2[0], 0 );
+			ObjRender_SetAlpha(ID2[1], 0 );
+		}
+		else{
+			ObjRender_SetColor(ID[1], 16, 16, 16 );
+			ObjRender_SetAlpha(ID2[0], 96 );
+			ObjRender_SetAlpha(ID2[1], 192 );
+		}
+		
+		if( now_gauge < 6 ){
+			if( gauge_base >= base_max ){
+				now_gauge++;
+				gauge_base -= base_max;
+				SetAreaCommonData("MegaEvolutionGauge", "Gauge", now_gauge );
+				SetAreaCommonData("MegaEvolutionGauge", "GaugeBase", gauge_base );
+				if( now_gauge >= 6 ){
+					FullPower_EvolutionGauge( ID[0], [96,2], pos, [ [255,0,0], [255,0,0] ] );
+					ObjSound_Play( UtilitySE[8] );
+				}
+			}
+		}
+		
+		frame++;
+		if( frame > 0 && frame%6 == 0 ){ anim1++; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		
+		ObjRender_SetColor(ID2[0], 64, 128 - 127*sin( anim1*32 ), 255 );
+		ObjSprite2D_SetSourceRect(ID2[0], 0, 0 + anim1*64, 64*13, 64 + anim1*64 );
+		ObjSprite2D_SetSourceRect(ID2[1], 0, 16, 128, 32 );
+		ObjRender_SetColor(ID2[1], 64, 128 + 127*sin( anim1*32 ), 255 );
+		
+		frame++;
+		if( frame > 0 && frame%6 == 0 ){ anim1++; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){ Obj_Delete( ID[i] ); }
+	ascent( i in 0..( length(ID2) ) ){ Obj_Delete( ID2[i] ); }
+	base_max += 8;
+	alternative( GetAreaCommonData("System", "Difficulty", "Normal" ) )
+	case( "Extra", "Phantasm" ){ base_max += 40; }
+}
+
+
+task DisplayGauge_Key(pos){
+	let ID	= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let i	= 0;
+	let sca	= [0.7,0.7];
+	let ang	= [0,180];
+	
+	let count	= 0;
+	let addpos	= [-26,26];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+	let now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[0] - 78 + i*32, pos[1] + addpos[ i%2 ], 0 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[i], front_tex[8] );
+		Obj_SetRenderPriorityI(ID[i], 82 );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0 - ang[ i%2 ], ang[ i%2 ] );
+		ObjRender_SetScaleXYZ(ID[i], sca[0], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 64, 0, 128, gauge_base );
+		ObjSprite2D_SetDestRect(ID[i], -32, 0, 32, gauge_base );
+		i++;
+	}
+	i = 0;
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetScaleXYZ(ID[i], move1*sca[0], sca[1], 0 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+		}
+		
+		moveA += 5;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( now_gauge < 6 && !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+		now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+		
+		loop( length(ID) ){
+			let rgb = 192 + 32 * sin( count*8 );
+			ObjRender_SetColor(ID[i], rgb, rgb, rgb );
+			if( now_gauge >= i+1 ){
+				ObjSprite2D_SetSourceRect(ID[i], 64, 0, 128, 64 );
+				ObjSprite2D_SetDestRect(ID[i], -32, 0, 32, 64 );
+			}
+			else if( now_gauge == i ){
+				ObjSprite2D_SetSourceRect(ID[i], 64, 0, 128, 64 * gauge_base/base_max );
+				ObjSprite2D_SetDestRect(ID[i], -32, 0, 32, 64 * gauge_base/base_max );
+			}
+			i++;
+		}
+		i = 0;
+		
+		count++;
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+			ObjRender_SetScaleXYZ(ID[i], sca[0] - sca[0]*move1, sca[1] + sca[1]*move1*8, 0 );
+			ObjRender_SetAlpha(ID[i], 255 - move1*255 );
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+}
+
+
+task DisplayGauge_KeySub(pos){
+	let ID	= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let i	= 0;
+	let sca	= [0.7,0.7];
+	let ang	= [0,180];
+	
+	let addpos	= [-26,26];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+	let now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[0] - 78 + i*32, pos[1] + addpos[ i%2 ], 0 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[i], front_tex[8] );
+		Obj_SetRenderPriorityI(ID[i], 82 );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0 - ang[ i%2 ], ang[ i%2 ] );
+		ObjRender_SetScaleXYZ(ID[i], sca[0], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 64 );
+		ObjSprite2D_SetDestRect(ID[i], -32, 0, 32, 64 );
+		i++;
+	}
+	i = 0;
+	
+	while( now_gauge < 6 && !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		gauge_base	= GetAreaCommonData("MegaEvolutionGauge", "GaugeBase", 0 );
+		now_gauge	= GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 );
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetScaleXYZ(ID[i], move1*sca[0], sca[1], 0 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+			ObjRender_SetScaleXYZ(ID[i], sca[0] - sca[0]*move1, sca[1] + sca[1]*move1*8, 0 );
+			ObjRender_SetAlpha(ID[i], 255 - move1*255 );
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+}
+
+//　ゲージ 満タン
+task FullPower_EvolutionGauge( ID, SET_DISTANCE, pos, rgb_array ){
+	let obj			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory();
+	let dis1		= 0;//　内円
+	let disA		= 0;
+	let dis2		= 0;//　外円
+	let disB		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let count		= 0;
+	
+	let gpos			= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let SET_POLYGON		= 8;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 0;
+	//　円の太さ
+	let w		= [];
+	let alpha	= [];
+	ascent( i in 0..( ten/2 ) ){
+		w		= w ~ [ rand(16,32) ];
+		alpha	= alpha ~ [ rand(96,255) ];
+	}
+	i = 0;
+	
+	ObjRender_SetPosition(obj, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(obj, csd ~ "./../img/effect/thunder_wave.png" );
+	Obj_SetRenderPriorityI(obj, 81 );
+	ObjRender_SetBlendType(obj, BLEND_ADD_ARGB );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(obj, ten );
+	
+	while( dis1 < 1 || dis2 < 1 ){
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(obj, i, dis1*(SET_DISTANCE[0]+w[i/2]) * cos(pc+ang), dis1*(SET_DISTANCE[1]+w[i/2]) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(obj, i2, dis2*SET_DISTANCE[0] * cos(pc+ang), dis2*SET_DISTANCE[1] * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(obj, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(obj, i2, 0 + _rect - count*32, 128 );
+			ObjPrim_SetVertexColor(obj, i, rgb_array[0][0], rgb_array[0][1], rgb_array[0][2] );
+			ObjPrim_SetVertexColor(obj, i2, rgb_array[1][0], rgb_array[1][1], rgb_array[1][2] );
+			ObjPrim_SetVertexAlpha(obj, i, alpha[i/2] );
+			ObjPrim_SetVertexAlpha(obj, i2, 0 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += 64;
+		
+		if( dis1 < 1 ){ disA += 5; }
+		if( dis2 < 1 ){ disB += 5; }
+		dis1 = 1 * sin( disA );
+		dis2 = 1 * sin( disB );
+		
+		yield;
+	}
+	while( !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(obj, i, dis1*(SET_DISTANCE[0]+w[i/2]) * cos(pc+ang), dis1*(SET_DISTANCE[1]+w[i/2]) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(obj, i2, dis2*SET_DISTANCE[0] * cos(pc+ang), dis2*SET_DISTANCE[1] * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(obj, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(obj, i2, 0 + _rect - count*32, 128 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += 64;
+		
+		yield;
+	}
+	dis1 = 0;
+	disA = 0;
+	while( dis1 < 1 ){
+		dis1 = 1 * sin( disA );
+		
+		loop( ten/2 ){
+			let disD = [ (SET_DISTANCE[0]+w), (SET_DISTANCE[1]) ];
+			
+			ObjPrim_SetVertexPosition(obj, i, (disD[0] + dis1*(SET_DISTANCE[0]+w[i/2])) * cos(pc+ang), (disD[0] + dis1*(SET_DISTANCE[1]+w[i/2])) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(obj, i2, (disD[1] + dis1*SET_DISTANCE[0]) * cos(pc+ang), (disD[1] + dis1*SET_DISTANCE[1]) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(obj, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(obj, i2, 0 + _rect - count*32, 128 );
+			ObjPrim_SetVertexAlpha(obj, i, alpha[i/2] - dis1*alpha[i/2] );
+			ObjPrim_SetVertexAlpha(obj, i2, alpha[i/2] - dis1*alpha[i/2] );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 128;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += 64;
+		
+		disA += 5;
+		
+		yield;
+	}
+	Obj_Delete(obj);
+}

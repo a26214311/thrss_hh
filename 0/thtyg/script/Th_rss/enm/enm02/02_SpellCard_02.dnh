@@ -1,0 +1,309 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage2　太鼓「天神ドラム」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm02_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 2, 4 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "太鼓「天神ドラム」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "太鼓「侮れない電電太鼓」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "神鼓「堀川雷鼓」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "神鼓「堀川雷鼓」";
+		}
+		
+		SpellCounter( GetDifficult, 2, 4 );
+		let sct = GetSpellCounter( GetDifficult, 2, 4 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_02(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　角度
+		let type	= 0;
+		//　攻撃頻度
+		let l_wt	= 366;
+		
+		//　弾画像
+		let shote	= [ ADD_BGW_BLUE_20, ADD_BGW_AQUA_20 ];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 3, 64 ];
+		}
+		case( "Normal" ){
+			lp		= [ 5, 48 ];
+		}
+		case( "Hard" ){
+			lp		= [ 6, 48 ];
+			l_wt 	= 200;
+		}
+		case( "Lunatic" ){
+			lp		= [ 8, 48 ];
+			l_wt	= 120;
+		}
+		case( "OverDrive" ){
+			lp		= [ 11, 32 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜めから初期化
+			if( count == l_wt - 100 ){
+				Concentration01_Main(enm, power_rgb, 60 );
+				EnemyMove(enm, 2, 8 );
+			}
+			if( count == l_wt ){
+		//		frame = 0;
+				count = 0;
+				angle = 0;
+				
+				let A_default = rand(0,360);
+				let av = rand(0,1);
+				ascent( i in 0..lp[0] ){
+					CreateThunderLaserC( gpos, 2, A_default + i*(360/lp[0]), rand(0.02,0.04), 10, -av, 32, 24 );
+					CreateThunderLaserC( gpos, 2, A_default + i*(360/lp[0]), rand(0.02,0.04), 10, av, 32, 24 );
+					if( GetDifficult == "Hard" || GetDifficult == "Lunatic" || GetDifficult == "OverDrive" ){
+						CreateThunderShot( gpos, GetAngleToPlayer(ID) + i*(360/lp[0]), 12, 0, 10, shote[ angle%2 ], 0 );
+					}
+					angle++;
+				}
+				ObjSound_Play( CreateShotSE[11] );
+			}
+			
+			//　自機狙いnway蝶弾
+			if( frame%lp[1] == 0 ){
+				let spos = [ rand(MinX,MaxX), MinY-32 ];
+				CreateThunderShot( spos, 90 + rand(-16,16), 8, 0, 10, BGW_YELLOW_28, 1 );
+				ObjSound_Play( CreateShotSE[0] );
+				SetAreaCommonData("anime", "spa", true );
+			}
+			
+			frame++;
+			count++;
+//			if( frame >= lp[1]*3 ){ count++; }
+			
+			yield;
+		}
+	}
+	
+	function CreateThunderShot( pos, angle, speed, acc, mx, shote, type ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote, 0 );
+		NotifyEventAll( EV_USER + 40, [ sht, 0 ] );
+		
+		if( type == 1 ){
+			let rgb_array = [
+				[0,255,255],
+				[255,255,0],
+			];
+			ascent( i in 0..1 ){
+				DisCharge_Thnder01( sht, rand(128,256), [0,0], rgb_array, 16 );
+			}
+		}
+		
+		ObjShot_SetIntersectionEnable( sht, false );
+		Obj_SetVisible( sht, false );
+		
+		ShotUpdate( sht, shote, type );
+		
+		return sht;
+	}
+	
+	task ShotUpdate( ObjID, shote, type ){
+		let angle = ObjMove_GetAngle( ObjID );
+		let frame = 0;
+		let count = truncate( rand(0,2) );
+		
+		let ft = truncate( rand(4,8) );
+		
+		while( !Obj_IsDeleted(ObjID) ){
+			let gpos = [ ObjMove_GetX(ObjID), ObjMove_GetY(ObjID) ];
+			
+			if( frame%ft == 0 ){
+				if( count%2 == 0 ){
+					ObjMove_SetAngle( ObjID, angle - 45 );
+				}
+				else{
+					ObjMove_SetAngle( ObjID, angle + 45 );
+				}
+				count++;
+			}
+			
+			if( frame%1 == 0 ){
+				if( type == 0 ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 0, ObjMove_GetAngle( ObjID ), 0, 0, shote, 32 );
+					NotifyEventAll( EV_USER + 40, [ sht, 32 ] );
+					ShotDelete( sht, 120 );
+				}
+				else{
+					let sht = CreateShotA2( gpos[0], gpos[1], 0.2, 90, 0, 0, shote, 32 );
+					NotifyEventAll( EV_USER + 40, [ sht, 32 ] );
+					ShotDelete( sht, 60 );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task ShotDelete( ObjID, long ){
+		Obj_SetValue( ObjID, "Item_Off", true );
+		loop( long ){ yield; }
+		ObjShot_ToItem( ObjID );
+	}

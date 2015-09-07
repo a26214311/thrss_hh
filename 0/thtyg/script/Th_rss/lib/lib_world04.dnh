@@ -1,0 +1,308 @@
+
+
+//　Stage4
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　桃源海
+task SetWorld04a(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D)
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let i			= 0;
+	let j			= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let move3		= 0;
+	let moveC		= 0;
+	let type		= 0;
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	loop( length(obj2) ){
+		ObjPrim_SetPrimitiveType(obj2[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj2[i], world04_texture_path[i] );
+		ObjRender_SetBlendType(obj2[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj2[i], world_layer );
+		ObjPrim_SetVertexCount(obj2[i], 10 );
+		ObjRender_SetAngleXYZ(obj2[i], 90, 0, 0 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetColor(obj2[0], 192, 192, 192 );
+	ObjRender_SetAlpha(obj2[1], 64 );
+	
+	let rect_base = 2048;
+	
+	//　頂点と画像rectの数値
+	let vertexX = [-rect_base/2,-rect_base/2,-rect_base/4,-rect_base/4,0,0,rect_base/4,rect_base/4,rect_base/2,rect_base/2];
+	let vertexY = [-rect_base/2,rect_base/2];
+	let rectX = 512;
+	let rectY = [ 0, rectX*5 ];
+	
+	let vertexZ = [];
+	let vertexZ_r = [];
+	ascent( i in 0..10 ){
+		vertexZ = vertexZ ~ [ rand(-32,32) ];
+	} i = 0;
+	
+	SetEclipse( [ 0, 640, 0 ] );
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 4 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		
+		if( !IsActive[0] ){ break; }
+		
+		if( !OnSpell ){
+			move1 = 1 * sin( moveA );
+			move2 = 1 * sin( moveB );
+			move3 = 1 * sin( moveC );
+			
+			let fog_array = [
+				move1*192 - move3*96,
+				move1*96 - move3*48,
+				move1*32 - move3*16,
+			];
+			
+			SetFogParam( move1*128, move1*1024, fog_array[0], fog_array[1], fog_array[2] );
+			SetCameraFocusXYZ( 0, 128 - move2*32 + move3*192, 0 );
+			SetCameraRadius( 512 );
+			SetCameraAzimuthAngle( 2 * sin( cc/8 ) );
+			SetCameraElevationAngle( 64 - move2*64 -2 + 2 * sin( cc/4 ) - move3*24 );
+			
+			//　鳥居
+			if( move2 >= 1 && cc > 0 && cc%180 == 0 ){
+				Obj_Torii( [ -1024, -32, rand(-32,32) ], [ 4, 0, 0 ], 420 );
+			}
+			
+			//　エフェクト
+			if( cc%2 == 0 ){
+				CreateSnow(
+					[ rand(-256,0), rand(-128,256), rand(-384,384) ],
+					[ rand(4,8), 1, 0 ],
+					rand(0.1,0.2),
+					rand(96,128),
+					60 + rand(0,60),
+					[ 32, 255, 32 ]
+				);
+			}
+			
+			let rectX_ch = rectX;
+			while( i < ObjPrim_GetVertexCount(obj2[0]) && move3 < 1 ){
+				loop( length(obj2) ){
+					let vz = [
+						vertexZ[ i ] * cos( cc*1.4 ),
+						vertexZ[ i ] * sin( cc*1.4 ),
+					];
+					ObjPrim_SetVertexPosition( obj2[j], i, vertexX[ i ], vertexY[ i%2 ], vz[ i%2 ] );
+					j++;
+				}
+				ObjPrim_SetVertexUVT( obj2[0], i, rectX_ch - cc*4.5, rectY[ i%2 ] );
+				ObjPrim_SetVertexUVT( obj2[1], i, rectX_ch - 256 * sin(cc/4) - cc*4, rectY[ i%2 ] );
+				if( i > 0 && i%2 == 0 ){ rectX_ch += rectX; }
+				i++;
+				j = 0;
+			}
+			i = 0;
+			
+			ObjRender_SetPosition(obj2[0], -256, 0, 0 );
+			ObjRender_SetPosition(obj2[1], -256, 0, 0 );
+			ObjRender_SetAlpha( obj2[1], 64 + 12 * sin( cc*4 ) );
+			
+			cc++;
+			if( move1 < 1 ){ moveA += 1; }
+			if( move2 < 1 ){ moveB += 0.02; }
+			if( move3 < 1 && type != 0 ){ moveC += 0.03; }
+		}
+		else{
+			type = 1;
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete(def);
+	loop( length(obj2) ){
+		Obj_Delete(obj2[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　日蝕
+task SetEclipse( pos ){
+	let obj1	= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let scale	= [ 1.1, 1.1, 1, 1.1 ];
+	let frame	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	ObjRender_SetBlendType( obj1[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType( obj1[1], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType( obj1[2], BLEND_SUBTRACT );
+	ObjRender_SetBlendType( obj1[3], BLEND_SUBTRACT );
+	
+	ascent( let i in 0..( length(obj1) ) ){
+		ObjPrim_SetTexture( obj1[i], csd ~ "./img/world/world04/world04d.png" );
+		Obj_SetRenderPriorityI( obj1[i], world_layer );
+		ObjRender_SetScaleXYZ( obj1[i], scale[i], scale[i], 0 );
+		ObjSprite3D_SetSourceDestRect( obj1[i], 0, 0, 512, 512 );
+		ObjSprite3D_SetBillboard( obj1[i], true );
+	}
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 4 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		let objScene 	= GetEnemyBossSceneObjectID();
+		let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		IsActive		= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance		= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		
+		if( !IsActive[0] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			ascent( let i in 0..( length(obj1) ) ){
+				ObjRender_SetPosition( obj1[i], pos[0], pos[1], pos[2] );
+				ObjRender_SetAlpha( obj1[i], move1*255 );
+			}
+			
+			let dist = rand(-6,6);
+			let ang = rand(0,360);
+			ObjRender_SetPosition( obj1[2], pos[0]+dist*cos(ang), pos[1]+dist*sin(ang), pos[2] );
+			ObjRender_SetPosition( obj1[3], pos[0]+dist*cos(ang), pos[1]+dist*sin(ang), pos[2] );
+			
+			ObjRender_SetAngleXYZ( obj1[0], 0, 0, frame*64 );
+			ObjRender_SetAngleXYZ( obj1[1], 0, 0, frame*-64 );
+			ObjRender_SetAngleXYZ( obj1[2], 0, 0, frame*64 );
+			ObjRender_SetAngleXYZ( obj1[3], 0, 0, frame*-64 );
+			
+			frame++;
+			if( move1 < 1 && frame > 300 ){ moveA += 0.05; }
+		}
+		
+		yield;
+	}
+	ascent( i in 0..( length(obj1) ) ){
+		Obj_Delete(obj1[i]);
+	}
+}
+
+//　鳥居
+task Obj_Torii( pos, move, long ){
+	if( GetAreaCommonData( "System", "Stage_Index", 0 ) != 4 ){ return; }
+	
+	let obj1	= ObjMesh_Create();
+	let obj2	= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let frame	= 0;
+	let ten		= 10;
+	
+	ObjMesh_Load( obj1, world_mesh_path[2] );
+	Obj_SetRenderPriorityI( obj1, world_layer-1 );
+	ObjRender_SetAngleXYZ(obj1, 0, 90, 0 );
+	ObjMesh_SetColor( obj1, 255, 255, 255 );
+	ObjMesh_SetAlpha( obj1, 255 );
+	
+	ascent( let i in 0..2 ){
+		ObjPrim_SetPrimitiveType( obj2[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture( obj2[i], csd ~ "./img/world/world04/world04c.png" );
+		ObjRender_SetBlendType( obj2[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI( obj2[i], world_layer );
+		ObjPrim_SetVertexCount( obj2[i], ten );
+		ObjRender_SetFogEnable( obj2[i], true );
+	}
+	ObjRender_SetAngleXYZ( obj2[0], 90 - rand(0,32), 24, 180 );
+	ObjRender_SetAngleXYZ( obj2[1], 90 - rand(0,32), -8, 180 );
+	
+	let vertexX = 0;
+	let vertexY = [ -16, 16 ];
+	let vertexZ = [];
+	let vertexZ_r = [];
+	let rc = [];
+	ascent( i in 0..( ten/2 ) ){
+		vertexZ = vertexZ ~ [ rand(12,16) ];
+		rc = rc ~ [ rand(16,20) ];
+	}
+	i = 0;
+	
+	let _rectX = [ 0, 256 ];
+	let _rectY = 0;
+	
+	while( frame < long || long < 0 ){
+		let objScene 	= GetEnemyBossSceneObjectID();
+		let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( GetAreaCommonData( "System", "Stage_Index", 0 ) != 4 ){ break; }
+		
+		if( !OnSpell ){
+			ObjRender_SetPosition( obj1, pos[0], pos[1], pos[2] );
+			ObjRender_SetPosition( obj2[0], pos[0], pos[1]+180, pos[2]+16 );
+			ObjRender_SetPosition( obj2[1], pos[0], pos[1]+180, pos[2]-48 );
+			
+			ascent( i in 0..( ten/2 ) ){
+				let vz = [
+					vertexZ[ i ] * cos( frame*rc[i] ),
+					vertexZ[ i ] * sin( frame*rc[i] ),
+				];
+				if( i == 0 ){ vz = [ 0, 0 ]; }
+				ascent( let j in 0..2 ){
+					ObjPrim_SetVertexPosition( obj2[0], i*2+j, vertexX, vertexY[ j%2 ], vz[ i%2 ] );
+					ObjPrim_SetVertexUVT( obj2[0], i*2+j, _rectX[ j%2 ], _rectY );
+					ObjPrim_SetVertexPosition( obj2[1], i*2+j, vertexX, vertexY[ j%2 ], vz[ i%2 ] );
+					ObjPrim_SetVertexUVT( obj2[1], i*2+j, _rectX[ j%2 ], _rectY );
+				}
+				vertexX += 48;
+				_rectY += 512 / (ten/2);
+			}
+			vertexX = 0;
+			_rectY = 0;
+			
+			pos[0] = pos[0] + move[0];
+			pos[1] = pos[1] + move[1];
+			pos[2] = pos[2] + move[2];
+			
+			frame++;
+		}
+		
+		yield;
+	}
+	Obj_Delete(obj1);
+	Obj_Delete(obj2[0]);
+	Obj_Delete(obj2[1]);
+}

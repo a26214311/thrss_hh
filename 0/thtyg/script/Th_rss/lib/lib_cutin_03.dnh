@@ -1,0 +1,545 @@
+
+/*
+
+スペルカードボーナス
+stg1	2100万
+stg2	4800万
+stg3	12000万
+stg4	24000万
+stg5	30000万
+stg6	60000万
+EX		10000万
+
+耐久はボーナスが減らない
+
+*/
+
+task SpellCardBonusDisplay(SPELL_ID,ID){
+	let spn0		= ObjPrim_Create(OBJ_SPRITE_2D);//　Bonus
+	let spn			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv			= [0,1,2,3,4,5,6,7,8,9];
+	let alpha		= 0;
+	let movea		= 0;
+	let move1		= 0;
+	let moveb		= 0;
+	let move2		= 0;
+	let cc			= 0;
+	let i			= 0;
+	let GetScores	= ObjEnemyBossScene_GetInfo(SPELL_ID,INFO_SPELL_SCORE);
+	
+	ObjPrim_SetTexture(spn0, path_front02 );
+	Obj_SetRenderPriorityI(spn0, 80 );
+	ObjRender_SetBlendType(spn0, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(spn0, 1, 1, 1 );
+	ObjSprite2D_SetSourceRect(spn0, 1, 105, 33, 115 );
+	ObjSprite2D_SetDestCenter(spn0);
+	ObjRender_SetAlpha(spn0, alpha );
+	
+	loop( length(spn) ){
+		ObjPrim_SetTexture(spn[i], path_front02 );
+		Obj_SetRenderPriorityI(spn[i], 80 );
+		ObjRender_SetBlendType(spn[i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(spn[i], 1, 1, 0 );
+		ObjSprite2D_SetSourceRect(spn[i], 71 + 8*uv[0], 76, 79 + 8*uv[0], 86 );
+		ObjSprite2D_SetDestCenter(spn[i]);
+		ObjRender_SetAlpha(spn[i], alpha );
+		i++;
+	}
+	i = 0;
+	
+	//　Bonus　座標変える時はココだけ弄るように
+	ObjRender_SetPosition(spn0, MinX+186, MinY+27, 0 );
+	
+	//　一番左の数値
+	ObjRender_SetPosition(spn[8], ObjRender_GetX(spn0)+30, ObjRender_GetY(spn0), 0 );
+	
+	loop( length(spn) - 1 ){
+		ObjRender_SetPosition(spn[7 - i], ObjRender_GetX(spn[8]) + 7*(1+i), ObjRender_GetY(spn[8]), 0 );
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID) ){
+		let gpos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		if(ObjRender_GetX(spn[4])-50 <= GetPlayerX && ObjRender_GetX(spn[4])+50 >= GetPlayerX &&
+		   ObjRender_GetY(spn[4])-50 <= GetPlayerY && ObjRender_GetY(spn[4])+50 >= GetPlayerY ){ alpha = 100; }
+		if(ObjRender_GetX(spn[4])-50 <= gpos[0] && ObjRender_GetX(spn[4])+50 >= gpos[1] &&
+		   ObjRender_GetY(spn[4])-50 <= gpos[0] && ObjRender_GetY(spn[4])+50 >= gpos[1] ){ alpha = 100; }
+		
+		GetScores	= ObjEnemyBossScene_GetInfo(SPELL_ID,INFO_SPELL_SCORE);
+		
+		let score	= [truncate(GetScores%10),
+						truncate((GetScores%100)/10),
+						truncate((GetScores%1000)/100),
+						truncate((GetScores%10000)/1000),
+						truncate((GetScores%100000)/10000),
+						truncate((GetScores%1000000)/100000),
+						truncate((GetScores%10000000)/1000000),
+						truncate((GetScores%100000000)/10000000),
+						truncate((GetScores%1000000000)/100000000)];
+		
+		if( cc > 120 && alpha < 255 ){ alpha += 15; }
+		ObjRender_SetAlpha(spn0, alpha );
+		i = 0;
+		loop( length(spn) ){
+			ObjRender_SetAlpha(spn[i], alpha );
+			i++;
+		}
+		i = 0;
+		
+		//　スペカ取得可能
+		if( ObjEnemyBossScene_GetInfo(spl, INFO_PLAYER_SPELL_COUNT ) == 0 &&
+			ObjEnemyBossScene_GetInfo(spl, INFO_PLAYER_SHOOTDOWN_COUNT ) == 0 ){
+			
+			//　表示更新
+			loop( length(spn) ){
+				ObjSprite2D_SetSourceRect(spn[i], 71 + 8*uv[ score[i] ], 76, 79 + 8*uv[ score[i] ], 86 );
+				i++;
+			}
+			i = 0;
+			
+			//　桁でいろいろ
+			if( GetScores >= 100000000 ){
+				loop( length(spn) ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 10000000 ){
+				loop( 8 ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+				ObjRender_SetColor(spn[8], 64, 64, 64 );
+			}
+			else if( GetScores >= 1000000 ){
+				loop( 7 ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+				loop( 2 ){
+					ObjRender_SetColor(spn[7+i], 64, 64, 64 );
+					i++;
+				}
+			}
+			else if( GetScores >= 100000 ){
+				loop( 6 ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+				loop( 3 ){
+					ObjRender_SetColor(spn[6+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 10000 ){
+				loop( 5 ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+				loop( 4 ){
+					ObjRender_SetColor(spn[5+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 1000 ){
+				loop( 5 ){
+					ObjRender_SetColor(spn[i], 255, 255, 255 );
+					i++;
+				}
+				i = 0;
+				loop( 5 ){
+					ObjRender_SetColor(spn[4+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 100 ){
+				ObjRender_SetColor(spn[0], 255, 255, 255 );
+				ObjRender_SetColor(spn[1], 255, 255, 255 );
+				ObjRender_SetColor(spn[2], 255, 255, 255 );
+				loop( 6 ){
+					ObjRender_SetColor(spn[3+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 10 ){
+				ObjRender_SetColor(spn[0], 255, 255, 255 );
+				ObjRender_SetColor(spn[1], 255, 255, 255 );
+				loop( 7 ){
+					ObjRender_SetColor(spn[2+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+			else if( GetScores >= 0 ){
+				ObjRender_SetColor(spn[0], 255, 255, 255 );
+				loop( 8 ){
+					ObjRender_SetColor(spn[1+i], 64, 64, 64 );
+					i++;
+				}
+				i = 0;
+			}
+		}
+		else{
+			//　スペカ取得失敗
+			loop( length(spn) - 1 ){
+				Obj_Delete(spn[i]);
+				i++;
+			}
+			i = 0;
+			ObjRender_SetPosition(spn[8], ObjRender_GetX(spn0) + 48, ObjRender_GetY(spn0), 0 );
+			ObjRender_SetColor(spn[8], 255, 255, 255 );
+			ObjSprite2D_SetSourceRect(spn[8], 71, 66, 101, 76 );
+			ObjSprite2D_SetDestCenter(spn[8]);
+		}
+		
+		cc++;
+		
+		yield;
+	}
+	//　おわり
+	Obj_Delete(spn0);
+	ascent( i in 0..( length(spn) ) ){
+		Obj_Delete( spn[i] );
+	}
+}
+
+task SpellCardHistoryDisplay(ID,getspell,playspell){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let i		= 0;
+	let alpha	= 0;
+	let uv		= [0,1,2,3,4,5,6,7,8,9];
+	let hs		= playspell;
+	let gs		= getspell;
+	let hispell	= [truncate(hs%10),
+					truncate((hs%100)/10),
+					truncate((hs%1000)/100)];
+	let gespell	= [truncate(gs%10),
+					truncate((gs%100)/10),
+					truncate((gs%1000)/100)];
+
+	ObjPrim_SetTexture(id[0], path_front02 );
+	Obj_SetRenderPriorityI(id[0], 80 );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(id[0], 1, 1, 1 );
+	ObjSprite2D_SetSourceRect(id[0], 35, 105, 69, 115 );
+	ObjSprite2D_SetDestCenter(id[0]);
+	ObjRender_SetAlpha(id[0], alpha );
+
+	loop( length(id) - 1 ){
+		ObjPrim_SetTexture(id[1+i], path_front02 );
+		Obj_SetRenderPriorityI(id[1+i], 80 );
+		ObjRender_SetBlendType(id[1+i], BLEND_ALPHA );
+		ObjRender_SetScaleXYZ(id[1+i], 1, 1, 1 );
+		ObjSprite2D_SetSourceRect(id[1+i], 71 + 8*uv[0], 76, 79 + 8*uv[0], 86 );
+		ObjSprite2D_SetDestCenter(id[1+i]);
+		ObjRender_SetAlpha(id[1+i], alpha );
+		i++;
+	}
+	i = 0;
+	
+	ObjSprite2D_SetSourceRect(id[4], 151, 76, 159, 86 );
+	ObjSprite2D_SetDestCenter(id[4]);
+	
+	if( getspell < 1 ){
+		ObjRender_SetColor(id[1], 64, 64, 64 );
+		ObjRender_SetColor(id[2], 64, 64, 64 );
+		ObjRender_SetColor(id[3], 64, 64, 64 );
+	}
+	else if( getspell < 10 ){
+		ObjRender_SetColor(id[1], 64, 64, 64 );
+		ObjRender_SetColor(id[2], 64, 64, 64 );
+		ObjRender_SetColor(id[3], 255, 255, 255 );
+	}
+	else if( getspell < 100 ){
+		ObjRender_SetColor(id[1], 64, 64, 64 );
+		ObjRender_SetColor(id[2], 255, 255, 255 );
+		ObjRender_SetColor(id[3], 255, 255, 255 );
+	}
+	
+	if( playspell < 1 ){
+		ObjRender_SetColor(id[5], 64, 64, 64 );
+		ObjRender_SetColor(id[6], 64, 64, 64 );
+		ObjRender_SetColor(id[7], 64, 64, 64 );
+	}
+	else if( playspell < 10 ){
+		ObjRender_SetColor(id[5], 64, 64, 64 );
+		ObjRender_SetColor(id[6], 64, 64, 64 );
+		ObjRender_SetColor(id[7], 255, 255, 255 );
+	}
+	else if( playspell < 100 ){
+		ObjRender_SetColor(id[5], 64, 64, 64 );
+		ObjRender_SetColor(id[6], 255, 255, 255 );
+		ObjRender_SetColor(id[7], 255, 255, 255 );
+	}
+	
+	loop( 120 ){ yield; }
+	
+	while( !Obj_IsDeleted(ID) ){
+		let gpos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		if(ObjRender_GetX(id[4])-50 <= GetPlayerX && ObjRender_GetX(id[4])+50 >= GetPlayerX &&
+		   ObjRender_GetY(id[4])-50 <= GetPlayerY && ObjRender_GetY(id[4])+50 >= GetPlayerY ){ alpha = 100; }
+		if(ObjRender_GetX(id[4])-50 <= gpos[0] && ObjRender_GetX(id[4])+50 >= gpos[0] &&
+		   ObjRender_GetY(id[4])-50 <= gpos[1] && ObjRender_GetY(id[4])+50 >= gpos[1]){ alpha = 100; }
+		
+		hispell	= [truncate(hs%10),
+					truncate((hs%100)/10),
+					truncate((hs%1000)/100)];
+		gespell	= [truncate(gs%10),
+					truncate((gs%100)/10),
+					truncate((gs%1000)/100)];
+		
+		let gx = ObjRender_GetX(id[0]);
+		let gy = ObjRender_GetY(id[0]);
+		
+		ObjRender_SetPosition(id[0], MinX+294, MinY+27, 0 );
+		ObjRender_SetPosition(id[1], gx+22, gy, 0 );
+		ObjRender_SetPosition(id[2], gx+29, gy, 0 );
+		ObjRender_SetPosition(id[3], gx+36, gy, 0 );
+		ObjRender_SetPosition(id[4], gx+43, gy, 0 );
+		ObjRender_SetPosition(id[5], gx+50, gy, 0 );
+		ObjRender_SetPosition(id[6], gx+57, gy, 0 );
+		ObjRender_SetPosition(id[7], gx+64, gy, 0 );
+		
+		loop( 3 ){
+			ObjSprite2D_SetSourceRect(id[1+i], 71 + 8*uv[ gespell[2-i] ], 76, 79 + 8*uv[ gespell[2-i] ], 86 );
+			ObjSprite2D_SetSourceRect(id[5+i], 71 + 8*uv[ hispell[2-i] ], 76, 79 + 8*uv[ hispell[2-i] ], 86 );
+			i++;
+		}
+		i = 0;
+		
+		loop( length(id) ){
+			ObjRender_SetAlpha(id[i], alpha );
+			i++;
+		}
+		i = 0;
+		
+		if( alpha < 255 ){ alpha += 15; }
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}i=0;
+}
+
+//　タイマー魔方陣
+task SpellCardMagicTimer(ID){
+	let dummy		= ObjEnemy_Create(OBJ_ENEMY);
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let GetTimerD	= ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(),INFO_TIMER);
+	let disMAX		= min(GetTimerD*3, 160 );
+	let csd			= GetCurrentScriptDirectory;
+	let dis1		= 0;//　内円
+	let dis2		= 0;//　外円
+	let dis3		= 0;//　赤用　拡大
+	let dis4		= 0;//　赤用　収縮
+	let disA		= 0;
+	let disB		= 0;
+	let disC		= 0;
+	let disD		= 0;
+	let disDAdd		= 0;
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let alpha3		= 0;
+	let alphaC		= 0;
+	let kaku		= 32;
+	let cc			= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	let rgb			= [255,255,255];
+	
+	let path		= path_front02;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= [1024/kaku,256/kaku];
+	//　円の太さ
+	let wight		= [20,14];
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	let RMangle	= GetAreaCommonData("RedMagic_Angle", "angle", 0 );
+	let spin	= GetAreaCommonData("RedMagic_Angle", "spin", 0 );
+	
+	ObjMove_SetPosition(dummy, ObjMove_GetX(ID), ObjMove_GetY(ID) );
+	ObjEnemy_SetLife(dummy, 9999 );
+	ObjEnemy_SetDamageRate(dummy, 0, 0 );
+	ObjEnemy_Regist(dummy);
+	
+	loop( length(id) ){
+		ObjRender_SetPosition(id[j], ObjMove_GetX(ID), ObjMove_GetY(ID), 0 );
+		ObjPrim_SetTexture(id[j], path );
+		Obj_SetRenderPriorityI(id[j], 31 );
+		ObjRender_SetBlendType(id[j], BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ(id[j], 1, 1, 0 );
+		ObjPrim_SetPrimitiveType(id[j], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(id[j], ten );
+		j++;
+	}
+	j = 0;
+	
+	while( dis1 < disMAX || dis2 < disMAX || dis3 < disMAX*2.5 || dis4 < disMAX*1.5 ){
+		ang	+= ang_plus;
+		cc++;
+		
+		RMangle	= GetAreaCommonData("RedMagic_Angle", "angle", 0 );
+		spin	= GetAreaCommonData("RedMagic_Angle", "spin", 0 );
+		ObjRender_SetAngleXYZ(id[0], 24 - 24 * cos(spin*2), 24 - 24 * sin(spin*2), RMangle + spin*10 );
+		ObjRender_SetAngleXYZ(id[1], (24-180) - 24 * cos(spin*2), (24-180) - 24 * sin(spin*2), RMangle - spin*10 );
+		
+		//　ゆっくり追従していってね
+		ObjMove_SetDestAtWeight(dummy, ObjMove_GetX(ID), ObjMove_GetY(ID), 48 , 4 );
+		ObjRender_SetPosition(id[0], ObjMove_GetX(dummy), ObjMove_GetY(dummy), 0 );
+		ObjRender_SetPosition(id[1], ObjMove_GetX(dummy), ObjMove_GetY(dummy), 0 );
+		
+		//　蒼
+		if( dis1 < disMAX ){ disA += 1; }
+		dis1 = disMAX * sin(disA);
+		if( dis2 < disMAX ){ disB += 0.5; }
+		dis2 = disMAX * sin(disB);
+		
+		//　赤
+		if( dis3 < disMAX*2.5 ){ disC += 2; }
+		else if( dis4 < disMAX*1.5 ){
+			disD	+= 0.1;
+			dis4	+= disD;
+		}
+		dis3 = disMAX*2.5 * sin(disC);
+		
+		if( alpha1 < rgb[0] ){ alphaA += 2; }
+		if( alpha2 < rgb[1] ){ alphaB += 2; }
+		if( alpha3 < rgb[2] ){ alphaC += 2; }
+		alpha1 = rgb[0] * sin( alphaA );
+		alpha2 = rgb[1] * sin( alphaB );
+		alpha3 = rgb[2] * sin( alphaC );
+		
+		loop( ten/2 ){
+			//　Spell Card Attack
+			ObjPrim_SetVertexPosition(id[0], i, (dis3-dis4-32) * cos(pc+ang), (dis3-dis4-32) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id[0], i2, (dis3-dis4+wight[0]-32) * cos(pc+ang), (dis3-dis4+wight[0]-32) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id[0], i, 0 + _rect[0], 448 );
+			ObjPrim_SetVertexUVT(id[0], i2, 0 + _rect[0], 480 );
+			ObjPrim_SetVertexColor(id[0], i, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexColor(id[0], i2, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexAlpha(id[0], i, 96 );
+			ObjPrim_SetVertexAlpha(id[0], i2, 96 );
+			//　Border Of Life
+			ObjPrim_SetVertexPosition(id[1], i, (dis2-wight[1]) * cos(pc-ang), (dis2-wight[1]) * sin(pc-ang), 0 );
+			ObjPrim_SetVertexPosition(id[1], i2, (dis1) * cos(pc-ang), (dis1) * sin(pc-ang), 0 );
+			ObjPrim_SetVertexUVT(id[1], i, 0 + _rect[1], 480 );
+			ObjPrim_SetVertexUVT(id[1], i2, 0 + _rect[1], 496 );
+			ObjPrim_SetVertexColor(id[1], i, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexColor(id[1], i2, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexAlpha(id[1], i, 96 );
+			ObjPrim_SetVertexAlpha(id[1], i2, 96 );
+			pc			+= 360/kaku;
+			i			+= 2;
+			i2			+= 2;
+			_rect[0]	= _rect[0] + 16;
+			_rect[1]	= _rect[1] + 16;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect[0]	= 0;
+		_rect[1]	= 0;
+		
+		yield;
+	}
+	
+	while( !Obj_IsDeleted(ID) && GetTimerD > 0 ){
+		ang	+= ang_plus;
+		cc++;
+		
+		RMangle	= GetAreaCommonData("RedMagic_Angle", "angle", 0 );
+		spin	= GetAreaCommonData("RedMagic_Angle", "spin", 0 );
+		ObjRender_SetAngleXYZ(id[0], 24 - 24 * cos(spin*2), 24 - 24 * sin(spin*2), RMangle + spin*10 );
+		ObjRender_SetAngleXYZ(id[1], (24-180) - 24 * cos(spin*2), (24-180) - 24 * sin(spin*2), RMangle - spin*10 );
+		
+		GetTimerD	= ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(),INFO_TIMER);
+		disMAX	= min(GetTimerD*3, 160 );
+		
+		if( dis1 > disMAX ){ dis1 -= 0.05; }
+		
+		//　ゆっくり追従していってね
+		ObjMove_SetDestAtWeight(dummy, ObjMove_GetX(ID), ObjMove_GetY(ID), 48 , 4 );
+		ObjRender_SetPosition(id[0], ObjMove_GetX(dummy), ObjMove_GetY(dummy), 0 );
+		ObjRender_SetPosition(id[1], ObjMove_GetX(dummy), ObjMove_GetY(dummy), 0 );
+		
+		if( alpha1 < rgb[0] ){ alphaA += 10; }
+		if( alpha2 < rgb[1] ){ alphaB += 10; }
+		if( alpha3 < rgb[2] ){ alphaC += 10; }
+		alpha1 = rgb[0] * sin( alphaA );
+		alpha2 = rgb[1] * sin( alphaB );
+		alpha3 = rgb[2] * sin( alphaC );
+		
+		loop( ten ){
+			//　Spell Card Attack
+			ObjPrim_SetVertexPosition(id[0], i, (dis1-32) * cos(pc+ang), (dis1-32) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id[0], i2, (dis1+wight[0]-32) * cos(pc+ang), (dis1+wight[0]-32) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id[0], i, 0 + _rect[0], 448 );
+			ObjPrim_SetVertexUVT(id[0], i2, 0 + _rect[0], 480 );
+			ObjPrim_SetVertexColor(id[0], i, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexColor(id[0], i2, alpha1, alpha2, alpha3 );
+			//　Border Of Life
+			ObjPrim_SetVertexPosition(id[1], i, (dis1-wight[1]) * cos(pc-ang), (dis1-wight[1]) * sin(pc-ang), 0 );
+			ObjPrim_SetVertexPosition(id[1], i2, (dis1) * cos(pc-ang), (dis1) * sin(pc-ang), 0 );
+			ObjPrim_SetVertexUVT(id[1], i, 0 + _rect[1], 480 );
+			ObjPrim_SetVertexUVT(id[1], i2, 0 + _rect[1], 496 );
+			ObjPrim_SetVertexColor(id[1], i, alpha1, alpha2, alpha3 );
+			ObjPrim_SetVertexColor(id[1], i2, alpha1, alpha2, alpha3 );
+			pc			+= 360/kaku;
+			i			+= 2;
+			i2			+= 2;
+			_rect[0]	= _rect[0] + 16;
+			_rect[1]	= _rect[1] + 16;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect[0]	= 0;
+		_rect[1]	= 0;
+		
+		yield;
+	}
+	Obj_Delete(dummy);
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}

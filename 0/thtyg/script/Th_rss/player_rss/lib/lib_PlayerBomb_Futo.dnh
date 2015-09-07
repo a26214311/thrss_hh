@@ -1,0 +1,284 @@
+
+
+//　スペルカード（ボム）
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
+
+//　自機当たり判定
+task PlayerCollisionChange(){
+	let frame1	= 0;
+	let frame2	= 0;
+	
+	while( GetPlayerState() != STATE_END ){
+		let EVfrag	= GetAreaCommonData("MegaEvolution", "Frag", false );
+		
+		if( frame1 == 1 ){
+			//　パワーアップ時
+			ObjPlayer_ClearIntersection( objPlayer );
+			ObjPlayer_AddIntersectionCircleA1( objPlayer, 0, 0, 0.001, 40 );
+		}
+		if( frame2 == 1 ){
+			//　通常時
+			ObjPlayer_ClearIntersection( objPlayer );
+			ObjPlayer_AddIntersectionCircleA1( objPlayer, 0, 0, 1, 20 );
+		}
+		
+		if( EVfrag ){
+			frame2 = 0;
+			frame1++;
+		}
+		else{
+			frame1 = 0;
+			frame2++;
+		}
+		
+		yield;
+	}
+}
+
+//　溜め撃ち
+task CallSpellChanger(){
+	let GetPlayerID	= GetPlayerObjectID();
+	let frag		= GetAreaCommonData("MegaEvolution", "Frag", false );
+	let frame		= 0;
+	let frame_max	= 15;
+	
+	while( GetVirtualKeyState( VK_SPELL ) != KEY_FREE && frame <= frame_max && !frag ){
+		if( GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 ) < 6 ){ break; }
+		SetPlayerInvincibilityFrame(60);
+		frame++;
+		yield;
+	}
+	
+	SetPlayerSpell( GetPlayerSpell - 1 );
+	
+	if( frame < frame_max ){
+		if( !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+			//　通常時はいつものボム
+			_CallSpell();
+		}
+		else{
+			//　パワーアップ時は強化ボム
+			_CallSpell_PowerUp();
+		}
+	}
+	else{
+		//　メガシンカ
+		MegaEvolution();
+		_CallSpell_PowerUp();
+	}
+}
+
+task _CallSpell(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let gpos		= [CenX,CenY];
+	let frame		= 0;
+	let angle		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let time		= 200;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	SetPlayerInvincibilityFrame( time + 120 );
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/se_nep00.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	while( IsPermitPlayerSpell() && frame < time ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		
+		move1 = 1 * sin( moveA );
+		
+		if( frame%6 == 0 ){
+			loop( 3 ){
+				SpellCard01_Main([gpos[0] + move1*256 * cos(angle), gpos[1] + move1*256 * sin(angle) ], 0, angle+180, 0.1, 8, [255,rand(32,64),32], 1.6, 0 );
+				angle += 120;
+			}
+			angle += 8;
+		}
+		
+		frame++;
+		if( move1 < 1 ){ moveA += 1; }
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	ObjSound_Play( PlayerEnviron_SE[4] );
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+task _CallSpell_PowerUp(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let gpos		= [CenX,CenY];
+	let frame		= 0;
+	let angle		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let time		= 200;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	SetPlayerInvincibilityFrame( time + 120 );
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/se_nep00.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	while( IsPermitPlayerSpell() && frame < time ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		
+		move1 = 1 * sin( moveA );
+		
+		if( frame%6 == 0 ){
+			loop( 5 ){
+				SpellCard01_Main([gpos[0] + move1*256 * cos(angle), gpos[1] + move1*256 * sin(angle) ], 0, angle+180, 0.1, 8, [255,rand(192,255),32], 1.6, 1 );
+				angle += 72;
+			}
+			angle += 8;
+		}
+		
+		frame++;
+		if( move1 < 1 ){ moveA += 1; }
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	ObjSound_Play( PlayerEnviron_SE[4] );
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+//　パワーアップ
+task MegaEvolution(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let frame		= 0;
+	let count		= 0;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	//　ゲージ管理　引数は霊夢が0　魔理沙が1　布都は2　それ以外を渡すとエラー
+	GaugeContorol( 2 );
+	
+	CreatePolygon_PlayerSUBT(objManage, 16, 384, 31, [0,-8], [255,255,255] );
+	CreatePolygon_PlayerUT(objManage, 16, 256, 31, [0,8], BLEND_ALPHA, [128,0,255] );
+	
+	SetPlayerInvincibilityFrame(180);
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/flare2.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	SnowflakePower( GetPlayerObjectID() );
+	
+	while( IsPermitPlayerSpell() && frame < 60 ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		
+		if( frame%1 == 0 ){
+			let fxn = frame*rand(1,6);
+			ascent( let i in 0..6 ){
+				PlayerBraid_Effect( fxn, i*60 + fxn, [1,1], [0,0,0 + i*60 + fxn], [64,64,128] );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+task SpellCard01_Main(pos,speed,angle,acc,_max,rgb_h,sca,type){
+	let sht		= CreateShotA2(pos[0], pos[1], speed, angle, acc, _max, 1, 0 );
+	let frame	= 0;
+	
+	ObjShot_SetAutoDelete(sht, true );
+	ObjShot_SetSpellResist(sht, true );
+	ObjShot_SetDamage(sht, 1 );
+	SpellCard01(sht, sca, rgb_h, type );
+}
+
+task SpellCard01(CallID,sca,rgb_h,type){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ObjMove_GetX(CallID),ObjMove_GetY(CallID)];
+	let move1	= 0;
+	let moveA	= 0;
+	let rang	= ObjMove_GetAngle(CallID);
+	let rsca	= rand(sca*2,sca*4);
+	let cc		= 0;
+	let i		= 0;
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/enm_effect01.png" );
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjRender_SetScaleXYZ(ID, move1*sca, move1*sca, 0 );
+	ObjRender_SetAlpha(ID, move1*255 );
+	ObjSprite2D_SetSourceRect(ID, 128 + type*64, 320, 192 + type*64, 384 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( IsPermitPlayerSpell() && !Obj_IsDeleted(CallID) ){
+		gpos	= [ObjMove_GetX(CallID),ObjMove_GetY(CallID)];
+		rang	= ObjMove_GetAngle(CallID);
+		
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, gpos[0], gpos[1], 8 );
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, rang+90 );
+		ObjRender_SetScaleXYZ(ID, sca/2*2 - move1*sca/2, sca*3 - move1*sca*2, 0 );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		cc += 16;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	ObjSprite2D_SetSourceRect(ID, 64, 320, 128, 384 );
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gpos[0] + move1*64 * cos( rang+180 ), gpos[1] + move1*64 * sin( rang+180 ), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, rang + cc );
+		ObjRender_SetScaleXYZ(ID, sca + move1*sca*rsca, sca + move1*sca*rsca, 0 );
+		ObjRender_SetColor(ID, rgb_h[0] - move1*rgb_h[0], rgb_h[1] - move1*rgb_h[1], rgb_h[2] - move1*rgb_h[2] );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		cc += 32;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

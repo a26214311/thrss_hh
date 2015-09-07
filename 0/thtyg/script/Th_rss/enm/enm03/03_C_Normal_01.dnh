@@ -1,0 +1,240 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage3　中ボス瑠璃　通常01"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm03_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 36;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(128,64,128,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		if( timer > 190 ){
+			SetIntersection(enm, true, true );
+		}
+		
+		//　弾幕
+		if( timer == 190 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		ObjMove_SetPosition(enm, CenX, CenY-96 );
+		Concentration02( enm, [CenX,CenY-96] );
+		ExplotionBlur( [255,255,255] );
+		
+		loop( 90 ){ yield; }
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [true,true] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　ショット画像
+		let shote	= [ ADD_BGW_AQUA_01, ADD_BGW_BLUE_05 ];
+		//　ループタイミング
+		let l_wt	= 180;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 3, 0 ];
+		}
+		case( "Normal" ){
+			lp		= [ 5, 0 ];
+		}
+		case( "Hard" ){
+			lp		= [ 5, 13 ];
+		}
+		case( "Lunatic" ){
+			lp		= [ 6, 15 ];
+			l_wt = 130;
+		}
+		case( "OverDrive" ){
+			lp		= [ 6, 17 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( frame > 0 && frame%3 == 0 && frame < 60 ){
+				ascent( i in 0..(lp[0]) ){
+					let ang = i*(360/lp[0]);
+					let spos = [
+						gpos[0] + 64 * cos( 270 + i*(360/lp[0]) ),
+						gpos[1] + 64 * sin( 270 + i*(360/lp[0]) ),
+					];
+					CreateShot( spos, 2, 270+ang-angle, -0.02, 0, shote[ angle/16%2 ], 8 );
+					CreateShot( spos, 2, 270+ang+angle, -0.02, 0, shote[ angle/16%2 ], 8 );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				angle += 16;
+			}
+			
+			//　移動
+			if( frame > 0 && frame%l_wt == 0 ){
+				EnemyMove(enm, 2, 8 );
+				frame = -60;
+				angle = 0;
+			}
+			
+			frame++;
+			
+			yield;
+		}
+	}
+	
+	task CreateShot( pos, speed, angle, acc, mx, shote, delay ){
+		let sht = CreateShotA2( pos[0], pos[1], speed-0.1, angle, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		let angleToPlayer;
+
+		//　収束地点距離
+		let v = 64;
+		alternative( GetDifficult )
+		case( "Easy" ){
+			v = 0;
+		}
+		case( "Lunatic" ){
+			v = 72;
+		}
+		
+		while( ObjMove_GetSpeed(sht) > 0 ){ yield; }
+		
+		loop( 30 ){
+			if( Obj_IsDeleted(enm) ){ break; }
+			yield;
+		}
+		
+		if( !Obj_IsDeleted(sht) && !Obj_IsDeleted(enm) ){
+			let sht2 = CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, 0, 0.02, 1.4, BGW_WHITE_13, 0 );
+			NotifyEventAll( EV_USER + 40, [ sht2, 0 ] );
+			
+			//　Hard以上追加弾
+			if( GetDifficult == "Hard" ){
+				let sht3 = CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, angle, 0.02, 1.4, BGB_BLUE_12, 0 );
+				NotifyEventAll( EV_USER + 40, [ sht3, 0 ] );
+			}
+			else if( GetDifficult == "Lunatic" ){
+				let sht3 = CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, angle, 0.02, 1.4, BGB_BLUE_12, 0 );
+				NotifyEventAll( EV_USER + 40, [ sht3, 0 ] );
+			}
+			else if( GetDifficult == "OverDrive" ){
+				let sht3 = CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, angle, 0.02, 1.4, BGB_BLUE_12, 0 );
+				let sht4 = CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, angle+180, 0.01, 1.4, BGB_AQUA_12, 0 );
+				NotifyEventAll( EV_USER + 40, [ sht3, 0 ] );
+				NotifyEventAll( EV_USER + 40, [ sht4, 0 ] );
+			}
+			
+			let spos = [
+				GetPlayerX() + v * cos( GetAngleToPlayer(enm)+180 ),
+				GetPlayerY() + v * sin( GetAngleToPlayer(enm)+180 ),
+			];
+			
+			angleToPlayer = atan2( spos[1] - ObjMove_GetY(sht), spos[0] - ObjMove_GetX(sht) );
+			
+			ObjMove_SetAngle( sht2, angleToPlayer );
+		}
+		Obj_SetValue( sht, "Item_Off", true );
+		ObjShot_ToItem( sht );
+	}

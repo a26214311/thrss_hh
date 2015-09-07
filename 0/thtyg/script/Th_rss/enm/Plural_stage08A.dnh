@@ -1,0 +1,168 @@
+//#東方弾幕風[Plural]
+#ScriptVersion[3]
+#Title["桃源宮　stage8 用　連続スクリプト　るり"]
+#Text[""]
+#Image[""]
+#Background[""]
+#BGM[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+	
+	let csd			= GetCurrentScriptDirectory();
+	let objScene;
+	let _objScene;
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+
+	let GetDifficult	= GetAreaCommonData("System", "Difficulty", "Normal" );
+	
+	//　Plural用の便利そうなやつ色々
+	#include "./../lib/lib_Plural.dnh"
+	//　各スペルカードSingleスクリプトへのパス
+	#include "./SpellCardPath.dnh"
+
+	#include "./../system/Load_AllTexture.dnh"
+
+	//　warning
+	#include "./../lib/lib_warning_effect.dnh"
+	
+	@Initialize{
+		objScene = ObjEnemyBossScene_Create();
+		TPlural();
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Finalize{ }
+	
+	task TPlural(){
+		let EnemyNameIn = 0;
+		if( GetDifficult == "OverDrive" ){
+
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_OverDrive.dnh" );
+			
+			//　別スレッドでロード（？）
+			ObjEnemyBossScene_LoadInThread( objScene );
+			
+			//　ボス出撃OKまで待機
+			while( !GetCommonData("RegistBoss", false ) ){ yield; }
+			//　出撃フラグをfalseに
+			SetCommonData("RegistBoss", false );
+			SetWarningEffect( [ CenX, CenY ], 240 );
+			loop( 180 ){ yield; }
+			//　ボス出撃
+			ObjEnemyBossScene_Regist( objScene );
+			
+			let AllBoss		= GetEnemyBossObjectID();
+			
+			//　左上 敵の名前表示
+			EnemyNameDisplay(objScene, [128,192,255], 4, EnemyNameIn );
+			//　敵の持ってるスペカ量
+			ascent( let i in 0..ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT ) ){
+				EnemySpellDisplay(objScene, i );
+			}
+			
+			let pos;
+			
+			//敵ボスシーンが終了するまで待機
+			while( !Obj_IsDeleted(objScene) ){
+				AllBoss = GetEnemyBossObjectID();
+				if( length(AllBoss) > 0 ){
+					pos = [ObjMove_GetX(AllBoss[0]),ObjMove_GetY(AllBoss[0])];
+				}
+				yield;
+			}
+			
+			//　画面震動
+			WorldShake( 60, 8 );
+			
+			//　引数2に座標をセット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+			NotifyEventAll( EV_USER + 1, pos );
+			
+			wait( 90 );				//　待機
+			WorldShake( 60, 12 );	//　画面震動
+			
+			wait( 160 );		//　待機
+			
+			//スクリプト終了
+			CloseScript( GetOwnScriptID() );
+			
+		}else{
+			alternative( GetPlayerID() )
+			case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){
+				ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_Event_01_PL01.dnh" );
+				EnemyNameIn = 1;
+			}
+			case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+				ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_Event_01_PL02.dnh" );
+				EnemyNameIn = 1;
+			}
+			case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+				ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_Event_01_PL03.dnh" );
+				EnemyNameIn = 1;
+			}
+			//*/
+			others{
+				ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_Event_01_PL01.dnh" );
+			}
+			
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm08/08_C_SpellCard_01.dnh" );
+			ObjEnemyBossScene_Add(objScene, 1, csd ~ "./enm08/08_C_SpellCard_02.dnh" );
+			ObjEnemyBossScene_Add(objScene, 2, csd ~ "./enm08/08_C_SpellCard_03.dnh" );
+			
+			//　別スレッドでロード（？）
+			ObjEnemyBossScene_LoadInThread( objScene );
+			//　ボス出撃OKまで待機
+			while( !GetCommonData("RegistBoss", false ) ){ yield; }
+			//　出撃フラグをfalseに
+			SetCommonData("RegistBoss", false );
+			//　ボス出撃
+			ObjEnemyBossScene_Regist( objScene );
+			
+			let AllBoss		= GetEnemyBossObjectID();
+			
+			//　左上 敵の名前表示
+			EnemyNameDisplay(objScene, [128,192,255], 4, EnemyNameIn );
+			//　敵の持ってるスペカ量
+			ascent( let i in 0..ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT ) ){
+				EnemySpellDisplay(objScene, i );
+			}
+			
+			let pos;
+			
+			//敵ボスシーンが終了するまで待機
+			while( !Obj_IsDeleted(objScene) ){
+				AllBoss = GetEnemyBossObjectID();
+				if( length(AllBoss) > 0 ){
+					pos = [ObjMove_GetX(AllBoss[0]),ObjMove_GetY(AllBoss[0])];
+				}
+				yield;
+			}
+			
+			//　画面震動
+			WorldShake( 60, 8 );
+			
+			//　引数2に座標をセット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+			//　撃破エフェクトイベント
+			NotifyEventAll( EV_USER + 1, pos );
+			
+			wait( 90 );				//　待機
+			WorldShake( 60, 12 );	//　画面震動
+			
+			wait( 120 );			//　待機
+			
+			//スクリプト終了
+			CloseScript( GetOwnScriptID() );
+		}
+	}

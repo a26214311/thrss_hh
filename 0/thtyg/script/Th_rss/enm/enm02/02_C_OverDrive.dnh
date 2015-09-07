@@ -1,0 +1,607 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage2中ボス オーバードライブ"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm02_setting.dnh"
+	
+	let base;
+	let enm = [-1,-1,-1];
+	let spl;
+
+	let SET_LIFE = 2400;
+	
+	//　制限時間
+	let SET_TIMER	= 59;
+	
+	@Initialize{
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　ボス生成
+		base = ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(base, 0, 0 );
+		ObjEnemy_Regist(base);
+		
+		CreateSaidaioujouLifeGauge( base );
+		
+		SetDrawTimer( base, 0, true, "BeginSpellCard", false );
+		
+		//　初期化
+		ascent( idx in 0..length( enm ) ){
+			EnemyInitialize( idx );
+			EndEnemy_( enm[ idx ], 1 );
+		}
+		
+		//　体力0まで待機
+		EndEnemy_( base, 0 );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+
+		
+		//　スペルカード宣言
+		CallSpellCard( base );
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+
+		//　メインスレッド開始
+		Main_Thread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		ascent( idx in 0..length( enm ) ){
+			SetIntersection_( enm[idx], true, true );
+			if( ObjEnemy_GetInfo( enm[idx], INFO_LIFE ) > 0 ){
+				ObjMove_SetPosition( base, ObjMove_GetX( enm[idx] ), ObjMove_GetY( enm[idx] ) );
+			}
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( SET_LIFE );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 9, 1 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize( type ){
+		enm[ type ] = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_SetDamageRate(enm[type], 0, 0 );
+		ObjEnemy_SetLife(enm[type], SET_LIFE / 3 );
+		ObjEnemy_Regist(enm[type]);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( enm[ type ] , 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle_( enm[ type ], 0 );
+		Aura(enm[ type ], 8, aura_rgb_C[0], aura_rgb_C[1] );
+
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01( enm[ type ], true, enemy_tex_path_C[type] );
+
+		SetDamageRate( enm[ type ], 100, false );
+		ShotScore( enm[ type ] );
+
+		BaseDamage( enm[ type ] );
+
+		task BaseDamage( ID ){
+			let life = ObjEnemy_GetInfo( ID, INFO_LIFE );
+			while( ObjEnemy_GetInfo( ID, INFO_LIFE ) > 0 ){
+				let damage = life - ObjEnemy_GetInfo( ID,INFO_LIFE );
+				if( damage != 0 ){
+					ObjEnemy_AddLife( base, -damage );
+				}
+				life = ObjEnemy_GetInfo( ID, INFO_LIFE );
+				yield;
+			}
+		}
+	}
+	
+	task CallSpellCard( ID ){
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "「フィンブルの小春」";
+		
+		SpellCounter( GetDifficult, 9, 1 );
+		let sct = GetSpellCounter( GetDifficult, 9, 1 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		
+		let scale = 0.75;
+		SpellCardCutin(ID, "TIREIDEN", 210, 122, [scale,scale], enemy_cutin_path_C[2], 512, 512, true );
+		SpellCardCutin(ID, "TIREIDEN", 140, 212, [scale,scale], enemy_cutin_path_C[0], 512, 512, true );
+		SpellCardCutin(ID, "TIREIDEN", 280, 212, [scale,scale], enemy_cutin_path_C[1], 512, 512, true );
+		
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_02b(base);
+		ascent( idx in 0..length( enm ) ){
+			SpellCardMagicTimer(enm[idx]);
+		}
+	}
+	
+	let PHASE = 1;
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	function WaitP( long, ps ){
+		loop( long ){
+			yield;
+			if( PHASE != ps ){ return true; }
+		}
+		return false;
+	}
+
+
+	task Main_Thread{
+		let rot = rand( 0, 360 );
+		let lg = 400;
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		InitPosition;
+		State;
+		Wait( 120 );
+		
+		let ps = 1;
+		if( PHASE == 1 ){
+			Phase1_1( ps );
+		}
+		
+		let pattern = round( rand( 0, 2 ) );
+		while( PHASE == 1 ){
+			alternative( pattern )
+			case( 0 ){
+				Phase1_2( ps );
+			}
+			case( 1 ){
+				Phase1_3( ps );
+			}
+			case( 2 ){
+				Phase1_4( ps );
+			}
+			
+			let wt = 200;
+			if( Obj_IsDeleted( enm[ ( pattern + 1 ) % 3 ] ) ){ wt -= 60; }
+			if( Obj_IsDeleted( enm[ ( pattern + 2 ) % 3 ] ) ){ wt -= 60; }
+			if( WaitP( wt, ps ) ){ break; }
+			
+			pattern = ( pattern + round( rand( 1, 2 ) ) ) % 3;
+			loop( 2 ){
+				if( Obj_IsDeleted( enm[ pattern ] ) ){ pattern = ( pattern + 1 ) % 3; }
+			}
+		}
+		
+		task InitPosition{
+			let angle = rot;
+			ascent( idx in 0..length( enm ) ){
+				let obj = enm[ idx ];
+				let sx = CenX + lg * cos( angle );
+				let sy = CenY + lg * sin( angle );
+				ObjMove_SetPosition( obj, sx, sy );
+				angle += 360 / length( enm );
+			}
+		}
+
+		task Phase1_1( ps ){
+			let count = 0;
+			let wt = 6;
+			while( PHASE == ps ){
+				ascent( idx in 0..length( enm ) ){
+					let obj = enm[ idx ];
+					if( !Obj_IsDeleted( obj ) ){
+						let pos = [ ObjMove_GetX( obj ), ObjMove_GetY( obj ) ];
+						let gra = [ ADD_BGW_RED_16, ADD_BGW_GREEN_16, ADD_BGW_YELLOW_16 ];
+
+						let speed = 5;
+						let p = atan2( CenY - pos[1], CenX - pos[0] ) + 105 * r;
+						let angle = p - 70 * cos( count / 1.4 ) * r;
+						let delay = 10;
+						loop( 2 ){
+							let sx = pos[0] + 24 * cos( angle );
+							let sy = pos[1] + 24 * sin( angle );
+							let sht = CreateShotA2( sx, sy, 0, angle, speed/180, speed, gra[idx%length(gra)], delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+							angle += 180;
+						}
+					}
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				count += wt;
+				Wait( wt );
+			}
+		}
+
+		task Phase1_2( ps ){
+			let idx = 0;
+			if( !Obj_IsDeleted( enm[ 1 ] ) || !Obj_IsDeleted( enm[ 2 ] ) ){
+				Concentration01_Main( enm[idx], power_rgb_C, 60 );
+			}
+			if( WaitP( 60, ps ) ){ return; }
+			let p = GetAngleToPlayer( enm[ idx ] );
+			loop( 12 ){
+				if( Obj_IsDeleted( enm[ idx ] ) ){ break; }
+				
+				let pos = [ ObjMove_GetX( enm[idx] ), ObjMove_GetY( enm[idx] ) ];
+
+				let angle = p;
+				let way = 4;
+				loop( way ){
+					Set( angle );
+					angle += 360 / way;
+				}
+				p += 16 * r;
+				ObjSound_Play( CreateShotSE[0] );
+				if( WaitP( 8, ps ) ){ return; }
+				
+				task Set( let p ){
+					let sx = pos[0] + 24 * cos( p );
+					let sy = pos[1] + 24 * sin( p );
+					let wide = 2;
+					let speed = 1.3;
+					let gra = BGW_PURPLE_08;
+					let delay = 10;
+					
+					local{
+						let sht = CreateShotA1( sx, sy, speed * 0.97, p, gra, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					}
+					let angle = p - wide / 2;
+					loop( 2 ){
+						let sht = CreateShotA1( sx, sy, speed, angle, gra, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += wide;
+					}
+				}
+			}
+		}
+
+		task Phase1_3( ps ){
+			let idx = 1;
+			if( !Obj_IsDeleted( enm[ 0 ] ) || !Obj_IsDeleted( enm[ 2 ] ) ){
+				Concentration01_Main( enm[idx], power_rgb_C, 60 );
+			}
+			if( WaitP( 60, ps ) ){ return; }
+			let p = GetAngleToPlayer( enm[ idx ] );
+			loop( 9 ){
+				let pos = [ ObjMove_GetX( enm[idx] ), ObjMove_GetY( enm[idx] ) ];
+				let way = 4;
+				let angle = p;
+				loop( way ){
+					Set( angle );
+					angle += 360 / way;
+				}
+				p += -24*r;
+				ObjSound_Play( CreateShotSE[0] );
+				if( WaitP( 16, ps ) ){ return; }
+				task Set( let p ){
+					let sx = pos[0] + 24 * cos( p );
+					let sy = pos[1] + 24 * sin( p );
+					
+					let speed = 1.5;
+					let angle = p;
+					let gra = BGW_GREEN_24;
+					let delay = 10;
+					loop( 6 ){
+						let sht = CreateShotA1( sx, sy, speed, angle, gra, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						speed += -0.04;
+						angle += 1 * r;
+					}
+				}
+			}
+		}
+
+		task Phase1_4( ps ){
+			let idx = 2;
+			if( !Obj_IsDeleted( enm[ 1 ] ) || !Obj_IsDeleted( enm[ 0 ] ) ){
+				Concentration01_Main( enm[idx], power_rgb_C, 60 );
+			}
+			if( WaitP( 60, ps ) ){ return; }
+			let p = GetAngleToPlayer( enm[ idx ] );
+			loop( 6 ){
+				let pos = [ ObjMove_GetX( enm[idx] ), ObjMove_GetY( enm[idx] ) ];
+
+				let way = 4;
+				let angle = p;
+				loop( way ){
+					Set( angle );
+					angle += 360 / way;
+				}
+				
+				p += 44 * r;
+				ObjSound_Play( CreateShotSE[0] );
+				if( WaitP( 24, ps ) ){ return; }
+
+				task Set( let p ){
+					let sx = pos[0];
+					let sy = pos[1];
+					let wide = 0;
+					let way = 1;
+					let speed = 1.9;
+					let gra = BGW_YELLOW_28;
+					let delay = 10;
+					loop( 4 ){
+						let angle = p - wide / 2;
+						loop( way ){
+							let sht = CreateShotA1( sx, sy, speed, angle, gra, delay );
+							angle += wide / ( way - 1 );
+						}
+						way++;
+						wide += 2;
+						speed -= 0.1;
+					}
+				}
+			}
+		}
+
+		task State{
+			let lbase = 160;
+			let lgv = lg - lbase;
+			let rtp = 1 * r;
+			let agp = [ 0, 0, 0 ];
+			while( !Obj_IsDeleted( base ) ){
+				
+				alternative( PHASE )
+				case( 1 ){
+					let angle = rot;
+					let nextphase = false;
+					ascent( idx in 0..length( enm ) ){
+						let obj = enm[ idx ];
+						if( Obj_IsDeleted( obj ) ){ nextphase = true; }
+						else{
+							let sx = ObjMove_GetX( obj );
+							let sy = ObjMove_GetY( obj );
+							let mx = CenX + lg * cos( angle );
+							let my = CenY + lg * sin( angle );
+							if( Obj_IsDeleted( enm[ ( idx + 1 ) % 3 ] ) ){
+								mx = CenX + lg * cos( angle + agp[ idx ] );
+								my = CenY + lg * sin( angle + agp[ idx ] );
+								if( agp[ idx ] < 60 ){ agp[ idx ] = agp[ idx ] + 0.3; }
+							}
+							
+							let spd = GetDistance( [sx,sy], [mx,my] );
+							let ag = GetGapAngle( [sx,sy], [mx,my] );  
+							
+							ObjMove_SetSpeed( obj, spd );
+							ObjMove_SetAngle( obj, ag );
+						}
+						angle += 360 / length( enm );
+					}
+					if( nextphase ){
+				//		PHASE = 2;
+					}
+					lg = lbase + lgv;
+					lgv /= 1.02;
+					rot += rtp;
+				}
+				case( 2 ){
+					let angle = rot;
+					ascent( idx in 0..length( enm ) ){
+						let obj = enm[ idx ];
+						if( !Obj_IsDeleted( obj ) ){
+							let sx = ObjMove_GetX( obj );
+							let sy = ObjMove_GetY( obj );
+							let mx = CenX + lg * cos( angle );
+							let my = CenY + lg * sin( angle );
+							let spd = GetDistance( [sx,sy], [mx,my] );
+							let ag = GetGapAngle( [sx,sy], [mx,my] );  
+							let life = ObjEnemy_GetInfo( obj, INFO_LIFE );
+							ObjMove_SetSpeed( obj, spd );
+							ObjMove_SetAngle( obj, ag );
+							if( lg >= 700 ){
+								ObjMove_SetSpeed( obj, 0 );
+								ObjMove_SetAngle( obj, 0 );
+								ObjMove_SetPosition( obj, CenX - 200 + 200*idx, MinY - 200 );
+								PHASE = 3;
+							}
+							if( life < SET_LIFE / 3 ){
+								ObjEnemy_AddLife( obj, 10 );
+							}
+							angle += 360 / length( enm );
+						}
+					}
+					lg += 5;
+					rot += rtp;
+					rtp *= 1.02;
+				}
+				case( 3 ){
+					if( lg >= 500 ){
+						let count = 0;
+						ascent( idx in 0..length( enm ) ){
+							let obj = enm[ idx ];
+							if( !Obj_IsDeleted( obj ) ){
+								let vx = [ -120, 120 ];
+								ObjMove_SetDestAtWeight( obj, CenX + vx[ count % 2 ], CenY-96, 8, 8 );
+								count++;
+							}
+						}
+						lg = 0;
+					}
+				}
+				
+				yield;
+			}
+			PHASE = 0;
+		}
+	}
+
+
+	task EndEnemy_( ID, type ){
+		if( type ){
+			NotifyEventAll( EV_USER + 31, ID );
+		}
+		if( !type ){
+			DisplayRank_Main( ID );
+		}
+		
+		while( ObjEnemy_GetInfo(ID,INFO_LIFE) > 0 ){
+			yield;
+		}
+		
+		let pos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+
+		if( type ){
+			if( ObjEnemy_GetInfo( base, INFO_LIFE ) > 0 ){
+				NotifyEventAll( EV_USER + 1, pos );
+			}
+			Obj_Delete( ID );
+			let flg = true;
+			ascent( idx in 0..length( enm ) ){
+				if( !Obj_IsDeleted( enm[ idx ] ) ){
+					flg = false;
+				}
+			}
+			if( flg ){
+				ObjEnemy_AddLife( base, -SET_LIFE );
+			}
+		}
+		
+		//　敵全弾アイテム化
+		if( !type ){
+			DeleteShotAll( TYPE_ALL, TYPE_ITEM );
+			
+			//----------------------------------------------------
+			//--------------------------------------------
+			//----イベント呼び出し----------------
+			
+			//　ボスシーン取得
+			let scene = GetEnemyBossSceneObjectID();
+			
+			//　スペル取得失敗時
+			if( ObjEnemyBossScene_GetInfo( scene, INFO_IS_SPELL ) ){
+				if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) > 0 ||
+					ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) > 0 ){
+						NotifyEventAll( EV_USER + 0, 0 );
+				}
+			}
+			
+			//　ユーザ定義イベント　点アイテム放出
+			//NotifyEventAll( EV_USER + 32, 0 );
+			
+			//　ユーザ定義イベント　残機のかけら放出
+			if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) == 0 ){
+				//　このステップ中でプレイヤーが被弾していなければ、イベント呼び出し
+				NotifyEventAll( EV_USER + 33, 0 );
+			}
+			
+			//　ユーザ定義イベント　ボムのかけら放出
+			if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) == 0 ){
+				//　このステップ中にプレイヤーがボムを使用していなければ、イベント呼び出し
+				NotifyEventAll( EV_USER + 34, 0 );
+			}
+			
+			//--------------------------------------------
+			//----------------------------------------------------
+			
+
+			
+			Obj_Delete(ID);
+			
+			loop( 240 ){ yield; }
+			
+			AllSoundObjectDelete();
+			CloseScript( GetOwnScriptID() );
+		}
+	}
+
+	task SetIntersection_(ID,IsShot,IsPlayer){
+		if( IsShot ){
+			ObjEnemy_SetIntersectionCircleToShot( ID, ObjMove_GetX(ID), ObjMove_GetY(ID), 32);
+		}
+		if( IsPlayer ){
+			ObjEnemy_SetIntersectionCircleToPlayer( ID, ObjMove_GetX(ID), ObjMove_GetY(ID), 24);
+		}
+	}
+	task RedMagicCircle_( ID, delay ){
+		let def			= ObjPrim_Create(OBJ_SPRITE_2D);
+		let move1		= 0;
+		let moveA		= 0;
+		let sca1		= 0;
+		let scaA		= 0;
+		let alpha		= 128;
+		let gpos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		let spin		= 0;
+		let RMangle		= 0;
+		
+		ObjPrim_SetTexture(def, path_effect01 );
+		Obj_SetRenderPriorityI(def, 32 );
+		ObjRender_SetBlendType(def, BLEND_ADD_ARGB );
+		ObjRender_SetAngleXYZ(def, 0, 0, RMangle );
+		ObjRender_SetScaleXYZ(def, sca1, sca1, 0 );
+		ObjSprite2D_SetSourceRect(def, 0, 0, 256, 256 );
+		ObjSprite2D_SetDestCenter(def);
+		ObjRender_SetAlpha(def, alpha );
+		
+		loop( delay ){
+			ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+			yield;
+		}
+		ObjSound_Play( UtilitySE[9] );
+		
+		while( !Obj_IsDeleted( ID ) ){
+			gpos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+			
+			ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(def, 24 - 24 * cos(spin), 24 - 24 * sin(spin), RMangle - move1*180 - spin*10 );
+			ObjRender_SetScaleXYZ(def, sca1 + 0.1 * sin( spin*5 ), sca1 + 0.1 * sin( spin*5 ), 0 );
+			if( move1 < 1 ){ moveA += 2; }
+			move1 = 1 * sin( moveA );
+			if( sca1 < 1 ){ scaA += 2; }
+			sca1 = 1 * sin( scaA );
+			if( sca1 >= 1 && move1 >= 1 ){ spin += 0.6; }
+			
+			yield;
+		}
+		Obj_Delete(def);
+	}
+
+	//　2点間の距離を取得
+	function GetDistance( pos1, pos2 ){
+		return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+	}
+
+	//　pos1 から見た pos2 への角度を取得
+	function GetGapAngle( pos1, pos2 ){
+		return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+	}

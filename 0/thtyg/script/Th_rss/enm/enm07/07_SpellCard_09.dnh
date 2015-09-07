@@ -1,0 +1,302 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　九頭竜「ミドガルズフォルム」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let dummy;
+	let spl;
+	
+	//　カウンタ
+	let count		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 58;
+	
+	//　耐久フェーズ
+	let phase		= 0;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+
+		dummy = ObjEnemy_Create( OBJ_ENEMY );
+		ObjEnemy_SetDamageRate( dummy, 0, 0 );
+		ObjEnemy_Regist( dummy );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 96, 64, 96, 96 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　弾幕
+		if( count == 180 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		count++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE / 1.5 );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 7, 11 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+//		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+//		RedMagicCircle( 1, 0 );
+		Aura( dummy, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b( enm, true, enemy_tex_path );
+		//　敵位置初期化
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+
+		SetDummy;
+		task SetDummy{
+			loop{
+				ObjMove_SetPosition( dummy, ObjMove_GetX( enm ), ObjMove_GetY( enm ) );
+				if( GetAreaCommonData( "anime", "alpha", 255 ) == 0 ){ break; }
+				yield;
+			}
+			Obj_Delete( dummy );
+		}
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Extra" ){
+/* to be translated */			spell_text = "九頭竜「ミドガルズフォルム」";
+		}
+		others{
+/* to be translated */			spell_text = "九頭竜「ミドガルズフォルム」";
+		}
+		
+		SpellCounter( GetDifficult, 7, 11 );
+		let sct = GetSpellCounter( GetDifficult, 7, 11 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[1], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		Concentration03_Main( ID, power_rgb, 60 );
+		Wait( 100 );
+		CreateWaveEffect( ID, [255,255,255], 32 );
+		Shot01( ID );
+		SetAreaCommonData("anime", "alpha", 0 );
+		Wait( 90 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY, 8, 2 );
+		Wait( 90 );
+		Shot02( ID, BGB_GREEN_14 );
+		ascent( let i in 0..5 ){
+			Wait( 340 );
+			if( i == 4 ){ Wait( 480 ); }
+			Concentration03_Main( ID, power_rgb, 0 );
+			phase = 1+i;
+		}
+	}
+	
+	//　開幕大玉
+	task Shot01( ID ){
+		let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let dis = [ 64, 48, 0 ];
+		ascent( let i in 0..3 ){
+			if( Obj_IsDeleted(ID) ){ break; }
+			let lp = 30;
+			ascent( let j in 0..lp ){
+				let ag = 90 + j*(360/lp);
+				let spos = [
+					gpos[0] + dis[i] * cos(ag),
+					gpos[1] + dis[i] * sin(ag),
+				];
+				CreateShot01( spos, 4, ag, -0.02, 2.2, ADD_BGW_GREEN_03, 32 );
+			}
+			ObjSound_Play( CreateShotSE[0] );
+			Wait( 12 );
+			yield;
+		}
+	}
+	
+	//　周囲端から出るやつ
+	task Shot02( ID, shote ){
+		
+		SetShot( MinX, MinY, 90 );
+		SetShot( MinX, MaxY, 0 );
+		SetShot( MaxX, MaxY, 270 );
+		SetShot( MaxX, MinY, 180 );
+		if( !Obj_IsDeleted(ID) ){ Shot02( ID, shote ); }
+
+
+		function SetShot( let sx, let sy, let ag ){
+			if( Obj_IsDeleted( enm ) ){ return; }
+			let lp = 22;
+			let mpos = [ CenX, CenY ];
+			let shte = [
+				BGW_PURPLE_28,
+				BGW_RED_27,
+				ADD_BGW_WHITE_17,
+			];
+			let wide = 6 + 3 * phase * 2;
+			let w = 4;
+			let v = 448;
+			let rd = 10 - phase * 2;
+			if( ag == 0 || ag == 180 ){ v = 384; }
+			if( phase >= 5 ){
+				w = 3;
+				lp = 26;
+			}
+			let spd = v / lp;
+			loop( lp ){
+				let spos = [ sx, sy ];
+				let speed = GetDistance( spos, mpos ) / ( 60 + phase * 12 );
+				let p = GetGapAngle( spos, mpos ) + round( rand( -1, 1 ) ) * rd;
+				let angle = p - wide / 2;
+				loop( 3 ){
+					CreateShot01( spos, 0, angle, speed / 60, speed, shote, 24 );
+					angle += wide / 2;
+				}
+				sx += spd * cos( ag );
+				sy += spd * sin( ag );
+				ObjSound_Play( CreateShotSE[ 1 ] );
+				if( Wait( w ) ){ return; }
+			}
+			Shot03( ID, [ sx, sy ], 4, -0.1, 1.8, shte[0], 24, 1 );
+			if( v == 448 ){
+				Shot03( ID, [ sx, sy ], 3, -0.1, 1, shte[1], 30, 2 );
+			}else{
+				Shot05( ID, [ sx, sy ], 4, -0.1, 3.6, shte[2], 5, 3 );
+			}
+			Shot04( ID, [ sx, sy ], [ sx-v*cos(ag), sy-v*sin(ag) ], 4, [255,255,128], 4 );
+		}
+	}
+	
+	//　全方位弾
+	task Shot03( ID, pos, spd, acc, mx, shote, lp, pse ){
+		if( Obj_IsDeleted(ID) || phase < pse ){ return; }
+		let ag = GetGapAngle( pos, [ CenX, CenY ] );
+		ascent( i in 0..lp ){
+			CreateShot01( pos, spd, ag + i*(360/lp), acc, mx, shote, 24 );
+		}
+		ObjSound_Play( CreateShotSE[2] );
+	}
+	
+	//　レーザー
+	task Shot04( ID, pos, mpos, lp, color, pse ){
+		if( Obj_IsDeleted(ID) || phase < pse ){ return; }
+		let gdis	= GetDistance( pos, mpos );
+		let gag		= GetGapAngle( pos, mpos );
+		ascent( let i in 0..lp ){
+			let spos = [
+				pos[0] + i*(gdis/(lp-1)) * cos( gag ),
+				pos[1] + i*(gdis/(lp-1)) * sin( gag ),
+			];
+			let sht = CreateSwordLaser( spos, gag+90, 640, 32, 12, color, 60 );
+		}
+		ObjSound_Play( CreateShotSE[13] );
+	}
+	
+	//　自機狙い
+	task Shot05( ID, pos, spd, acc, mx, shote, lp, pse ){
+		if( Obj_IsDeleted(ID) || phase < pse ){ return; }
+		let ag = GetGapAngle( pos, [ GetPlayerX(), GetPlayerY() ] );
+		ascent( i in 0..lp ){
+			if( Obj_IsDeleted(ID) ){ break; }
+			let wide = 70;
+			let way = 3;
+			let angle = ag - wide / 2;
+			loop( way ){
+				let sht = CreateShot01( pos, spd, angle, acc, mx, shote, 24 );
+				ObjRender_SetScaleXYZ( sht, 1.4, 1.4, 0 );
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[4] );
+			Wait(8);
+			yield;
+		}
+	}

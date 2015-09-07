@@ -1,0 +1,505 @@
+
+//　赤魔方陣とライフバー
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
+task RedMagicCircle(type,delay){
+	let def			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1		= 0;
+	let moveA		= 0;
+	let sca1		= 0;
+	let scaA		= 0;
+	let alpha		= 128;
+	let gpos		= [ObjMove_GetX(enm),ObjMove_GetY(enm)];
+	let spin		= 0;
+	let RMangle		= 0;
+	
+	CreateCommonDataArea("RedMagic_Angle");
+	
+	alternative(type)
+	case( 0 ){
+		SetAreaCommonData("RedMagic_Angle", "angle", 0 );
+		SetAreaCommonData("RedMagic_Angle", "spin", 0 );
+	}
+	case( 1 ){
+		RMangle	= GetAreaCommonData("RedMagic_Angle", "angle", 0 );
+		spin	= GetAreaCommonData("RedMagic_Angle", "spin", 0 );
+	}
+	
+	ObjPrim_SetTexture(def, path_effect01 );
+	Obj_SetRenderPriorityI(def, 32 );
+	ObjRender_SetBlendType(def, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(def, 0, 0, RMangle );
+	ObjRender_SetScaleXYZ(def, sca1, sca1, 0 );
+	ObjSprite2D_SetSourceRect(def, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestCenter(def);
+	ObjRender_SetAlpha(def, alpha );
+	
+	loop( delay ){
+		ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+		yield;
+	}
+	
+	//　0:戦闘開始　1:戦闘継続
+	alternative( type )
+	case( 0 ){ ObjSound_Play( UtilitySE[9] ) }
+	case( 1 ){ sca1 = 1; }
+	
+	while( !Obj_IsDeleted(enm) ){
+		gpos	= [ObjMove_GetX(enm),ObjMove_GetY(enm)];
+		
+		ObjRender_SetPosition(def, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ(def, 24 - 24 * cos(spin), 24 - 24 * sin(spin), RMangle - move1*180 - spin*10 );
+		if( type == 0 ){
+			ObjRender_SetScaleXYZ(def, sca1 + 0.1 * sin( spin*5 ), sca1 + 0.1 * sin( spin*5 ), 0 );
+			if( move1 < 1 ){ moveA += 2; }
+			move1 = 1 * sin( moveA );
+			if( sca1 < 1 ){ scaA += 2; }
+			sca1 = 1 * sin( scaA );
+			if( sca1 >= 1 && move1 >= 1 ){ spin += 0.6; }
+		}
+		else{
+			ObjRender_SetScaleXYZ(def, 1 + 0.1 * sin( spin*5 ), 1 + 0.1 * sin( spin*5 ), 0 );
+			spin += 0.6;
+		}
+		
+		SetAreaCommonData("RedMagic_Angle", "spin", RMangle - move1*180 - spin*10 );
+		SetAreaCommonData("RedMagic_Angle", "spin", spin );
+		
+		yield;
+	}
+	Obj_Delete(def);
+}
+
+
+//　ライフバー本体
+task CreateLifeBar_Main(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_TYPE, SET_PROCES ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 16/SET_POLYGON;
+	//　線の太さ
+	let width		= 10;
+	//　開始角度　270から開始　恐らく変更は不要
+	let ang			= 270;
+	
+	let GetMaxLife;
+	//　スペプラでは全てのスペルがデフォルトになる
+	if( GetAreaCommonData("System", "PlayMode", "Story" ) == "Spell" ){
+		SET_TYPE = "Default";
+	}
+	if( SET_TYPE == "Default" ){
+		//　デフォ　円形すべてを使用　ラスペとかで使用？
+		GetMaxLife = 360;
+	}
+	else if( SET_TYPE == "Normal" ){
+		//　体力を少し残す
+		//　通常　半分とちょっとを使用　本家で言う通常
+		ang = 270 - 60;
+		GetMaxLife = 300;
+		CreateLifeBar_Sub(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_PROCES, 60-1 );
+		CreateLifeBar_Sector(SET_ID, ang, SET_DISTANCE, SET_PRIORITY, SET_TYPE, SET_PROCES );
+	}
+	else if( SET_TYPE == "SpellCard" ){
+		//　スペカ　通常で余る所を使用　本家で言うスペカ
+		GetMaxLife = 60;
+	}
+	else{
+		GetLife = 360;
+	}
+	
+	//　体力取得する値の設定
+	let GetLife			= ObjEnemy_GetInfo(SET_ID, INFO_LIFE );			//　敵の現在体力を取得し代入
+	let rect_maxlife	= GetMaxLife / GetLife;							//　対応させたいrect最大値 / 敵現在体力　を代入
+	let life_max		= min(rect_maxlife * GetLife, GetMaxLife );		//　値の小さい方が返る
+	
+	ObjRender_SetPosition(id, ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+	ObjPrim_SetTexture(id, csd ~ "../img/effect/enm_effect02.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY-1 );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		GetLife		= ObjEnemy_GetInfo(SET_ID, INFO_LIFE );
+		life_max	= min( rect_maxlife * GetLife, GetMaxLife );
+		
+		ObjRender_SetPosition(id, ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+		
+		if( SET_PROCES ){
+			move1 = 1 * sin( moveA );
+		}
+		else{
+			move1 = 1;
+		}
+		
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, (SET_DISTANCE+width) * cos(pc+ang), (SET_DISTANCE+width) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect, 8 );
+			
+			if( (360-life_max) > pc ){
+				ObjPrim_SetVertexAlpha(id, i, 0 );
+				ObjPrim_SetVertexAlpha(id, i2, 0 );
+			}
+			else{
+				if( GetObjectDistance( SET_ID, GetPlayerObjectID() ) < SET_DISTANCE+32 ){
+					ObjPrim_SetVertexAlpha(id, i, move1*64 );
+					ObjPrim_SetVertexAlpha(id, i2, move1*64 );
+				}
+				else{
+					ObjPrim_SetVertexAlpha(id, i, move1*255 );
+					ObjPrim_SetVertexAlpha(id, i2, move1*255 );
+				}
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 16;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+
+//　ライフバー外枠
+task CreateLifeBar(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_DELAY, SET_RGB, SET_TYPE, SET_PROCES ){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let csd			= GetCurrentScriptDirectory;
+	let dis1		= 0;
+	let disA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let j			= 0;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 16/SET_POLYGON;
+	//　線の太さ
+	let width		= 10;
+	//　回転の早さ
+	let ang_plus	= 0;
+	
+	loop( SET_DELAY ){ yield; }
+	
+	loop( length(id) ){
+		ObjRender_SetPosition(id[j], ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+		ObjPrim_SetTexture(id[j], csd ~ "../img/effect/enm_effect02.png" );
+		Obj_SetRenderPriorityI(id[j], SET_PRIORITY );
+		ObjRender_SetBlendType(id[j], BLEND_ALPHA );
+		ObjPrim_SetPrimitiveType(id[j], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(id[j], ten );
+		j++;
+	}
+	j = 0;
+	
+	//　敵への追従と頂点移動処理
+	while( !Obj_IsDeleted(SET_ID) && dis1 < 1 ){
+		if( SET_PROCES[0] ){
+			dis1 = 1 * sin( disA );
+			disA += 2;
+		}
+		else{
+			dis1 = 1;
+		}
+		
+		loop( length(id) ){
+			ObjRender_SetPosition(id[j], ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+			j++;
+		}
+		j = 0;
+		
+		loop( ten/2 ){
+			loop( length(id) ){
+				ObjPrim_SetVertexPosition(id[j], i, dis1*SET_DISTANCE * cos(pc+ang), dis1*SET_DISTANCE * sin(pc+ang), 0 );
+				ObjPrim_SetVertexPosition(id[j], i2, dis1*(SET_DISTANCE+width) * cos(pc+ang), dis1*(SET_DISTANCE+width) * sin(pc+ang), 0 );
+				ObjPrim_SetVertexUVT(id[j], i, 0 + _rect, j*8 );
+				ObjPrim_SetVertexUVT(id[j], i2, 0 + _rect, (j+1)*8 );
+				j++;
+			}
+			j = 0;
+			
+			ObjPrim_SetVertexAlpha(id[0], i, 64 );
+			ObjPrim_SetVertexAlpha(id[0], i2, 64 );
+			ObjPrim_SetVertexColor(id[1], i, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			ObjPrim_SetVertexColor(id[1], i2, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 16;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		yield;
+	}
+	CreateLifeBar_Main(SET_ID, 180, SET_DISTANCE, SET_PRIORITY, SET_TYPE, SET_PROCES[1] );
+	//　敵への追従　外枠なので頂点更新必要無し
+	while( !Obj_IsDeleted(SET_ID) ){
+		//　自機が近づいたら薄く　体力親のIDと自機のIDで距離を求める
+		if( GetObjectDistance( SET_ID, GetPlayerObjectID() ) < SET_DISTANCE+32 ){
+			ObjRender_SetAlpha(id[0], 32 );
+			ObjRender_SetAlpha(id[1], 64 );
+		}
+		else{
+			ObjRender_SetAlpha(id[0], 64 );
+			ObjRender_SetAlpha(id[1], 255 );
+		}
+		
+		loop( length(id) ){
+			ObjRender_SetPosition(id[j], ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+			j++;
+		}
+		j = 0;
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[j]);
+		j++;
+	}
+	j = 0;
+}
+
+
+//　ライフバー補間
+task CreateLifeBar_Sub(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_PROCES, SET_MAXLIFE ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	
+	let rgb			= [255,255,255];
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 16/SET_POLYGON;
+	//　線の太さ
+	let width		= 10;
+	//　開始角度　270から開始　恐らく変更は不要
+	let ang			= 270;
+	
+	let GetMaxLife	= SET_MAXLIFE;
+	
+	//　体力取得する値の設定
+	let GetLife			= ObjEnemy_GetInfo(SET_ID, INFO_LIFE );			//　敵の現在体力を取得し代入
+	let rect_maxlife	= GetMaxLife / GetLife;							//　対応させたいrect最大値 / 敵現在体力　を代入
+	let life_max		= min(rect_maxlife * GetLife, GetMaxLife );		//　値の小さい方が返る
+	
+	ObjRender_SetPosition(id, ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+	ObjPrim_SetTexture(id, csd ~ "../img/effect/enm_effect02.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetBlendType(id, BLEND_INV_DESTRGB );
+	ObjRender_SetScaleXYZ(id, 1, 1, 0 );
+	ObjRender_SetAngleXYZ(id, 0, 0, 0 );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		GetLife		= ObjEnemy_GetInfo(SET_ID, INFO_LIFE );
+		life_max	= min(rect_maxlife * GetLife, GetMaxLife );
+		
+		ObjRender_SetPosition(id, ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+		
+		if( SET_PROCES ){
+			move1 = 1 * sin( moveA );
+		}
+		else{
+			move1 = 1;
+		}
+		
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, (SET_DISTANCE+width) * cos(pc+ang), (SET_DISTANCE+width) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect, 8 );
+			ObjPrim_SetVertexColor(id, i, rgb[0], rgb[1], rgb[2] );
+			ObjPrim_SetVertexColor(id, i2, rgb[0], rgb[1], rgb[2] );
+			
+			if( (360-life_max) > pc ){
+				ObjPrim_SetVertexAlpha(id, i, 0 );
+				ObjPrim_SetVertexAlpha(id, i2, 0 );
+			}
+			else{
+				ObjPrim_SetVertexAlpha(id, i, move1*255 );
+				ObjPrim_SetVertexAlpha(id, i2, move1*255 );
+			}
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 16;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		if( move1 < 1 ){ moveA += 5; }
+		else{ break; }
+		
+		yield;
+	}
+	while( !Obj_IsDeleted(SET_ID) ){
+		//　親に追従
+		ObjRender_SetPosition(id, ObjMove_GetX(SET_ID), ObjMove_GetY(SET_ID), 0 );
+		
+		//　自機が近づいたら薄く　体力親のIDと自機のIDで距離を求める
+		if( GetObjectDistance( SET_ID, GetPlayerObjectID() ) < SET_DISTANCE+32 ){
+			ObjRender_SetColor(id, 64, 64, 64 );
+		}
+		else{
+			ObjRender_SetColor(id, 255, 255, 255 );
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+
+//　ライフバー区切り
+task CreateLifeBar_Sector(SET_ID, SET_ANGLE, SET_DISTANCE, SET_PRIORITY, SET_TYPE, SET_PROCES ){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)
+						];
+	let csd			= GetCurrentScriptDirectory;
+	let i			= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	//　線の太さ分加算
+	SET_DISTANCE = SET_DISTANCE + 8 / 1.5;
+	
+	loop( length(ID) ){
+		ObjPrim_SetTexture(ID[i], csd ~ "../img/effect/enm_effect02.png" );
+		Obj_SetRenderPriorityI(ID[i], SET_PRIORITY );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, SET_ANGLE-90 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 16, 16, 32 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetColor(ID[0], 128, 32, 255 );
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		
+		move1 = 1 * sin( moveA );
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], ObjMove_GetX(SET_ID) + SET_DISTANCE * cos( SET_ANGLE ),
+										ObjMove_GetY(SET_ID) + SET_DISTANCE * sin( SET_ANGLE ), 0 );
+			ObjRender_SetAlpha(ID[i], move1 * 255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetScaleXYZ(ID[0], 1.4*4 - move1*1.4*3, 1.4*4 - move1*1.4*3, 0 );
+		ObjRender_SetScaleXYZ(ID[1], 4 - move1*3, 4 - move1*3, 0 );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}
+
+
+
+//　最大往生風ゲージ
+task CreateSaidaioujouLifeGauge( let ENEMY_ID ){
+	let lifemax = ObjEnemy_GetInfo( ENEMY_ID, INFO_LIFE );
+	let dir = GetCurrentScriptDirectory~"../img/effect/";
+	let lmax = 334;
+	let sx = CenX - lmax/2;
+	let sy = MinY + 48;
+	Frame;
+	Gauge;
+	task Frame{
+		let obj = ObjPrim_Create( OBJ_SPRITE_2D );
+		ObjPrim_SetTexture( obj, dir~"life_gauge1.png" );
+		ObjRender_SetPosition( obj, sx, sy, 0 );
+		ObjRender_SetBlendType( obj, BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ( obj, 1, 1, 0 );
+		ObjRender_SetAlpha( obj, 244 );
+		while( !IsDeleted ){
+			ObjSprite2D_SetSourceRect( obj, 80, 0, 432, 32 );
+			ObjSprite2D_SetDestRect( obj, -8, 0, lmax+8, 32 );
+			yield;
+		}
+		while( lmax > 0 ){
+			ObjSprite2D_SetDestRect( obj, -8, 0, lmax+8, 32 );
+			lmax -= 8;
+			yield;
+		}
+		Obj_Delete( obj );
+	}
+
+	task Gauge{
+		let obj = ObjPrim_Create( OBJ_SPRITE_2D );
+		ObjPrim_SetTexture( obj, dir~"life_gauge2.png" );
+		ObjRender_SetPosition( obj, sx, sy, 0 );
+		ObjRender_SetBlendType( obj, BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ( obj, 1, 1, 0 );
+		ObjRender_SetAlpha( obj, 192 );
+		let leng = 0;
+		let lbase = 0;
+		let ac = 0;
+		let count = 0;
+		while( !IsDeleted ){
+			let life = ObjEnemy_GetInfo( ENEMY_ID, INFO_LIFE );
+			leng = min( lbase, lmax * ( life / lifemax ) );
+			ObjSprite2D_SetSourceRect( obj, 90, 0 + 32 * ac, 90 + leng, 32 + 32 * ac );
+			ObjSprite2D_SetDestRect( obj, 0, 0, leng, 32 );
+			ac = round( count / 5 ) % 4;
+			
+			if( lbase < lmax ){
+				lbase += 8;
+			}else{
+				lbase = lmax;
+			}
+			count++;
+			yield;
+		}
+		Obj_Delete( obj );
+	}
+
+	function IsDeleted{
+		return Obj_IsDeleted( ENEMY_ID );
+	}
+}

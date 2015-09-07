@@ -1,0 +1,1370 @@
+
+
+
+
+//　流れる雲
+task CreateCloud(pos,movep,sca,long,rgb_array){
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, world_effect_texture_path[0] );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, world_layer );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAngleZ(ID, rand(0,360) );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 0, 0, 256, 256 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　氷の結晶
+task CreateSnowFlake(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, effect_path );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 0, 64, 64, 128 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　雪
+task CreateSnow(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	
+	//　点滅の速度
+	let rc			= truncate( rand(4,16) );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, effect_path );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 196, 0, 256, 64 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2]*2 );
+		
+		if( frame > 0 && frame%rc == 0 ){
+			ObjRender_SetAlpha(ID, move1*alpha/2 );
+		}
+		else{
+			ObjRender_SetAlpha(ID, move1*alpha );
+		}
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2]*2 );
+		
+		if( frame > 0 && frame%rc == 0 ){
+			ObjRender_SetAlpha(ID, alpha/2 );
+		}
+		else{
+			ObjRender_SetAlpha(ID, alpha );
+		}
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2]*2 );
+		
+		if( frame > 0 && frame%rc == 0 ){
+			ObjRender_SetAlpha(ID, alpha/2 - move1*alpha/2 );
+		}
+		else{
+			ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		}
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　散る桜花
+task CreateSakura(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, effect_path );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 64, 64, 128, 128 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		ObjRender_SetAngleXYZ(ID, move[0], move[1], spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　浮かぶ氷塊
+task CreateIce(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, effect_path );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 128, 0, 192, 64 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　氷メッシュ
+task CreateIceMesh(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjMesh_Create();
+	
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	Obj_SetRenderPriorityI(ID, world_layer+2 );
+	ObjMesh_Load(ID, world_mesh_path[1] );
+	ObjMesh_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	while( move1 < 1 && !OnSpell && GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		ObjRender_SetScaleXYZ(ID, move1*sca[0], move1*sca[1], move1*sca[2] );
+		ObjRender_SetAngleXYZ(ID, move[0]/24, spin + move[1]/24, move[2]/24 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long && !OnSpell && GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, move[0]/24, spin + move[1]/24, move[2]/24 );
+		
+		frame++;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	while( move1 < 1 && !OnSpell && GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		ObjRender_SetAngleXYZ(ID, move[0]/24, spin + move[1]/24, move[2]/24 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　瞬く光
+task CreateFlashLight(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	let flash		= rand(2,64);
+	
+	//　点滅の速度
+	let rc			= truncate( rand(2,4) );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, effect_path );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 196, 0, 256, 64 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, (move1*(alpha/2)) - (move1*(alpha/4))*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + sca*sin(frame*2), sca*2 + sca*sin(frame*2), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, alpha/2 - alpha/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + sca*sin(frame*2), sca*2 + sca*sin(frame*2), 0 );
+		
+		frame++;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	while( move1 < 1 && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		let fade = alpha - move1*alpha;
+		
+		ObjRender_SetAlpha(ID, fade/2 - fade/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + sca*sin(frame*2), sca*2 + sca*sin(frame*2), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　竜巻
+task CreateHurricane( posXYZ, moveXYZ, long ){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let obj			= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let count		= 0;
+	
+	let weight		= rand(128,256);
+	let ang			= rand(0,360);
+	let kaku		= 8;
+	let pc			= 0;
+	let i			= 0;
+	let j			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= 0;
+	//　円の太さ
+	let wight		= 32;
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	ascent( let lp in 0..( length(obj) ) ){
+		//　上
+		ObjRender_SetPosition(obj[lp], posXYZ[0], posXYZ[1], posXYZ[2] );
+		ObjPrim_SetPrimitiveType(obj[lp], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj[lp], world03_texture_path[1] );
+		ObjRender_SetBlendType(obj[lp], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj[lp], world_layer );
+		ObjPrim_SetVertexCount(obj[lp], ten );
+		ObjRender_SetColor(obj[lp], lp*100, lp*100, lp*100 );
+		ObjRender_SetAngleXYZ(obj[lp], 48, 0, 180 );
+		ObjSprite3D_SetBillboard(obj[lp], true );
+		//　下
+		ObjRender_SetPosition(obj2[lp], posXYZ[0], posXYZ[1], posXYZ[2] );
+		ObjPrim_SetPrimitiveType(obj2[lp], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj2[lp], world03_texture_path[1] );
+		ObjRender_SetBlendType(obj2[lp], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(obj2[lp], world_layer );
+		ObjPrim_SetVertexCount(obj2[lp], ten );
+		ObjRender_SetColor(obj2[lp], lp*100, lp*100, lp*100 );
+		ObjRender_SetAngleXYZ(obj2[lp], 48, 0, 180 );
+		ObjSprite3D_SetBillboard(obj2[lp], true );
+	}
+	
+	while( !OnSpell && GetAreaCommonData( "System", "Stage_Index", 0 ) == 4 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		ascent( lp in 0..( length(obj) ) ){
+			ObjRender_SetPosition(obj[lp], posXYZ[0], posXYZ[1], posXYZ[2] );
+			ObjRender_SetPosition(obj2[lp], posXYZ[0], posXYZ[1], posXYZ[2] );
+		}
+		
+		let ddis = [ 48 * sin( count*2 ), 64 * sin( count*2 ) ];
+		let dpos = [ 
+			[ddis[0]*sin(ang+count/3), ddis[0]*cos(ang+count/3)],
+			[ddis[1]*sin(ang+count/3), ddis[1]*cos(ang+count/3)],
+		];
+		
+		loop( ten/2 ){
+			let mx = i*4 * sin( count/2 );
+			let spin_ac = [ 64, -48, 64 ];
+			
+			ascent( lp in 0..( length(obj) ) ){
+				let dis = [
+					(weight+96+lp*8) + 8*sin(count*4),
+					(weight+lp*8) + 16*sin(count*4),
+				];
+				
+				//　上
+				ObjPrim_SetVertexPosition(obj[lp], i, dpos[0][0] + (8+lp*8) * cos(pc), dpos[0][1] + (8+lp*8) * sin(pc), -1024-lp*48 );
+				ObjPrim_SetVertexPosition(obj[lp], j, 0 + dis[1] * cos(pc), 0 + dis[1] * sin(pc), 0 );
+				ObjPrim_SetVertexUVT(obj[lp], i, 0 + _rect - count*spin_ac[lp], 0 + count );
+				ObjPrim_SetVertexUVT(obj[lp], j, 0 + _rect - count*spin_ac[lp], 2048 + count );
+				ObjPrim_SetVertexAlpha(obj[lp], i, 0 );
+				ObjPrim_SetVertexAlpha(obj[lp], j, move1*192 + move1*32*lp - move2*192 );
+				//　下
+				ObjPrim_SetVertexPosition(obj2[lp], i, -dpos[1][0] + dis[0] * cos(pc), -dpos[1][1] + dis[0] * sin(pc), 64+lp*48 );
+				ObjPrim_SetVertexPosition(obj2[lp], j, 0 + dis[1] * cos(pc), 0 + dis[1] * sin(pc), 0 );
+				ObjPrim_SetVertexUVT(obj2[lp], i, 0 + _rect + count*spin_ac[lp], 0 + count );
+				ObjPrim_SetVertexUVT(obj2[lp], j, 0 + _rect + count*spin_ac[lp], 1024 + count );
+				ObjPrim_SetVertexAlpha(obj2[lp], i, 0 );
+				ObjPrim_SetVertexAlpha(obj2[lp], j, move1*223 + move1*32*lp - move2*223 );
+			}
+			
+			pc			+= 360/kaku;
+			i			+= 2;
+			j			+= 2;
+			_rect		= _rect + 256;
+		}
+		pc			= 0;
+		i			= 0;
+		j			= 1;
+		_rect		= 0;
+		
+		count++;
+		if( move1 < 1 ){ moveA += 1; }
+		if( move2 < 1 && count > long ){ moveB += 1; }
+		else if( move2 >= 1 ){ break; }
+		
+		ascent( let _i in 0..3 ){
+			posXYZ[_i] = posXYZ[_i] + moveXYZ[_i];
+		}
+		
+		yield;
+	}
+	ascent( lp in 0..( length(obj) ) ){
+		Obj_Delete(obj[lp]);
+		Obj_Delete(obj2[lp]);
+	}
+}
+
+//　オーロラ
+task CreateAurora(pos){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let obj			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	let ang			= rand(0,360);
+	let kaku		= 48;
+	let pc			= 0;
+	let i			= 0;
+	let j			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= 0;
+	//　円の太さ
+	let wight		= 32;
+	//　回転の早さ
+	let ang_plus	= 6;
+	
+	ObjRender_SetPosition(obj, pos[0], pos[1], pos[2] );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "./../img/effect/aurora01a.png" );
+	ObjRender_SetBlendType(obj, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(obj, world_layer );
+	ObjPrim_SetVertexCount(obj, ten );
+	ObjRender_SetAngleXYZ(obj, 90, 0, 0 );
+	ObjSprite3D_SetBillboard(obj, true );
+	ObjRender_SetFogEnable(obj, false );
+	
+	let move	= [];
+	let alpha	= [];
+	let color	= [];
+	ascent( i in 0..( ten ) ){
+		move	= move ~ [0];
+		alpha	= alpha ~ [0];
+		color	= color ~ [ [0,0,0] ];
+	}
+	ascent( i in 0..( ten ) ){
+		move[i]		= rand(-128,128);
+		alpha[i]	= rand(128,255);
+		color[i]	= [ 128, 128 + rand(-64,64), 64 + rand(-64,64) ];
+	}
+	i = 0;
+	
+	//　下の処理あるから要らんけど、一応
+	move[0]		= move[ length(move)-1 ];
+	color[0]	= color[ length(color)-1 ];
+	
+	//　最初の頂点と最後の頂点はくっついてる様でくっついてないので、a値を 0 にしてごまかす
+	alpha[0]	= 0;
+	alpha[ length(alpha)-1 ] = 0;
+	
+	//　オーロラ下方向への変化量　カメラの関係でz軸
+	let z2 = 512 + rand(0,256);
+	
+	while( IsActive[0] && GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAngleXYZ(obj, 90 + 16*sin( count/8 ), 0, 0 );
+		
+		if( !OnSpell ){
+			let ct = 0;
+			
+			loop( ten/2 ){
+				let dis = [
+					[ 1024+32*sin(count), 256+32*cos(count), 0 ],
+					[ (1024+128)+32*cos(count), (256+128)+32*sin(count), z2 ],
+				];
+				
+				ObjPrim_SetVertexPosition(obj, i, dis[0][0] * cos(pc), dis[0][1] * sin(pc), dis[0][2] );
+				ObjPrim_SetVertexPosition(obj, j, dis[1][0] * cos(pc), dis[1][1] * sin(pc), dis[1][2] + move[ct] * sin( count*(move[ct]/64) ) );
+				ObjPrim_SetVertexUVT(obj, i, 0 + _rect - count, 0 );
+				ObjPrim_SetVertexUVT(obj, j, 0 + _rect - count, 512 );
+				ObjPrim_SetVertexAlpha(obj, i, 0 );
+				ObjPrim_SetVertexAlpha(obj, j, move1*alpha[ct] + 64*sin( count*(move[ct]/32) ) );
+				ObjPrim_SetVertexColor(obj, i, color[ct][0] + 127*sin(count*2), color[ct][1], color[ct][2] );
+				ObjPrim_SetVertexColor(obj, j, color[ct*2][0] + 127*sin(count*2), color[ct*2][1], color[ct*2][2] );
+				
+				pc			+= 360/kaku;
+				i			+= 2;
+				j			+= 2;
+				_rect		+= 128;
+				ct++;
+			}
+			pc			= 0;
+			i			= 0;
+			j			= 1;
+			_rect		= 0;
+			
+			count++;
+			if( move1 < 1 ){ moveA += 0.1; }
+		}
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　星っぽいやつ
+task CreateConstellation( pos ){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let obj			= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	let kaku		= 28;
+	let pc			= 0;
+	let i			= 0;
+	let j			= 1;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( kaku + 1 ) * 2;
+	//　画像rect
+	let _rect		= 0;
+	
+	ascent( i in 0..( length(obj) ) ){
+		ObjRender_SetPosition(obj[i], pos[0], pos[1], pos[2] );
+		ObjPrim_SetPrimitiveType(obj[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj[i], GetCurrentScriptDirectory() ~ "./../img/effect/constellation01a.png" );
+		ObjRender_SetBlendType(obj[i], BLEND_ADD_ARGB );
+		Obj_SetRenderPriorityI(obj[i], world_layer );
+		ObjPrim_SetVertexCount(obj[i], ten );
+		ObjSprite3D_SetBillboard(obj[i], true );
+		ObjRender_SetFogEnable(obj[i], false );
+	}
+	
+	let rgb_array	= [];
+	let alpha		= [];
+	let ra			= [];
+	ascent( i in 0..( ten ) ){
+		rgb_array	= rgb_array ~ [ [rand(0,255),rand(0,255),rand(0,255)] ];
+		alpha		= alpha ~ [ rand(128,192) ];
+		ra			= ra ~ [ rand(-32,32) ];
+	}
+	i = 0;
+	
+	while( IsActive[0] && GetAreaCommonData( "System", "Stage_Index", 0 ) == 3 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			loop( ten/2 ){
+				let dis = [ 192, 512 ];
+				let spin = count/-8;
+				
+				ascent( let i2 in 0..( length(obj) ) ){
+					ObjPrim_SetVertexPosition(obj[i2], i, (dis[0]+i2*128) * cos(pc+spin), (dis[0]+i2*128) * sin(pc+spin), 256 );
+					ObjPrim_SetVertexPosition(obj[i2], j, (dis[1]+i2*128) * cos(pc+spin), (dis[1]+i2*128) * sin(pc+spin), 0 );
+					ObjPrim_SetVertexUVT(obj[i2], i, 0 + _rect + count*i2, 0 );
+					ObjPrim_SetVertexUVT(obj[i2], j, 0 + _rect + count*i2, 512 );
+					ObjPrim_SetVertexAlpha(obj[i2], i, (move1*alpha[0]) + (move1*16) * cos( count*ra[0] ) );
+					ObjPrim_SetVertexAlpha(obj[i2], j, 0 );
+					ObjPrim_SetVertexColor(obj[i2], i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+					ObjPrim_SetVertexColor(obj[i2], j, rgb_array[j][0], rgb_array[j][1], rgb_array[j][2] );
+				}
+				
+				pc			+= 360/kaku;
+				i			+= 2;
+				j			+= 2;
+				_rect		+= 73;
+			}
+			pc			= 0;
+			i			= 0;
+			j			= 1;
+			_rect		= 0;
+		}
+		
+		count++;
+		if( move1 < 1 ){ moveA += 0.1; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(obj) ) ){
+		Obj_Delete( obj[i] );
+	}
+}
+
+//　泡
+task CreateBubble(pos,movep,sca,alpha,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	let flash		= rand(2,64);
+	let r_tex		= rand(0,99);
+	
+	//　点滅の速度
+	let rc			= truncate( rand(2,4) );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/effect/bubble01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	if( r_tex >= 0 && r_tex < 30 ){
+		ObjSprite3D_SetSourceDestRect(ID, 0, 0, 128, 128 );
+	}
+	else if( r_tex >= 0 && r_tex < 30 ){
+		ObjSprite3D_SetSourceDestRect(ID, 128, 0, 256, 128 );
+	}
+	else{
+		ObjSprite3D_SetSourceDestRect(ID, 0, 128, 128, 256 );
+	}
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, (move1*(alpha/2)) - (move1*(alpha/4))*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, alpha/2 - alpha/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	while( move1 < 1 && !OnSpell ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		let fade = alpha - move1*alpha;
+		
+		ObjRender_SetAlpha(ID, fade/2 - fade/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		move[2] = move[2] + movep[2];
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　流れる雲　EX用
+task CreateCloudEX( pos, movep, sca, long, rgb_array, alpha ){
+	let ID			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], pos[2] );
+	ObjPrim_SetTexture(ID, world_effect_texture_path[1] );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, world_layer );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAngleZ(ID, rand(0,360) );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite3D_SetSourceDestRect(ID, 0, 0, 256, 256 );
+	ObjSprite3D_SetBillboard(ID, true );
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　滝っぽいの　EX用
+task CreateFall( pos, movep, sca, long, rgb_array, alpha ){
+	let ID			= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	let scale = [ sca+0.1, -sca ];
+	let blend = [ BLEND_ADD_ARGB, BLEND_ADD_ARGB ];
+	
+	ascent( let i in 0..length(ID) ){
+		ObjRender_SetPosition( ID[i], pos[0], pos[1], pos[2] );
+		ObjPrim_SetTexture( ID[i], world07_texture_path[2] );
+		ObjRender_SetBlendType( ID[i], blend[i] );
+		Obj_SetRenderPriorityI( ID[i], world_layer );
+		ObjRender_SetScaleXYZ( ID[i], scale[i%2], 1, 0 );
+		ObjRender_SetColor( ID[i], rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjSprite3D_SetSourceDestRect( ID[i], 0, 0, 512, 1024 );
+		ObjRender_SetAngleXYZ( ID[i], -70+90, 90, 0 );
+		ObjRender_SetFogEnable( ID[i], false );
+	}
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+			ObjPrim_SetVertexAlpha( ID[i], 0, move1*alpha[0] );
+			ObjPrim_SetVertexAlpha( ID[i], 1, move1*alpha[1] );
+			ObjPrim_SetVertexAlpha( ID[i], 2, move1*alpha[2] );
+			ObjPrim_SetVertexAlpha( ID[i], 3, move1*alpha[3] );
+		}
+		ObjSprite3D_SetSourceDestRect( ID[0], 0, 0 + frame*2, 512, 1024 + frame*2 );
+		ObjSprite3D_SetSourceDestRect( ID[1], 0, 0 + frame*4, 512, 1024 + frame*4 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 0.2;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+		}
+		ObjSprite3D_SetSourceDestRect( ID[0], 0, 0 + frame*2, 512, 1024 + frame*2 );
+		ObjSprite3D_SetSourceDestRect( ID[1], 0, 0 + frame*4, 512, 1024 + frame*4 );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], pos[0]+move[0], pos[1]+move[1], pos[2]+move[2] );
+			ObjPrim_SetVertexAlpha( ID[i], 0, alpha[0] - move1*alpha[0] );
+			ObjPrim_SetVertexAlpha( ID[i], 1, alpha[1] - move1*alpha[1] );
+			ObjPrim_SetVertexAlpha( ID[i], 2, alpha[2] - move1*alpha[2] );
+			ObjPrim_SetVertexAlpha( ID[i], 3, alpha[3] - move1*alpha[3] );
+		}
+		ObjSprite3D_SetSourceDestRect( ID[0], 0, 0 + frame*2, 512, 1024 + frame*2 );
+		ObjSprite3D_SetSourceDestRect( ID[1], 0, 0 + frame*4, 512, 1024 + frame*4 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 0.5;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+
+
+
+//　画面推移用
+//　雲
+task CreateCloud_Trance(pos,movep,sca,long,rgb_array){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let move		= [0,0,0];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, world_effect_texture_path[0] );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, world_layer+1 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAngleZ(ID, pos[2] );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleZ(ID, pos[2] );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( frame < long ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleZ(ID, pos[2] );
+		
+		if( !OnSpell ){
+			frame++;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	while( move1 < 1 ){
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleZ(ID, pos[2] );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		if( !OnSpell ){
+			frame++;
+			moveA += 1;
+			move[0] = move[0] + movep[0];
+			move[1] = move[1] + movep[1];
+			move[2] = move[2] + movep[2];
+		}
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+
+//　h:色相 多分255位で一周してる
+//　s:彩度 上限 255
+//　v:明度 上限 255
+//　要素数 3 の配列で RGB が返る
+function HSVtoRGB( h, s, v ){
+	let f;
+	let i;
+	let p;
+	let q;
+	let t;
+	let rgb = [0,0,0];
+	
+	i = floor(h / 60) % 6;
+	f = (h / 60) - floor(h / 60);
+	p = round( v * (1 - (s / 255) ) );
+	q = round( v * (1 - (s / 255) * f) );
+	t = round( v * (1 - (s / 255) * (1 - f) ) );
+	
+	alternative(i)
+	case(0){ rgb[0] = v; rgb[1] = t; rgb[2] = p; }
+	case(1){ rgb[0] = q; rgb[1] = v; rgb[2] = p; }
+	case(2){ rgb[0] = p; rgb[1] = v; rgb[2] = t; }
+	case(3){ rgb[0] = p; rgb[1] = q; rgb[2] = v; }
+	case(4){ rgb[0] = t; rgb[1] = p; rgb[2] = v; }
+	case(5){ rgb[0] = v; rgb[1] = p; rgb[2] = q; }
+	
+	return rgb;
+}

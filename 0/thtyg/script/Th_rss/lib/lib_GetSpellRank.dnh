@@ -1,0 +1,236 @@
+
+
+let getrank_tex = [
+	GetCurrentScriptDirectory() ~ "./../img/front/getspell_rank01a.png",
+	GetCurrentScriptDirectory() ~ "./../img/front/getspell_rank01b.png",
+	GetCurrentScriptDirectory() ~ "./../img/front/getspell_rank01c.png",
+];
+
+//　取得ランク表示
+task DisplayRank_Main( ID ){
+	//　評定
+	let rank = 0;
+	
+	/*
+		rank
+		0 完全勝利
+		1 勝利
+		2 及第点
+		3 敗北
+	*/
+
+	let gpos = [ ObjMove_GetX( ID ), ObjMove_GetY( ID ) ];
+	
+	while( ObjEnemy_GetInfo(ID,INFO_LIFE) > 0 ){
+		gpos = [ ObjMove_GetX( ID ), ObjMove_GetY( ID ) ];
+		
+		//　メガ使用
+		if( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+			rank = 1;
+		}
+		yield;
+	}
+	let ObjScene = GetEnemyBossSceneObjectID();
+	//　スペルカードでなければ抜ける
+	if( !ObjEnemyBossScene_GetInfo( ObjScene, INFO_IS_SPELL ) ){ return; }
+	//　ボム使用
+	if( ObjEnemyBossScene_GetInfo( ObjScene, INFO_PLAYER_SPELL_COUNT ) > 0 ){
+		rank = 2;
+	}
+	//　被弾なし
+	if( ObjEnemyBossScene_GetInfo( ObjScene, INFO_PLAYER_SHOOTDOWN_COUNT ) > 0 ){
+		rank = 3;
+	}
+	
+	DisplayRank_Child01( [ CenX-80, CenY+24 ], 0.36, 79, rank );
+	DisplayRank_Child02( [ CenX, CenY+18 ], 0.6, 79, rank );
+	DisplayRank_Child03( [ CenX, CenY+37 ], 0.5, 79, rank );
+
+	//　完全勝利で青結晶ボーナス
+	if( rank == 0 ){
+		NotifyEventAll( EV_USER + 42, gpos );
+	}
+
+	//勝利以上でスペルカード取得回数＋
+	if( rank <= 1 ){
+		let gc = GetCommonData( "GainSpellCount", 0 );
+		SetCommonData( "GainSpellCount", gc + 1 );
+	}
+}
+
+//　金銀銅の表示
+task DisplayRank_Child01( pos, scale, layer, type ){
+	if( type == 3 ){ return; }
+	
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let frame	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture( obj, getrank_tex[0] );
+	Obj_SetRenderPriorityI( obj, layer );
+	ObjRender_SetBlendType( obj, BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect( obj, 0 + type*128, 0, 128 + type*128, 128 );
+	ObjSprite2D_SetDestCenter( obj);
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAngleXYZ( obj, 0, 0, move1*360 );
+		ObjRender_SetScaleXYZ( obj, move1*scale, move1*scale, 0 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	
+	//　2秒待機
+	loop( 120 ){
+		if( frame%4 == 0 ){
+			DisplayRank_Effect( [ pos[0] + rand(-24,24), pos[1] + rand(-24,24) ], scale/2.4, rand(128,192), layer );
+		}
+		frame++;
+		yield;
+	}
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( obj, scale - move1*scale, scale - move1*scale, 0 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　評定表示
+task DisplayRank_Child02( pos, scale, layer, type ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture( obj, getrank_tex[1] );
+	Obj_SetRenderPriorityI( obj, layer );
+	ObjRender_SetBlendType( obj, BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect( obj, 0, 0 + type*64, 256, 64 + type*64 );
+	ObjSprite2D_SetDestCenter( obj);
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( obj, scale*2 - move1*scale, move1*scale, 0 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	
+	//　2秒待機
+	loop( 120 ){ yield; }
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAlpha( obj, 255 - move1*255 );
+		ObjRender_SetScaleXYZ( obj, scale + move1*scale, scale - move1*scale, 0 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　評定表示
+task DisplayRank_Child03( pos, scale, layer, type ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture( obj, getrank_tex[1] );
+	Obj_SetRenderPriorityI( obj, layer );
+	ObjRender_SetBlendType( obj, BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect( obj, 256, 0 + type*64, 512, 64 + type*64 );
+	ObjSprite2D_SetDestCenter( obj);
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( obj, scale, move1*scale, 0 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	
+	//　2秒待機
+	loop( 120 ){ yield; }
+	
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ( obj, scale, scale - move1*scale, 0 );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+//　キラキラっぽいエフェクト
+task DisplayRank_Effect( pos, scale, alpha, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	let animC	= 0;
+	let anim1	= 0;
+	let angle	= rand( 0, 360 );
+	let ap		= rand( -1, 1 );
+	
+	while( ap == 0 ){ ap = rand( -1, 1 ); }
+	
+	ObjRender_SetPosition( obj, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture( obj, getrank_tex[2] );
+	Obj_SetRenderPriorityI( obj, layer );
+	ObjRender_SetBlendType( obj, BLEND_ADD_ARGB );
+	ObjRender_SetAngleZ( obj, angle );
+	ObjRender_SetScaleXYZ( obj, scale, scale, 0 );
+	ObjSprite2D_SetSourceRect( obj, 0, 0, 128, 128 );
+	ObjSprite2D_SetDestCenter( obj);
+	
+	while( anim1 < 4 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		let alpha_fl = [ move1*alpha, move1*alpha / 2 ];
+		ObjRender_SetAlpha( obj, alpha_fl[ animC%2 ] );
+		ObjRender_SetAngleZ( obj, angle );
+		ObjSprite2D_SetSourceRect( obj, 0 + anim1*128, 0, 128 + anim1*128, 128 );
+		
+		animC++;
+		moveA += 2;
+		angle += ap*4;
+		if( animC > 0 && animC%8 == 0 ){ anim1++; }
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}

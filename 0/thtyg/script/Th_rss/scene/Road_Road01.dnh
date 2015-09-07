@@ -1,0 +1,809 @@
+function Road01(){
+	let enm_num = GetEnemyIntersectionPosition(CenX, CenY, 512 );
+	let plural;
+	let compile_file_h;
+	
+	plural = csd ~ "./enm/Plural_stage01A.dnh";
+	
+	//　中ボスロード開始
+	compile_file_h = LoadScriptInThread( plural );
+	LoadBossScript( compile_file_h );
+	
+	
+	
+	
+	//　nフレーム待機
+	function FrameWait( n ){
+		loop( n ){ yield };
+	}
+	//　自機ボム終了まで待機
+	function WaitForSpell(){
+		while( IsPlayerSpellActive() ){ yield; }
+	}
+	//　敵の数が 0 になるまで待機
+	function WaitForZeroEnemy(){
+		let AllEnemy	= GetAllEnemyID();
+		let AllBoss		= GetEnemyBossObjectID();
+		let AllScene	= GetEnemyBossSceneObjectID();
+		while( length(AllEnemy) > 0 || length(enm_num) != 0 || length(AllBoss)!=0 || AllScene!=ID_INVALID ){
+			AllEnemy	= GetAllEnemyID();
+			AllBoss		= GetEnemyBossObjectID();
+			AllScene	= GetEnemyBossSceneObjectID();
+			yield;
+		}
+	}
+	//　すべての敵を削除
+	function VanishAllEnemy(){
+		let AllEnemy	= GetAllEnemyID();
+		let i			= 0;
+		while(i<length(AllEnemy)){
+			Obj_Delete(AllEnemy[i]);
+			i++;
+		}
+	}
+
+	//　テスト用雑魚でーた
+	/*
+	local{
+		
+		loop{ yield; }
+	}
+	//*/
+	
+	
+	ActiveArray_Default( true );
+	
+	Stage01_WorldManager();
+	
+	FrameWait(120);
+	
+	//　引数2に情報セット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+	//　[ テクスチャ番号(0~2), 画像rect番号 ]
+	NotifyEventAll( EV_USER + 2, [ 0, 1 ] );
+	DeleteMusic();
+	PlayMusic( 1, true, 0 );
+	
+	//ザコ妖精2 左→右上 a*2
+	task E_Pattern_Road01_1A( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_2( [MinX-64,CenY+64], [MaxX+rand(0,256),MinY-256] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//ザコ妖精2 右→左上 ax2
+	task E_Pattern_Road01_1B( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_2( [MaxX+64,CenY+64], [MinX-rand(0,256),MinY-256] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+	
+	//ザコ妖精2 左上→右 a*2
+	task E_Pattern_Road01_1C( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_2( [MinX-64,MinY+48], [MaxX+64,CenY+rand(-96,96)] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//ザコ妖精2 右上→左 a*2
+	task E_Pattern_Road01_1D( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_2( [MaxX+64,MinY+48], [MinX-64,CenY+rand(-96,96)] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//---------------------
+	//ザコ妖精3 左→右
+	task E_Pattern_Road01_2A( a ){
+		loop( a ){
+			CreateEnemy_Road01_3( [MinX-64,MinY-rand(0,64)], [CenX+rand(0,160),CenY-rand(96,192)], [MaxX+256,MinY] );
+			loop( 5 ){ yield; }
+		}
+	}
+
+	//ザコ妖精3 右→左
+	task E_Pattern_Road01_2B( a ){
+		loop( a ){
+			CreateEnemy_Road01_3( [MaxX+64,MinY-rand(0,64)], [CenX-rand(0,160),CenY-rand(96,192)], [MinX-256,MinY] );
+			loop( 5 ){ yield; }
+		}
+	}
+	
+	//-----------------------
+	//ザコ妖精7 左→右上 a*2
+	task E_Pattern_Road01_7A( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_7( [MinX-64,CenY+64], [MaxX+rand(0,256),MinY-256] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//ザコ妖精7 右→左上 ax2
+	task E_Pattern_Road01_7B( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_7( [MaxX+64,CenY+64], [MinX-rand(0,256),MinY-256] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+	
+	//ザコ妖精7 左上→右 a*2
+	task E_Pattern_Road01_7C( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_7( [MinX-64,MinY+48], [MaxX+64,CenY+rand(-96,96)] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//ザコ妖精7 右上→左 a*2
+	task E_Pattern_Road01_7D( a ){
+		loop( 2 ){
+			loop( a ){
+				CreateEnemy_Road01_7( [MaxX+64,MinY+48], [MinX-64,CenY+rand(-96,96)] );
+				loop( 12 ){ yield; }
+			}
+			loop( 20 ){ yield; }
+		}
+	}
+
+	//ザコ妖精9 右→Ｕターン
+	task E_Pattern_Road01_9A( a ){
+		loop( a ){
+			CreateEnemy_Road01_9( [MaxX+64,CenY-96], [MaxX,CenY-96], [384,128], 270, -2 );
+			loop( 8 ){ yield; }
+		}
+	}
+	//ザコ妖精9 左→Ｕたーん
+	task E_Pattern_Road01_9B( a ){
+		loop( a ){
+			CreateEnemy_Road01_9( [MinX-64,CenY-96], [MinX,CenY-96], [384,128], 270, 2 );
+			loop( 8 ){ yield; }
+		}
+	}
+
+	// ----------PhaseA------------
+	
+	CreateEnemy_Road01_1( [CenX,MinY-64], [CenX,CenY-128], [rand(MinX,MaxX),MinY-256] );
+	
+	FrameWait( 80 );
+	E_Pattern_Road01_1A( 8 );
+	
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_1D( 6 );
+	}
+	FrameWait( 60 );
+
+	E_Pattern_Road01_1B( 8 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_1( [CenX-128,MinY-64], [CenX-64,CenY-84], [CenX,MinY-256] );
+		CreateEnemy_Road01_1( [CenX+128,MinY-64], [CenX+64,CenY-84], [CenX,MinY-256] );
+	}
+	
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_1C( 6 );
+	}
+	FrameWait( 140 );
+	
+	StageTitleDisplay(180, csd ~ "./img/stg/stg1img/stg_t01a.png", [128,64,32] );
+	
+	FrameWait( 180 );
+
+	if( IsOverDrive ){
+		CreateEnemy_Road01_5( [CenX-80,CenY], [MaxX,MinY-256] );
+		CreateEnemy_Road01_5( [CenX+80,CenY], [MinX,MinY-256] );
+	}
+	FrameWait( 60 );
+	
+	CreateEnemy_Road01_1( [CenX,MinY-64], [CenX-96,CenY-128], [rand(MinX,MaxX),MinY-256] );
+	
+	FrameWait( 100 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_5( [CenX-50,CenY+48], [MaxX,MinY-256] );
+		CreateEnemy_Road01_5( [CenX+50,CenY+48], [MinX,MinY-256] );
+		CreateEnemy_Road01_5( [CenX-50,CenY-48], [MaxX,MinY-256] );
+		CreateEnemy_Road01_5( [CenX+50,CenY-48], [MinX,MinY-256] );
+	}
+	FrameWait( 50 );
+	CreateEnemy_Road01_1( [CenX,MinY-64], [CenX+96,CenY-128], [rand(MinX,MaxX),MinY-256] );
+	
+	FrameWait( 90 );
+
+	E_Pattern_Road01_1C( 5 );
+
+	FrameWait( 120 );
+
+	E_Pattern_Road01_2B( 10 );
+
+	FrameWait( 100 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX,CenY-48], [CenX,MinY-256] );
+	}
+	FrameWait( 50 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX,CenY-80], [CenX,MinY-256] );
+	}
+	FrameWait( 50 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX,CenY-112], [CenX,MinY-256] );
+	}
+
+	CreateEnemy_Road01_1( [CenX,MinY-64], [CenX+64,CenY-128], [rand(MinX,MaxX),MinY-256] );
+	
+	FrameWait( 150 );
+
+	CreateEnemy_Road01_1( [CenX,MinY-64], [CenX-64,CenY-128], [rand(MinX,MaxX),MinY-256] );
+
+	FrameWait( 90 );
+
+	E_Pattern_Road01_1D( 5 );
+
+	FrameWait( 120 );
+
+	E_Pattern_Road01_2A( 10 );
+
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7A( 6 );
+	}
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7C( 8 );
+	}
+	FrameWait( 60 );
+	
+	CreateEnemy_Road01_5( [CenX-48,CenY-128], [MaxX,MinY-256] );
+	CreateEnemy_Road01_5( [CenX+48,CenY-128], [MinX,MinY-256] );
+	
+	FrameWait( 70 );
+
+	CreateEnemy_Road01_5( [CenX-80,CenY-160], [MaxX,MinY-256] );
+	CreateEnemy_Road01_5( [CenX+80,CenY-160], [MinX,MinY-256] );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7B( 6 );
+	}
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7D( 8 );
+	}
+	FrameWait( 120 );
+
+	//-------------PhaseB-----------
+	
+	CreateEnemy_Road01_4( [CenX,CenY-128], [rand(MinX,MaxX),MinY-256] );
+	
+	FrameWait( 150 );
+	
+	E_Pattern_Road01_2A( 12 );
+	
+	FrameWait( 40 );
+
+	E_Pattern_Road01_2B( 12 );
+	
+	FrameWait( 100 );
+	
+	if( IsOverDrive ){
+		E_Pattern_Road01_1C( 8 );
+		E_Pattern_Road01_1D( 8 );
+	}
+	
+	FrameWait( 100 );
+	
+	CreateEnemy_Road01_5( [CenX-140,CenY-128], [CenX,MinY-256] );
+	FrameWait( 40 );
+	CreateEnemy_Road01_5( [CenX-80,CenY-128], [CenX,MinY-256] );
+	FrameWait( 40 );
+	CreateEnemy_Road01_5( [CenX-40,CenY-128], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX+140,CenY+64], [CenX,MaxY+256] );
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX+80,CenY+64], [CenX,MaxY+256] );
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX+40,CenY+64], [CenX,MinY+256] );
+		}
+	}
+
+	E_Pattern_Road01_1D( 6 );
+	
+	FrameWait( 50 );
+	
+	CreateEnemy_Road01_4( [CenX+96,CenY-128], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX+80,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+112,CenY-96], [CenX,MinY-256] );
+	}
+	
+	FrameWait( 240 );
+
+	E_Pattern_Road01_2B( 12 );
+	
+	FrameWait( 200 );
+	
+	CreateEnemy_Road01_5( [CenX+140,CenY-128], [CenX,MinY-256] );
+	FrameWait( 40 );
+	CreateEnemy_Road01_5( [CenX+80,CenY-128], [CenX,MinY-256] );
+	FrameWait( 40 );
+	CreateEnemy_Road01_5( [CenX+40,CenY-128], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX-140,CenY+64], [CenX,MaxY+256] );
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX-80,CenY+64], [CenX,MaxY+256] );
+			FrameWait( 40 );
+			CreateEnemy_Road01_5( [CenX-40,CenY+64], [CenX,MinY+256] );
+		}
+	}
+
+	E_Pattern_Road01_1C( 6 );
+	
+	FrameWait( 50 );
+	
+	CreateEnemy_Road01_4( [CenX-96,CenY-128], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX-80,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX-112,CenY-96], [CenX,MinY-256] );
+	}
+	FrameWait( 240 );
+
+	E_Pattern_Road01_2A( 12 );
+	
+	FrameWait( 200 );
+
+	
+	//-----------PhaseC------------
+	CreateEnemy_Road01_6( [CenX,CenY-128], [rand(MinX,MaxX),MinY-256] );
+
+	FrameWait( 60 );
+
+	E_Pattern_Road01_7A( 6 );
+
+	FrameWait( 120 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7C( 6 );
+	}
+	
+	FrameWait( 90 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7B( 6 );
+	}
+
+	FrameWait( 120 );
+
+	E_Pattern_Road01_7D( 6 );
+	
+	CreateEnemy_Road01_5( [CenX-114,CenY-20], [CenX,MinY-256] );
+	FrameWait( 30 );
+	CreateEnemy_Road01_5( [CenX-114,CenY-70], [CenX,MinY-256] );
+	FrameWait( 30 );
+	CreateEnemy_Road01_5( [CenX-114,CenY-120], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		E_Pattern_Road01_2A( 5 );
+		E_Pattern_Road01_2B( 5 );
+	}
+
+	E_Pattern_Road01_7B( 6 );
+
+	FrameWait( 120 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7D( 6 );
+	}
+	
+	FrameWait( 90 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_7A( 6 );
+	}
+
+	FrameWait( 120 );
+
+	E_Pattern_Road01_7C( 6 );
+	
+	CreateEnemy_Road01_5( [CenX+114,CenY-20], [CenX,MinY-256] );
+	FrameWait( 30 );
+	CreateEnemy_Road01_5( [CenX+114,CenY-70], [CenX,MinY-256] );
+	FrameWait( 30 );
+	CreateEnemy_Road01_5( [CenX+114,CenY-120], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		E_Pattern_Road01_2A( 5 );
+		E_Pattern_Road01_2B( 5 );
+	}
+	FrameWait( 120 );
+	
+	CreateEnemy_Road01_6( [CenX,CenY-64], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX-32,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+32,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX-32,CenY-32], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+32,CenY-32], [CenX,MinY-256] );
+	}
+	
+	FrameWait( 100 );
+	
+	//　中間地点
+	ActiveArray_Change( 0, false );
+	
+	FrameWait( 120 );
+	
+	//　チルノ
+	CreateEnemy_Road01_8( [MaxX,MinY-64], [CenX,CenY-128], [MinX,MinY-256] );
+	
+	FrameWait( 50 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_5( [CenX+30,CenY-64], [CenX,MaxY+256] );
+		CreateEnemy_Road01_5( [CenX-30,CenY-64], [CenX,MaxY+256] );
+		E_Pattern_Road01_9B( 12 );
+	}
+	FrameWait( 150 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_5( [CenX+48,CenY-48], [CenX,MaxY+256] );
+		CreateEnemy_Road01_5( [CenX-48,CenY-48], [CenX,MaxY+256] );
+		E_Pattern_Road01_9A( 12 );
+	}
+	FrameWait( 200 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_1( [CenX-96,MinY-96], [CenX-64,CenY-84], [CenX,MinY-256] );
+		CreateEnemy_Road01_1( [CenX+96,MinY-96], [CenX+64,CenY-84], [CenX,MinY-256] );
+	}
+	FrameWait( 100 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_9A( 8 );
+		E_Pattern_Road01_9B( 8 );
+	}
+	
+	//------------PhaseD--------------
+	CreateEnemy_Road01_10( [MinX-64,MinY], [CenX-96,CenY-128], [MaxX+256,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_10( [MinX-64,MinY], [CenX-32,CenY-100], [MaxX+256,MinY-256] );
+	}
+
+	E_Pattern_Road01_9A( 15 );
+	
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_2A( 5 );
+		E_Pattern_Road01_2B( 5 );
+	}
+	FrameWait( 100 );
+
+	E_Pattern_Road01_1C( 5 );
+
+	E_Pattern_Road01_1D( 5 );
+
+	FrameWait( 150 );
+
+	CreateEnemy_Road01_10( [MinX+64,MinY], [CenX+96,CenY-128], [MaxX+256,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_10( [MinX+64,MinY], [CenX+32,CenY-100], [MaxX+256,MinY-256] );
+	}
+
+	E_Pattern_Road01_9B( 15 );
+	
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_2A( 5 );
+		E_Pattern_Road01_2B( 5 );
+	}
+	FrameWait( 100 );
+
+	E_Pattern_Road01_7C( 5 );
+
+	E_Pattern_Road01_7D( 5 );
+
+	FrameWait( 50 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX-48,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX-32,CenY-112], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX-64,CenY-112], [CenX,MinY-256] );
+	}
+	FrameWait( 100 );
+
+	CreateEnemy_Road01_10( [MinX+64,MinY], [CenX+144,CenY-128], [MaxX+256,MinY-256] );
+	FrameWait( 60 );
+	CreateEnemy_Road01_10( [MinX+64,MinY], [CenX+96,CenY-96], [MaxX+256,MinY-256] );
+	FrameWait( 60 );
+	CreateEnemy_Road01_10( [MinX+64,MinY], [CenX+48,CenY-64], [MaxX+256,MinY-256] );
+
+	FrameWait( 100 );
+	
+	E_Pattern_Road01_9B( 20 );
+	
+	FrameWait( 100 );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX+48,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+32,CenY-112], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+64,CenY-112], [CenX,MinY-256] );
+	}
+	CreateEnemy_Road01_10( [MaxX-64,MinY], [CenX-144,CenY-128], [MaxX+256,MinY-256] );
+	FrameWait( 60 );
+	CreateEnemy_Road01_10( [MaxX-64,MinY], [CenX-96,CenY-96], [MaxX+256,MinY-256] );
+	FrameWait( 60 );
+	CreateEnemy_Road01_10( [MaxX-64,MinY], [CenX-48,CenY-64], [MaxX+256,MinY-256] );
+
+	FrameWait( 100 );
+	
+	E_Pattern_Road01_9A( 20 );
+	
+	FrameWait( 75 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_9B( 16 );
+	}
+	FrameWait( 75 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_9A( 16 );
+	}
+	
+	CreateEnemy_Road01_11( [MinX-64,MinY], [CenX-96,CenY-70], [MaxX+256,MinY-256] );
+	
+	CreateEnemy_Road01_11( [MaxX+64,MinY], [CenX+96,CenY-70], [MinX-256,MinY-256] );
+	
+	FrameWait( 75 );
+	if( IsOverDrive ){
+		E_Pattern_Road01_9B( 16 );
+	}
+	FrameWait( 60 );
+
+	CreateEnemy_Road01_6( [CenX,CenY-64], [CenX,MinY-256] );
+	if( IsOverDrive ){
+		CreateEnemy_Road01_4( [CenX-32,CenY-64], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX+32,CenY-64], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX,CenY-96], [CenX,MinY-256] );
+		CreateEnemy_Road01_4( [CenX,CenY-32], [CenX,MinY-256] );
+	}
+	FrameWait( 150 );
+	
+	E_Pattern_Road01_9A( 20 );
+	E_Pattern_Road01_9B( 20 );
+	
+	FrameWait( 440 );
+	//*/
+	//　ボス
+	VanishAllEnemy();
+	WaitForZeroEnemy();
+	WaitForSpell();
+	DeleteShotAll(TYPE_ALL, TYPE_ITEM);
+	FrameWait(60);
+	RegistBoss();
+	FrameWait(300);
+	WaitForZeroEnemy();
+	FrameWait(120);
+	
+	//　ステージ背景変更奴の添え字初期化
+	ActiveArray_Default( true );
+	
+	//----------------敵の作成--------------------------------
+	task CreateEnemy_Road01_1(posD,posM,posE){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 7, 2, 166, 30, 100, 100, 40 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.1, 6 );
+		Road01_ShotPattern01( enm_obj, 60, ADD_BGW_BLUE_24, 300 );
+		loop( 500 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_2(posD,posM){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 2, 3, 10, 100, 100, 3 );
+		Road01_ShotPattern08( enm_obj, ADD_BGB_AQUA_04 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 1, 0.02, 4 );
+	}
+	task CreateEnemy_Road01_3(posD,posM,posE){
+		//　タイプ　色　体力　無敵　レート
+		let enm_obj = CreateEnemy01_Fairy( 1, 3, 10, 10, 100, 100, 3 );
+		Road01_ShotPattern09( enm_obj, ADD_BGB_PURPLE_04 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.1, 6 );
+		Road01_ShotPattern02( enm_obj, BGW_PURPLE_20 );
+		loop( 240 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_4(posD,posE){
+		let enm_obj = CreateEnemy01_Onmyougyoku( "AQUA", 60, 0, 100, 100, 60, 56 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		Road01_ShotPattern03( enm_obj, 180, [BGB_BLUE_10,BGW_AQUA_10], 400 );
+		loop( 600 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_5(posD,posE){
+		let enm_obj = CreateEnemy01_Onmyougyoku( "BLUE", 24, 0, 100, 100, 60, 32 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		Road01_ShotPattern04( enm_obj, 220, BGW_WHITE_26 );
+		loop( 300 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_6(posD,posE){
+		let enm_obj = CreateEnemy01_Onmyougyoku( "PURPLE", 120, 0, 100, 100, 60, 80 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		Road01_ShotPattern03( enm_obj, 150, [BGW_BLUE_18,BGW_AQUA_18], 420 );
+		loop( 600 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_7(posD,posM){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 2, 5, 9, 100, 100, 3 );
+	//	Road01_ShotPattern09( enm_obj, BGB_BLUE_04 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+	
+		OutDelete( enm_obj, [128,128] );
+		
+		Road01_ShotPattern00( enm_obj, 80 + round( rand( 0, 5 ) ) * 30, BGW_BLUE_26 );
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 1, 0.02, 4 );
+	}
+	task CreateEnemy_Road01_8(posD,posM,posE){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Cirno( 512, 36, 100, 100, 64 );
+		
+		OutDelete_DropItem( enm_obj, [128,128] );
+		
+		Road01_ShotPattern06( enm_obj, 120, [BGW_AQUA_08,BGW_AQUA_08], 540 );
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.1, 6 );
+		loop( 660 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_9(posD,posM,dis,angle,spin){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 2, 5, 3, 100, 100, 3 );
+		Road01_ShotPattern10( enm_obj, BGW_BLUE_08 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Circle( enm_obj, posM, dis, angle, spin, 16, 4, 0, 10 );
+	}
+	task CreateEnemy_Road01_10(posD,posM,posE){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 7, 2, 96, 12, 100, 100, 32 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.1, 6 );
+		Road01_ShotPattern07( enm_obj, 120, [BGW_AQUA_20,BGW_BLUE_20], 180 );
+		loop( 300 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road01_11(posD,posM,posE){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 7, 2, 64, 120, 100, 100, 32 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.1, 6 );
+		Road01_ShotPattern01( enm_obj, 60, ADD_BGW_BLUE_24, 180 );
+		loop( 240 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	
+	//　ユーティリティ
+	task OutDelete( ID, dis ){
+		let pos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		while( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] ){
+			if( Obj_IsDeleted(ID) ){ break; }
+			pos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+			yield;
+		}
+		Obj_Delete(ID);
+	}
+	task OutDelete_DropItem( ID, dis ){
+		let pos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		let frag	= false;
+		while( pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1] ){
+			if( Obj_IsDeleted(ID) ){
+				frag = true;
+				break;
+			}
+			pos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+			yield;
+		}
+		//　かけら放出
+		if( frag ){ NotifyEventAll( EV_USER + 38, pos ); }
+		Obj_Delete(ID);
+	}
+}
+
+//　ステージ背景推移マネージャ
+task Stage01_WorldManager(){
+	let IsActive = GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	
+	SetWorld01a();
+	
+	while( IsActive[0] ){
+		IsActive = GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		yield;
+	}
+	
+	SetWorld03b();
+}
+
+//　配列添え字変更マン
+function ActiveArray_Change(num,bool_value){
+	let SetArray = GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	
+	SetArray[ num ] = bool_value;
+	
+	loop( 120 ){
+		loop( 2 ){
+			CreateCloud_Trance([rand(-384,448),rand(-448,448),rand(0,360)], [rand(-1,1),1,rand(-1,1)],
+									1.6, 16, [rand(128,192),192,192] );
+		}
+		yield;
+	}
+	
+	SetAreaCommonData("StageTrance", "active", SetArray );
+}
+
+//　配列添え字変更マン　即時
+function ActiveArray_Change02(num,bool_value){
+	let SetArray = GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	
+	SetArray[ num ] = bool_value;
+	
+	SetAreaCommonData("StageTrance", "active", SetArray );
+}
+
+//　配列初期化
+function ActiveArray_Default( frag ){
+	SetAreaCommonData("StageTrance", "active", [frag,frag,frag,frag] );
+}
+
+//　画面振動　他道中でも呼び出せます
+task WorldShakeP(long,shake){
+	loop(long){
+		Set2DCameraFocusX(CenX+rand(-shake,shake));
+		Set2DCameraFocusY(CenY+rand(-shake,shake));
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+}

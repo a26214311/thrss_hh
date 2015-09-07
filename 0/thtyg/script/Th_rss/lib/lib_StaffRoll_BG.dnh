@@ -1,0 +1,201 @@
+
+
+//　Stage4
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　桃源海
+task SetWorld04_SR(){
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	let cc			= 0;
+	let i			= 0;
+	let j			= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let type		= 0;
+	
+	let csd			= GetCurrentScriptDirectory();
+	
+	Rain_SR( 82, 120 );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, csd ~ "./../img/front/Effect_White.png" );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, 81 );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	let path = [
+		csd ~ "./../img/world/world09/world09a.png",
+		csd ~ "./../img/world/world09/world09b.png",
+		csd ~ "./../img/world/world09/world09c.png",
+	];
+	
+	let blend = [
+		BLEND_ALPHA,
+		BLEND_ALPHA,
+		BLEND_ALPHA,
+	];
+	
+	loop( length(obj2) ){
+		ObjPrim_SetPrimitiveType(obj2[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetTexture(obj2[i], path[i] );
+		ObjRender_SetBlendType(obj2[i], blend[i] );
+		Obj_SetRenderPriorityI(obj2[i], 81 );
+		ObjPrim_SetVertexCount(obj2[i], 18 );
+		i++;
+	}
+	i = 0;
+	
+	let rect_base = 2048;
+	
+	//　頂点と画像rectの数値
+	let vertexX = [
+		-rect_base/2,
+		-rect_base/2,
+		-rect_base/3,
+		-rect_base/3,
+		-rect_base/4,
+		-rect_base/4,
+		-rect_base/8,
+		-rect_base/8,
+		0,
+		0,
+		rect_base/8,
+		rect_base/8,
+		rect_base/4,
+		rect_base/4,
+		rect_base/3,
+		rect_base/3,
+		rect_base/2,
+		rect_base/2,
+	];
+	let vertexY = [ -rect_base/2, rect_base/2 ];
+	let rectX = 512;
+	let rectY = [ 0, rectX*5 ];
+	
+	
+	let vertexZ = [];
+	let vertexZ_r = [];
+	ascent( i in 0..18 ){
+		vertexZ = vertexZ ~ [ rand(-96,96) ];
+	} i = 0;
+	
+	while( GetAreaCommonData("Stop","frag",false) ){
+		
+		move1 = 1 * sin( moveA );
+		
+		SetFogParam( 448, 1600, 192 - move1*128, 96 - move1*64, 32 + move1*32 );
+		SetCameraFocusX( 256 );
+		SetCameraFocusY( 64 );
+		SetCameraFocusZ( 0 );
+		SetCameraAzimuthAngle( 0 + 8 * sin( cc/8 ) );
+		SetCameraElevationAngle( 0 );
+		
+		let rectX_ch = rectX;
+		while( i < ObjPrim_GetVertexCount(obj2[0]) ){
+			loop( length(obj2) ){
+				let vz = [
+					vertexZ[ i ] * cos( cc*1.4 ),
+					vertexZ[ i ] * sin( cc*1.4 ),
+				];
+				ObjPrim_SetVertexPosition( obj2[j], i, vertexX[ i ], vertexY[ i%2 ], vz[ i%2 ] );
+				j++;
+			}
+			ObjPrim_SetVertexUVT( obj2[0], i, rectX_ch, rectY[ i%2 ] - cc*2 );
+			ObjPrim_SetVertexUVT( obj2[1], i, rectX_ch - 256 * sin(cc/4), rectY[ i%2 ] - cc*1.5 );
+			ObjPrim_SetVertexUVT( obj2[2], i, rectX_ch + 256 * cos(cc/4), rectY[ i%2 ] - cc*1 );
+			if( i > 0 && i%2 == 0 ){ rectX_ch += rectX; }
+			i++;
+			j = 0;
+		}
+		i = 0;
+		
+		ObjRender_SetPosition( obj2[0], -256, 0, 0 );
+		ObjRender_SetPosition( obj2[1], -256, 32, 0 );
+		ObjRender_SetPosition( obj2[2], -256, 64, 0 );
+		ObjRender_SetAngleXYZ( obj2[0], -50, 90, 0 );
+		ObjRender_SetAngleXYZ( obj2[1], -50, 90, 0 );
+		ObjRender_SetAngleXYZ( obj2[2], -50, 90, 0 );
+		ObjRender_SetAlpha( obj2[1], 128 + 12 * sin( cc*4 ) );
+		ObjRender_SetAlpha( obj2[2], 48 - 12 * sin( cc*8 ) );
+		
+		cc++;
+		if( move1 < 1 ){ moveA += 0.01; }
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete(def);
+	loop( length(obj2) ){
+		Obj_Delete(obj2[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　天候を雨にする
+task Rain_SR( Priority, wait ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D)
+	];
+	let i		= 0;
+	let ctr		= 0;
+	let scrX	= 0;
+	let scrY	= 0;
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let tpath	= [
+		GetCurrentScriptDirectory() ~ "../img/effect/rain.png",
+		GetCurrentScriptDirectory() ~ "../img/effect/foga01.png"
+	];
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], 320, 240, 0 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[i], tpath[i] );
+		Obj_SetRenderPriorityI(ID[i], Priority );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 640, 480 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	while( GetAreaCommonData("Stop","frag",false) ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAngleZ(ID[0], 0 - 16 * sin( ctr/16 ) );
+		ObjSprite2D_SetSourceRect(ID[0], 0 - scrX, 0 - scrY - ctr*2, 600 - scrX, 600 - scrY - ctr*2 );
+		ObjSprite2D_SetSourceRect(ID[1], 0, 0 - ctr/2, 600, 600 - ctr/2 );
+		ObjRender_SetAlpha(ID[0], move1*255 );
+		ObjRender_SetAlpha(ID[1], move1*32 + move1*8 * sin( ctr/4 ) );
+		
+		if( ctr > 0 && ctr%3 == 0 ){
+			let rscr = [rand(16,32),rand(32,64)];
+			scrX += rscr[0];
+			scrY += rscr[1];
+		}
+		ctr++;
+		count++;
+		if( move1 < 1 && count > wait ){ moveA += 0.01; }
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}

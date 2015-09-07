@@ -1,0 +1,190 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　やと通常04"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 51;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( frame == 180 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( frame == 280 ){
+			ShotMain(enm);
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1500 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,true] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07b(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		while( !Obj_IsDeleted(ID) ){
+			
+			let av = 0.18;
+			let way = 5;
+			let wide = 640;
+			let vx = -wide / 2;
+			loop( way ){
+				let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				let ppos = [ gpos[0] + vx, MinY + rand( 50, 160 ) ];
+				let speed = GetDistance( gpos, ppos ) / 40;
+				let angle = GetGapAngle( gpos, ppos );
+				Shot01( ID, speed, angle, av, -speed/40, 0, [ ADD_BGW_AQUA_02, BGW_BLUE_31 ], 32, 120 );
+				ObjSound_Play( CreateShotSE[1] );
+				vx += wide / ( way - 1 );
+			}
+			
+			if( Wait( 60 ) ){ return; }
+			
+			EnemyMove( ID, 2, 8 );
+			
+			if( Wait( 120 ) ){ return; }
+		}
+		
+	}
+	
+	task Shot01( ID, speed, angle, av, acc, maxspeed, shote, delay, wait ){
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let sht		= CreateShot01( gpos, speed, angle, acc, maxspeed, shote[0], delay );
+		ObjShot_SetSpellResist( sht, true );
+		Wait( wait );
+		
+		let lp = 18;
+		let rd = 16;
+		let ra = 90;
+		
+		if( Obj_IsDeleted(sht) ){ return; }
+		ascent( let i in 0..lp ){
+			let ag = 360/lp;
+			let spos = [
+				ObjMove_GetX(sht) + rd * cos( ra+i*ag ),
+				ObjMove_GetY(sht) + rd * sin( ra+i*ag ),
+			];
+			let speed = 3;
+			loop( 2 ){
+				let obj = CreateShot01( spos, speed, ra+i*ag, -speed/60, speed/2, shote[1], 8 );
+				ObjMove_SetAngularVelocity( obj, av );
+				speed /= 1.5;
+			}
+		}
+		ObjSound_Play( CreateShotSE[1] );
+		
+		local{
+			let spos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+			let p = 90;
+			let dis = 16;
+			let kill = 50;
+			let color = [ 32, 128, 244 ];
+			let delay = 60;
+			let way = 5;
+			ascent( let i in 0..way ){
+				let ag		= p + i*(360/way);
+				let pos	= [ spos[0] + dis * cos( ag ), spos[1] + dis * sin( ag ) ];
+				CreateSwordLaser( pos, p, 512, 16, kill, color, delay );
+			}
+			ObjSound_Play( CreateShotSE[13] );
+			if( Wait( 120 ) ){ return; }
+		}
+		
+		Obj_Delete( sht );
+	}
+	

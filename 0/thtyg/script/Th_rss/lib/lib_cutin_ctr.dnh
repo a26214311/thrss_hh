@@ -1,0 +1,11 @@
+
+#include "./../system/Load_AllTexture.dnh"		//　殆ど全部のテクスチャパス
+
+let path_front01	= front_tex[0];
+let path_front02	= front_tex[1];
+let se_cutin		= 0;
+
+#include"./lib_cutin_01.dnh"
+#include"./lib_cutin_02.dnh"
+#include"./lib_cutin_03.dnh"
+#include"./lib_cutin_04.dnh"

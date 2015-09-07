@@ -1,0 +1,115 @@
+
+task EventMain( CallID ){
+	
+	let frame	= 0;
+	let count	= 0;
+	let ctr		= 0;
+	let mpos	= [ 0, 24 ];
+	
+	let AutoTalk = 140;	
+	
+	//　敵のテクスチャ
+	let enemy_texture01 = [
+		chara_tex[36],	//　皇女
+		chara_tex[25],	//　垂神
+		chara_tex[41],	//　桃姫
+	];
+	
+	let enm_pos = [ 280, 64 ];
+	
+	//　共通データ作成　会話カウンタ作成
+	CreateCommonDataArea("Talk");
+	SetAreaCommonData("Talk", "counter", count );
+
+	//　スペプラ時はすっ飛ばす
+	if( GetAreaCommonData("System", "PlayMode", "Story" ) == "Spell" ){
+		SetAreaCommonData("Talk", "counter", 0 );
+		CallSpellCard( enm, 0 );
+		ShotMain( enm );
+		return;
+	}
+	
+	while( !Obj_IsDeleted(CallID) ){
+		SetForbidPlayerShot( true );
+		SetForbidPlayerSpell( true );
+		
+		//　時間停止
+		StopTimer();
+		
+		//　会話表示
+		if( frame == 1 ){
+			alternative( count )
+			case( 0 ){
+				let text = [
+					"　　この世は粟散辺土なれば",
+					"NULL",
+				];
+				CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [true,true], "front", false, [0,0,0], 1, count, enemy_texture01[0], 512 );
+				CreateBalloonManager_Reverse( [ CenX+32+mpos[0], CenY+32+mpos[1] ], 2, text, count, 0 );
+			}
+			case( 1 ){
+				let text = [
+					"我ら、[ ruby rb=\"水底の藤原の魂さえ鎮める者\" rt=\"リバーベッドソウルセーバー\" ]なれば",
+					"NULL",
+				];
+				CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [true,true], "front", false, [0,0,0], 1, count, enemy_texture01[1], 512 );
+				CreateBalloonManager_Reverse( [ CenX-32+mpos[0], CenY+32+mpos[1] ], 3, text, count, 0 );
+			}
+			case( 2 ){
+				let text = [
+					"あなたも極楽焦土へ連れて行く！",
+					"NULL",
+				];
+				CreateCharacterTexture( [ CenX+enm_pos[0]+mpos[0], CenY+enm_pos[1]+mpos[1] ], [true,true], "front", false, [0,0,0], 1, count, enemy_texture01[2], 512 );
+				CreateBalloonManager_Reverse( [ CenX+32+mpos[0], CenY+32+mpos[1] ], 2, text, count, 0 );
+			}
+			others{
+				SetAreaCommonData("Talk", "counter", 0 );
+				CallSpellCard( enm, 0 );
+				ShotMain( enm );
+				break;
+			}
+		}
+		
+		//　移動ウェイト
+		if( count == 10 ){
+			count = WaitForZeroSpeed( CallID, count );
+			SetAreaCommonData("Talk", "counter", count );
+		}
+		
+		//　カウンタ加算
+		frame++;
+		if( ObjMove_GetSpeed(CallID) <= 0 && count != 10 ){ ctr++; }
+		else{ ctr = 0; }
+		
+		//　会話自動進行
+		if( ctr > 0 && ctr%AutoTalk == 0 ){
+			count++;
+			frame = 0;
+			SetAreaCommonData("Talk", "counter", count );
+		}
+		
+		yield;
+	}
+	SetForbidPlayerShot( false );
+	SetForbidPlayerSpell( false );
+}
+
+//　速度 0 まで待機
+function WaitForZeroSpeed( ID, count ){
+	//　移動
+	ObjMove_SetDestAtWeight(ID, CenX, CenY-96, 8, 8 );
+	//　速度 0 まで待機
+	while( ObjMove_GetSpeed(ID) > 0 ){ yield; }
+	//　1秒待機
+	loop( 30 ){ yield; }
+	//　カウント + 1 を返す
+	return count + 1;
+}
+
+//　制限時間を上限で停止
+task StopTimer(){
+	// 時間停止
+	let BossScene = GetEnemyBossSceneObjectID();
+	ObjEnemyBossScene_SetSpellTimer( BossScene, (SET_TIMER) * 60 + 1 );
+}

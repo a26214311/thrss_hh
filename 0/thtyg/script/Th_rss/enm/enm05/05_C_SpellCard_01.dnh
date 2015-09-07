@@ -1,0 +1,305 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5　相撲「天使とヤコブの格闘」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 36;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		if( timer == 180 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 5, 0 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, C_aura_rgb[0], C_aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05a(enm, true, enemy_tex_path00 );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "相撲「天使とヤコブの格闘」";
+		}
+		case( "Hard", "Lunatic" ){
+/* to be translated */			spell_text = "土師「十人力ドラゴン相撲」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "土師「十人力ドラゴン相撲」";
+		}
+		
+		SpellCounter( GetDifficult, 5, 0 );
+		let sct = GetSpellCounter( GetDifficult, 5, 0 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 192, 192, [1,1], chara_tex[ 49 ], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_05a(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){ 
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let count	= 0;
+		let i		= 0;
+		
+		//　way数
+		let way		= 16;
+		let lp		= 1;
+		let shote	= [ ADD_BGW_ORANGE_07, BGW_RED_02 ];
+		let angle	= 0;
+		let wtA		= 240;
+		let wtB		= 0;
+		let repulsive = 0.6;
+		let movewt	= 60;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			repulsive = 0.8;
+			way = 0;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			lp = 3;
+			way = 16;
+			wtA = 200;
+			wtB = 30;
+			movewt = 30;
+			shote	= [ ADD_BGW_RED_07, BGW_AQUA_02 ];
+		}
+		case( "Lunatic" ){
+			lp = 5;
+			way = 15;
+			wtA = 200;
+			wtB = 20;
+			movewt = 20;
+			shote	= [ ADD_BGW_RED_07, BGW_AQUA_02 ];
+		}
+		case( "OverDrive" ){
+			shote	= [ ADD_BGW_RED_07, BGW_AQUA_02 ];
+		}
+		
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+
+		State;
+		task State{
+			Concentration03_Main( ID, power_rgb, 60 );
+			ObjSound_Play( CreateShotSE[5] );
+			Wait( 80 );
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				//　
+				let g_ang	= GetGapAngle( gpos, [ GetPlayerX(), GetPlayerY() ] );
+				let g_dist	= GetDistance( gpos, [ GetPlayerX(), GetPlayerY() ] );
+				
+				let spos = [
+					gpos[0] + (g_dist+repulsive) * cos( g_ang ),
+					gpos[1] + (g_dist+repulsive) * sin( g_ang ),
+				];
+				
+				ObjMove_SetPosition( GetPlayerObjectID(), spos[0], spos[1] );
+				yield;
+			}
+			task Effect{
+				loop{
+					JewelEffect( ID, [64,128,255], 16 );
+					if( Wait( 32 ) ){ return; }
+				}
+			}
+		}
+		
+		SetShot;
+		task SetShot{
+			//　土俵
+			CreateShot01( ID, [ CenX, CenY ], shote[0], 24, 160 );
+			Wait( 160 );
+			loop{
+			
+				//　自機に向かって移動
+				let l = lp;
+				loop( lp ){
+					let delay	= 32;
+					let ag		= GetAngleToPlayer( ID );
+					loop( way ){
+						let spos = [
+							gpos[0] + 32 * cos( ag ),
+							gpos[1] + 32 * sin( ag ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], 0, ag, 0.01, 1, shote[1], delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						ag += 360 / way;
+					}
+					ObjSound_Play( CreateShotSE[0] );
+					local{
+						let ag = GetAngleToPlayer( ID );
+						let dist = GetDistance( gpos, [ GetPlayerX, GetPlayerY ] ) / l;
+						let mx = gpos[0] + dist * cos( ag );
+						let my = gpos[1] + dist * sin( ag );
+						let speed = dist / movewt;
+						ObjMove_SetDestAtWeight( ID, mx, my, 16, speed );
+					}
+					l--;
+					if( Wait( wtB ) ){ return; }
+				}
+				if( Wait( wtA ) ){ return; }
+			}
+		}
+	}
+	
+	task CreateShot01( ID, pos, shote, delay, distance ){
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let count	= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		let lp		= 24;
+		
+		while( !Obj_IsDeleted(ID) ){
+			
+			move1 = 1 * sin( moveA );
+			
+			if( count%4 == 0 ){
+				let ag = rand(0,360);
+				ascent( let i in 0..( lp ) ){
+					let spos = [
+						pos[0] + ( distance*2 - move1*distance ) * cos( ag + i*(360/lp) ),
+						pos[1] + ( distance*2 - move1*distance ) * sin( ag + i*(360/lp) ),
+					];
+					
+					let sht = CreateShotA2( spos[0], spos[1], 2, ag + i*(360/lp), 0, 20, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				if( move1 < 1 ){ moveA += 1; }
+			}
+			
+			count++;
+			
+			yield;
+		}
+	}
+	
+	//　pos1 から見た pos2 への角度を取得
+	function GetGapAngle( pos1, pos2 ){
+		return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+	}

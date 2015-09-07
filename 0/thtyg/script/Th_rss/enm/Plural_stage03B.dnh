@@ -1,0 +1,136 @@
+////#東方弾幕風[Plural]
+#ScriptVersion[3]
+#Title["桃源宮　stage2 用　連続スクリプト　瑠璃"]
+#Text[""]
+#Image[""]
+#Background[""]
+#BGM[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+	
+	let csd			= GetCurrentScriptDirectory();
+	let objScene;
+	let _objScene;
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　Plural用の便利そうなやつ色々
+	#include "./../lib/lib_Plural.dnh"
+	//　各スペルカードSingleスクリプトへのパス
+	#include "./SpellCardPath.dnh"
+	
+	@Initialize{
+		objScene = ObjEnemyBossScene_Create();
+		_objScene = ObjEnemyBossScene_Create();
+		TPlural();
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		yield;
+	}
+	
+	@Finalize{ }
+	
+	task TPlural(){
+		let EnemyNameIn = 0;
+		
+		alternative( GetPlayerID() )
+		case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm03/03_Event_befor_PL01.dnh" );
+			EnemyNameIn = 3;
+		}
+		case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm03/03_Event_befor_PL02.dnh" );
+			EnemyNameIn = 3;
+		}
+		case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm03/03_Event_befor_PL03.dnh" );
+			EnemyNameIn = 4;
+		}
+		others{
+			ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm03/03_Event_befor_PL01.dnh" );
+		}
+		
+		ObjEnemyBossScene_Add(objScene, 0, csd ~ "./enm03/03_Normal_01.dnh" );
+		ObjEnemyBossScene_Add(objScene, 0, SpellCardPath_stage03[4] );
+		ObjEnemyBossScene_Add(objScene, 1, csd ~ "./enm03/03_Normal_02.dnh" );
+		ObjEnemyBossScene_Add(objScene, 1, SpellCardPath_stage03[8] );
+		ObjEnemyBossScene_Add(objScene, 2, csd ~ "./enm03/03_Normal_03.dnh" );
+		ObjEnemyBossScene_Add(objScene, 2, SpellCardPath_stage03[12] );
+		ObjEnemyBossScene_Add(objScene, 3, SpellCardPath_stage03[16] );
+		
+		alternative( GetPlayerID() )
+		case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){
+			ObjEnemyBossScene_Add(_objScene, 0, csd ~ "./enm03/03_Event_after_PL01.dnh" );
+		}
+		case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+			ObjEnemyBossScene_Add(_objScene, 0, csd ~ "./enm03/03_Event_after_PL02.dnh" );
+		}
+		case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+			ObjEnemyBossScene_Add(_objScene, 0, csd ~ "./enm03/03_Event_after_PL03.dnh" );
+		}
+		others{
+			ObjEnemyBossScene_Add(_objScene, 0, csd ~ "./enm03/03_Event_after_PL01.dnh" );
+		}
+		
+		//　別スレッドでロード（？）
+		ObjEnemyBossScene_LoadInThread( objScene );
+		ObjEnemyBossScene_LoadInThread( _objScene );
+		//　ボス出撃OKまで待機
+		while( !GetCommonData("RegistBoss", false ) ){ yield; }
+		//　出撃フラグをfalseに
+		SetCommonData("RegistBoss", false );
+		//　ボス出撃
+		ObjEnemyBossScene_Regist( objScene );
+		
+		let AllBoss		= GetEnemyBossObjectID();
+		
+		//　左上 敵の名前表示
+		EnemyNameDisplay(objScene, [128,192,255], 4, EnemyNameIn );
+		//　敵の持ってるスペカ量
+		ascent( let i in 0..ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT ) ){
+			EnemySpellDisplay(objScene, i );
+		}
+		
+		let pos;
+		
+		//敵ボスシーンが終了するまで待機
+		while( !Obj_IsDeleted(objScene) ){
+			AllBoss = GetEnemyBossObjectID();
+			if( length(AllBoss) > 0 ){
+				pos = [ObjMove_GetX(AllBoss[0]),ObjMove_GetY(AllBoss[0])];
+			}
+			yield;
+		}
+		
+		//　画面震動
+		WorldShake( 60, 8 );
+		
+		//　引数2に座標をセット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+		//　撃破エフェクトイベント
+		NotifyEventAll( EV_USER + 1, pos );
+		
+		wait( 90 );				//　待機
+		WorldShake( 60, 12 );	//　画面震動
+		
+		wait( 60 );			//　待機
+		
+		//　会話再生
+		ObjEnemyBossScene_Regist( _objScene );
+		
+		while( !Obj_IsDeleted(_objScene) ){ yield; }
+		
+		wait( 120 );			//　2秒待機
+		
+		//スクリプト終了
+		CloseScript( GetOwnScriptID() );
+	}

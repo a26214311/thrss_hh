@@ -1,0 +1,1175 @@
+
+
+//　プレイヤー選択
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+
+	let csd		= GetCurrentScriptDirectory();
+
+	//　使用する効果音
+	let se = [
+		PlaySEsP( csd ~ "./../se/menuselect.ogg" ),
+		PlaySEsP( csd ~ "./../se/menudecide.ogg" ),
+		PlaySEsP( csd ~ "./../se/menucancel.ogg" ),
+	];
+
+	//　装備選択フェイズになると true
+	let IsWeaponSelect = false;
+
+#include "./../system/Load_AllTexture.dnh"
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	TBackground();
+	TPlayerSelectScene();
+	
+	SetAreaCommonData("System", "selectP_weapon", 0 );
+	
+	SetScriptResult("");
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	Obj_DeleteArray( se );
+}
+
+
+//　渡された配列の中に入っているオブジェクトを全て削除
+task Obj_DeleteArray( obj_array ){
+	ascent( let i in 0..( length(obj_array) ) ){
+		Obj_Delete( obj_array[i] );
+	}
+}
+
+//　このスクリプト中でアクティブなサウンドオブジェクト
+function PlaySEsP(path){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	
+	return sid;
+}
+
+//　出る時用
+task PlaySEsP_Exit(path){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	ObjSound_Play(sid);
+	loop( 180 ){ yield; }
+	Obj_Delete(sid);
+}
+
+task TBackground(){
+	let objText	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 	= GetCurrentScriptDirectory();
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let flg		= 0;
+	let ctr		= 0;
+	let i		= 0;
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.56, 0.56, 0 );
+	ObjSprite2D_SetSourceRect(objText, 512, 0, 1024, 256 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+	
+	while( alpha1 < 1 && !eflg ){
+		let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg		= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		
+		if( Rsector == 3 ){
+			flg = 1;
+			break;
+		}
+		
+		alphaA += 5;
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !eflg ){
+		let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		let Psector	= GetAreaCommonData("System", "P_sector", 0 );
+		eflg		= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		
+		if( Rsector == 2 ){
+			flg = 1;
+		}
+		
+		ctr++;
+		if( flg != 0 ){ alphaA+=5; }
+		yield;
+	}
+	SetAreaCommonData("System", "selectP", 0 );
+	Obj_Delete( objText );
+	CloseScript( GetOwnScriptID() );
+}
+
+//----------------------------------------------------
+// 自機選択
+//----------------------------------------------------
+task TPlayerSelectScene{
+	let csd 	= GetCurrentScriptDirectory();
+	let ctr		= 0;
+	let cc		= 0;
+	let stc		= 0;	//　キャラ選択用
+	let stc_w	= 0;	//　装備選択用
+	let mt		= "LEFT";
+	let Psector	= GetAreaCommonData("System", "P_sector", 0 );
+	let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let tp		= GetAreaCommonData("System", "title_place", 0 );
+	
+	//　表示したいテクスチャのパス
+	//　プレイヤー説明
+	let path	= [
+		csd ~ "./../img/title/player01.png",
+		csd ~ "./../img/title/player02.png",
+		csd ~ "./../img/title/player03.png",
+	];
+	//　キャラクター立ち絵
+	let path2	= [
+		player_tex[0],
+		player_tex[14],
+		player_tex[37],
+	];
+	//　各自機装備
+	let path_weapon_reimu = [
+		csd ~ "./../img/title/pl01_weapon01.png",
+		csd ~ "./../img/title/pl01_weapon02.png",
+		csd ~ "./../img/title/pl01_weapon03.png"
+	];
+	let path_weapon_marisa = [
+		csd ~ "./../img/title/pl02_weapon01.png",
+		csd ~ "./../img/title/pl02_weapon02.png",
+		csd ~ "./../img/title/pl02_weapon03.png"
+	];
+	let path_weapon_futo = [
+		csd ~ "./../img/title/pl03_weapon01.png",
+		csd ~ "./../img/title/pl03_weapon02.png",
+		csd ~ "./../img/title/pl03_weapon03.png"
+	];
+	//　装備パス
+	let path_wepon = [
+		path_weapon_reimu,
+		path_weapon_marisa,
+		path_weapon_futo,
+	];
+	
+	SetAreaCommonData("System","selectP",0);
+	
+	//　キャラ立ち絵
+	DrawTexture_PlayerCharacter([128,244], 0.92, [255,255,255], path2[ stc ], 512, 512, stc, "LEFT" );
+	
+	while( !eflg && Psector == 0){
+		Psector	= GetAreaCommonData("System", "P_sector", 0 );
+		Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		tp		= GetAreaCommonData("System", "title_place", 0 );
+		
+		//　スクリプト起動許可が出ているか
+		let st	= GetAreaCommonData("System", "stflg", false );
+		
+		if( Psector == 0 ){
+			//　画像表示
+			if( ctr == 1 ){
+				alternative( stc )
+				case( 0 ){
+					if( !IsWeaponSelect ){
+					}
+				}
+				if( !IsWeaponSelect ){
+					//　キャラ選択の時
+					//　キャラ説明
+					DrawTexture_CharaSelect([350+96,250], 1, [255,255,255], path[stc], 512, 256, stc, mt );
+					
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//　Extra以外の時
+					if( tp != 1 ){
+						if( IsClear_Player( stc ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+							//　クリア済みマーク
+							DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc );
+						}
+					}
+					else{
+						//　Extraの時
+						if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "Extra" ){
+							if( IsClear_Player_EX( stc ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc );
+							}
+						}
+						else if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "Phantasm" ){
+							if( IsClear_Player_PH( stc ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc );
+							}
+						}
+						else if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+							if( IsClear_Player_OD( stc ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc );
+							}
+						}
+					}
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//--------------------------------------------------------------------------------------------------------------------------------
+				}
+				else{
+					//　装備選択の時
+					DrawTexture_WeaponSelect([350+96,250], 1, [255,255,255], path_wepon[stc][stc_w], 512, 256, stc_w, mt );
+					
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//　Extra以外の時
+					if( tp != 1 ){
+						if( IsClear_Wepon( stc, stc_w ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+							//　クリア済みマーク
+							DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc_w );
+						}
+					}
+					else{
+						//　Extraの時
+						if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "Extra" ){
+							if( IsClear_Wepon_EX( stc, stc_w ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+							if( IsClear_Wepon( stc, stc_w ) ){
+								//　挑戦可能マーク
+								DrawChallenge([350-46,128+32], 0.5, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+						}
+						else if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "Phantasm" ){
+							if( IsClear_Wepon_PH( stc, stc_w ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+							if( IsClear_Wepon_EX( stc, stc_w ) ){
+								//　挑戦可能マーク
+								DrawChallenge([350-46,128+32], 0.5, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+						}
+						else if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+							if( IsClear_Wepon_OD( stc, stc_w ) && GetAreaCommonData("System", "PlayMode", "NULL" ) == "Story" ){
+								//　クリア済みマーク
+								DrawClear([350+256-19,128+32], 0.6, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+							if( IsClearPhantasm() ){
+								//　挑戦可能マーク
+								DrawChallenge([350-46,128+32], 0.5, csd ~ "../img/title/clearlogo.png", stc_w );
+							}
+						}
+					}
+					//--------------------------------------------------------------------------------------------------------------------------------
+					//--------------------------------------------------------------------------------------------------------------------------------
+				}
+			}
+			
+			//　左右キー
+			if( Rsector == 1 && GetVirtualKeyState( VK_LEFT ) == KEY_PUSH && ctr > 8 ){
+				if( !IsWeaponSelect ){
+					//　キャラセレクトの時
+					stc--;
+					if( stc < 0 ){ stc = length(path)-1; }
+					SetAreaCommonData("System", "selectP", stc );
+					//　キャラ立ち絵
+					DrawTexture_PlayerCharacter([128,244], 0.92, [255,255,255], path2[ stc ], 512, 512, stc, "LEFT" );
+				}
+				else{
+					//　装備選択の時
+					stc_w--;
+					if( stc_w < 0 ){ stc_w = length(path_wepon[stc])-1; }
+					SetAreaCommonData("System", "selectP_weapon", stc_w );
+				}
+				mt	= "LEFT";
+				ctr	= 0;
+				ObjSound_Play( se[0] );
+			}
+			if( Rsector == 1 && GetVirtualKeyState( VK_RIGHT ) == KEY_PUSH && ctr > 8 ){
+				if( !IsWeaponSelect ){
+					//　キャラセレクトの時
+					stc++;
+					if( stc > length(path)-1 ){ stc = 0; }
+					SetAreaCommonData("System", "selectP", stc );
+					//　キャラ立ち絵
+					DrawTexture_PlayerCharacter([128,244], 0.92, [255,255,255], path2[ stc ], 512, 512, stc, "LEFT" );
+				}
+				else{
+					//　装備選択の時
+					stc_w++;
+					if( stc_w > length(path_wepon[stc])-1 ){ stc_w = 0; }
+					SetAreaCommonData("System", "selectP_weapon", stc_w );
+				}
+				mt	= "RIGHT";
+				ctr	= 0;
+				ObjSound_Play( se[0] );
+			}
+			
+			//　キャンセルキー
+			if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 8 ){
+				if( !IsWeaponSelect && ctr > 32 ){
+					//　キャラセレクトの時
+					SetAreaCommonData("System", "R_sector", 2 );
+					ctr = 0;
+					ObjSound_Play( se[2] );
+				}
+				else if( IsWeaponSelect && ctr > 8 ){
+					//　装備選択の時
+					IsWeaponSelect = false;
+					ctr = 0;
+					ObjSound_Play( se[2] );
+				}
+			}
+			
+			//　決定キー
+			if( tp == 1 ){
+				//--------------------------------------------------------------------------------------------------------------------------------
+				//--------------------------------------------------------------------------------------------------------------------------------
+				//　EX実装時はこの中改変
+				//　Extraの時
+				if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 8 && Rsector != 3 ){
+					if( IsWeaponSelect && st ){
+						//　装備選択の時
+						//　EX
+						if( IsClear_Wepon( stc, stc_w ) && GetAreaCommonData("System", "Difficulty", "NULL" ) == "Extra" ){
+							TChangeSelectScene( stc, stc_w );
+							break;
+						}
+						else{
+							ObjSound_Play( se[2] );
+						}
+						//　PH
+						if( IsClear_Wepon_EX( stc, stc_w ) && GetAreaCommonData("System", "Difficulty", "NULL" ) == "Phantasm" ){
+							TChangeSelectScene( stc, stc_w );
+							break;
+						}
+						else{
+							ObjSound_Play( se[2] );
+						}
+						//　OD
+						if( IsClearPhantasm() && GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+							TChangeSelectScene( stc, stc_w );
+							break;
+						}
+						else{
+							ObjSound_Play( se[2] );
+						}
+					}
+					else if( !IsWeaponSelect ){
+						//　キャラ選択の時
+						IsWeaponSelect = true;
+						stc_w = 0;
+						SetAreaCommonData("System", "selectP_weapon", stc_w );
+						ctr = 0;
+						ObjSound_Play( se[1] );
+					}
+				}
+				//--------------------------------------------------------------------------------------------------------------------------------
+				//--------------------------------------------------------------------------------------------------------------------------------
+			}
+			else{
+				//　それ以外
+				if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 8 && Rsector != 3 ){
+					if( IsWeaponSelect && st ){
+						//　装備選択の時
+						TChangeSelectScene( stc, stc_w );
+						break;
+					}
+					else if( !IsWeaponSelect ){
+						//　キャラ選択の時
+						IsWeaponSelect = true;
+						stc_w = 0;
+						SetAreaCommonData("System", "selectP_weapon", stc_w );
+					}
+					ctr = 0;
+					ObjSound_Play( se[1] );
+				}
+			}
+			ctr++;
+		}
+		yield;
+	}
+}
+
+//　立ち絵表示に使う
+task DrawTexture_PlayerCharacter(pos,sca,rgb_array,path,rect1,rect2,num,char_v){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let flg		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetScaleXYZ(id, sca, sca, 0 );
+	ObjRender_SetColor(id, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(id, 0, 0, rect1, rect2 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !eflg ){
+		let slt		= GetAreaCommonData("System", "selectP", 0 );
+		let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg		= GetAreaCommonData("System", "title_end", false );
+		
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		if( char_v == "LEFT" ){
+			ObjRender_SetPosition(id, pos[0] + 128 - move1*128 - move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, 180 - move1*180 - move2*180, 0 );
+		}
+		else if( char_v == "RIGHT" ){
+			ObjRender_SetPosition(id, pos[0] - 128 + move1*128 + move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, -180 + move1*180 + move2*180, 0 );
+		}
+		ObjRender_SetAlpha(id, move1*255 - move2*255 );
+		
+		//　装備選択の時は消す
+		if( num != slt ){ flg = 1; }
+		
+		if( Rsector != 0 && num == slt ){
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		if( Rsector==2 || flg == 1 ){
+			if( move2 < 1 ){ moveB += 5; }
+			else{ break; }
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+
+//　キャラセレクト時に使う
+task DrawTexture_CharaSelect(pos,sca,rgb_array,path,rect1,rect2,num,char_v){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let flg		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetScaleXYZ(id, sca, sca, 0 );
+	ObjRender_SetColor(id, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(id, 0, 0, rect1, rect2 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !eflg ){
+		let slt		= GetAreaCommonData("System", "selectP", 0 );
+		let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg		= GetAreaCommonData("System", "title_end", false );
+		
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		if( char_v == "LEFT" ){
+			ObjRender_SetPosition(id, pos[0] + 128 - move1*128 - move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, 180 - move1*180 - move2*180, 0 );
+		}
+		else if( char_v == "RIGHT" ){
+			ObjRender_SetPosition(id, pos[0] - 128 + move1*128 + move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, -180 + move1*180 + move2*180, 0 );
+		}
+		ObjRender_SetAlpha(id, move1*255 - move2*255 );
+		
+		//　装備選択の時は消す
+		if( num != slt || IsWeaponSelect ){ flg = 1; }
+		
+		if( Rsector != 0 && num == slt ){
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		if( Rsector==2 || flg == 1 ){
+			if( move2 < 1 ){ moveB += 5; }
+			else{ break; }
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+
+//　装備選択時に使う
+task DrawTexture_WeaponSelect(pos,sca,rgb_array,path,rect1,rect2,num,char_v){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let flg		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetScaleXYZ(id, sca, sca, 0 );
+	ObjRender_SetColor(id, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(id, 0, 0, rect1, rect2 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !eflg ){
+		let slt		= GetAreaCommonData("System", "selectP_weapon", 0 );
+		let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg		= GetAreaCommonData("System", "title_end", false );
+		
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		if( char_v == "LEFT" ){
+			ObjRender_SetPosition(id, pos[0] + 128 - move1*128 - move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, 180 - move1*180 - move2*180, 0 );
+		}
+		else if( char_v == "RIGHT" ){
+			ObjRender_SetPosition(id, pos[0] - 128 + move1*128 + move2*128, pos[1], 0 );
+			ObjRender_SetAngleXYZ(id, 0, -180 + move1*180 + move2*180, 0 );
+		}
+		ObjRender_SetAlpha(id, move1*255 - move2*255 );
+		
+		//　装備選択じゃない時は消す
+		if( num != slt || !IsWeaponSelect ){ flg = 1; }
+		
+		if( Rsector != 0 && num == slt ){
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		if( Rsector==2 || flg == 1 ){
+			if( move2 < 1 ){ moveB += 5; }
+			else{ break; }
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　クリアマーク
+task DrawClear(pos,sca,path,num){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let IsWeaponSelect_OLD = IsWeaponSelect;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetAngleXYZ(id, 0, 0, -24 - 360 - move1*360 );
+	ObjRender_SetScaleXYZ(id, sca*2 - move1*sca, sca*2 - move1*sca, 0 );
+	ObjRender_SetAlpha(id, move1*255 );
+	ObjSprite2D_SetSourceRect(id, 0, 0, 128, 128 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !eflg && IsWeaponSelect == IsWeaponSelect_OLD ){
+		let Rsector	= GetAreaCommonData("System","R_sector",0);
+		eflg		= GetAreaCommonData("System","title_end",false);
+		
+		let slt;
+		if( !IsWeaponSelect_OLD ){
+			slt = GetAreaCommonData( "System", "selectP", 0 );
+		}
+		else{
+			slt = GetAreaCommonData( "System", "selectP_weapon", 0 );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		ObjRender_SetAngleXYZ(id, 0, 0, -24 - 360 - move1*360 );
+		ObjRender_SetScaleXYZ(id, sca*2 - move1*sca, sca*2 - move1*sca, 0 );
+		ObjRender_SetAlpha(id, move1*255 );
+		
+		if( Rsector == 2 || num  != slt ){
+			break;
+		}
+		
+		move1 = 1 * sin( moveA );
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　可マーク
+task DrawChallenge(pos,sca,path,num){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let IsWeaponSelect_OLD = IsWeaponSelect;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetAngleXYZ(id, 0, 0, -24 - 360 - move1*360 );
+	ObjRender_SetScaleXYZ(id, sca*2 - move1*sca, sca*2 - move1*sca, 0 );
+	ObjRender_SetAlpha(id, move1*255 );
+	ObjSprite2D_SetSourceRect(id, 128, 0, 256, 128 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !eflg && IsWeaponSelect == IsWeaponSelect_OLD ){
+		let Rsector	= GetAreaCommonData("System","R_sector",0);
+		eflg		= GetAreaCommonData("System","title_end",false);
+		
+		let slt;
+		if( !IsWeaponSelect_OLD ){
+			slt = GetAreaCommonData( "System", "selectP", 0 );
+		}
+		else{
+			slt = GetAreaCommonData( "System", "selectP_weapon", 0 );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		ObjRender_SetAngleXYZ(id, 0, 0, -24 - 360 - move1*360 );
+		ObjRender_SetScaleXYZ(id, sca*2 - move1*sca, sca*2 - move1*sca, 0 );
+		ObjRender_SetAlpha(id, move1*255 );
+		
+		if( Rsector == 2 || num  != slt ){
+			break;
+		}
+		
+		move1 = 1 * sin( moveA );
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+task TChangeSelectScene( charactor, weapon ){
+	let csd 			= GetCurrentScriptDirectory();
+	let pathScript		= csd ~ "./Package_StageScene.dnh";
+	let INDEX_REIMU_A	= 0;
+	let INDEX_REIMU_B	= 1;
+	let INDEX_REIMU_C	= 2;
+	let INDEX_MARISA_A	= 3;
+	let INDEX_MARISA_B	= 4;
+	let INDEX_MARISA_C	= 5;
+	let INDEX_FUTO_A	= 6;
+	let INDEX_FUTO_B	= 7;
+	let INDEX_FUTO_C	= 8;
+	let player			= 0;
+	
+	alternative( charactor )
+	case( 0 ){
+		alternative( weapon )
+		case( 0 ){ player = INDEX_REIMU_A; }
+		case( 1 ){ player = INDEX_REIMU_B; }
+		case( 2 ){ player = INDEX_REIMU_C; }
+	}
+	case( 1 ){
+		alternative( weapon )
+		case( 0 ){ player = INDEX_MARISA_A; }
+		case( 1 ){ player = INDEX_MARISA_B; }
+		case( 2 ){ player = INDEX_MARISA_C; }
+	}
+	case( 2 ){
+		alternative( weapon )
+		case( 0 ){ player = INDEX_FUTO_A; }
+		case( 1 ){ player = INDEX_FUTO_B; }
+		case( 2 ){ player = INDEX_FUTO_C; }
+	}
+	
+	//　自機の設定
+	SetAreaCommonData("System", "player_type", player );
+	
+	//　プレイカウンタ加算
+	AddPlayCount( charactor );
+	
+	//　代入されたシーンスクリプト起動
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+}
+
+//　プレイカウンタ
+task AddPlayCount( charactor ){
+	let INDEX_REIMU_A	= 0;
+	let INDEX_REIMU_B	= 1;
+	let INDEX_REIMU_C	= 2;
+	let INDEX_MARISA_A	= 3;
+	let INDEX_MARISA_B	= 4;
+	let INDEX_MARISA_C	= 5;
+	let INDEX_FUTO_A	= 6;
+	let INDEX_FUTO_B	= 7;
+	let INDEX_FUTO_C	= 8;
+	
+	let rank	= GetAreaCommonData("System", "Difficulty", "NULL" );
+	let count_d;
+	
+	alternative( rank )
+	case( "Easy" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_easy", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_easy", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_easy", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_easy", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_easy", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_easy", count_d + 1 );
+		}
+	}
+	case( "Normal" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_normal", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_normal", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_normal", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_normal", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_normal", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_normal", count_d + 1 );
+		}
+	}
+	case( "Hard" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_hard", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_hard", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_hard", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_hard", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_hard", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_hard", count_d + 1 );
+		}
+	}
+	case( "Lunatic" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_lunatic", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_lunatic", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_lunatic", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_lunatic", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_lunatic", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_lunatic", count_d + 1 );
+		}
+	}
+	case( "Extra" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_extra", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_extra", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_extra", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_extra", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_extra", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_extra", count_d + 1 );
+		}
+	}
+	case( "Phantasm" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_phantasm", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_phantasm", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_phantasm", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_phantasm", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_phantasm", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_phantasm", count_d + 1 );
+		}
+	}
+	case( "OverDrive" ){
+		alternative( charactor )
+		case( 0 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl01_overdrive", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl01_overdrive", count_d + 1 );
+		}
+		case( 1 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl02_overdrive", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl02_overdrive", count_d + 1 );
+		}
+		case( 2 ){
+			count_d = GetAreaCommonData("Score", "GamePlayCountD_pl03_overdrive", 0 );
+			SetAreaCommonData("Score", "GamePlayCountD_pl03_overdrive", count_d + 1 );
+		}
+	}
+}
+
+
+
+
+//　クリア済みか
+function IsClear_Player( pl_type ){
+	let cl_lock = [ 0, 0, 0 ];
+	
+	alternative( pl_type )
+	case( 0 ){
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 1 ){
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 2 ){
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03C", false ) ){ cl_lock[2] = 1; }
+	}
+	
+	let frag = true;
+	ascent( let i in 0..length(cl_lock) ){
+		if( cl_lock[i] == 0 ){ frag = false; }
+	}
+	
+	return frag;
+}
+
+function IsClear_Wepon( pl_type, wepon_type ){
+	let frag = false;
+	
+	alternative( pl_type )
+	case( 0 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL01C", false ) ){ frag = true; }
+		}
+	}
+	case( 1 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL02C", false ) ){ frag = true; }
+		}
+	}
+	case( 2 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_ExtraStage_PL03C", false ) ){ frag = true; }
+		}
+	}
+	
+	return frag;
+}
+
+
+
+
+//　クリア済みか　EX用
+function IsClear_Player_EX( pl_type ){
+	let cl_lock = [ 0, 0, 0 ];
+	
+	alternative( pl_type )
+	case( 0 ){
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 1 ){
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 2 ){
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03C", false ) ){ cl_lock[2] = 1; }
+	}
+	
+	let frag = true;
+	ascent( let i in 0..length(cl_lock) ){
+		if( cl_lock[i] == 0 ){ frag = false; }
+	}
+	
+	return frag;
+}
+
+function IsClear_Wepon_EX( pl_type, wepon_type ){
+	let frag = false;
+	
+	alternative( pl_type )
+	case( 0 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL01C", false ) ){ frag = true; }
+		}
+	}
+	case( 1 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL02C", false ) ){ frag = true; }
+		}
+	}
+	case( 2 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Standby_PhantasmStage_PL03C", false ) ){ frag = true; }
+		}
+	}
+	
+	return frag;
+}
+
+
+
+
+//　クリア済みか　PH用
+function IsClear_Player_PH( pl_type ){
+	let cl_lock = [ 0, 0, 0 ];
+	
+	alternative( pl_type )
+	case( 0 ){
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 1 ){
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 2 ){
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03C", false ) ){ cl_lock[2] = 1; }
+	}
+	
+	let frag = true;
+	ascent( let i in 0..length(cl_lock) ){
+		if( cl_lock[i] == 0 ){ frag = false; }
+	}
+	
+	return frag;
+}
+
+function IsClear_Wepon_PH( pl_type, wepon_type ){
+	let frag = false;
+	
+	alternative( pl_type )
+	case( 0 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL01C", false ) ){ frag = true; }
+		}
+	}
+	case( 1 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL02C", false ) ){ frag = true; }
+		}
+	}
+	case( 2 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_PhantasmStage_PL03C", false ) ){ frag = true; }
+		}
+	}
+	
+	return frag;
+}
+
+
+//　クリア済みか　OD用
+function IsClear_Player_OD( pl_type ){
+	let cl_lock = [ 0, 0, 0 ];
+	
+	alternative( pl_type )
+	case( 0 ){
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 1 ){
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02C", false ) ){ cl_lock[2] = 1; }
+	}
+	case( 2 ){
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03A", false ) ){ cl_lock[0] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03B", false ) ){ cl_lock[1] = 1; }
+		if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03C", false ) ){ cl_lock[2] = 1; }
+	}
+	
+	let frag = true;
+	ascent( let i in 0..length(cl_lock) ){
+		if( cl_lock[i] == 0 ){ frag = false; }
+	}
+	
+	return frag;
+}
+
+function IsClear_Wepon_OD( pl_type, wepon_type ){
+	let frag = false;
+	
+	alternative( pl_type )
+	case( 0 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL01C", false ) ){ frag = true; }
+		}
+	}
+	case( 1 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL02C", false ) ){ frag = true; }
+		}
+	}
+	case( 2 ){
+		alternative( wepon_type )
+		case( 0 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03A", false ) ){ frag = true; }
+		}
+		case( 1 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03B", false ) ){ frag = true; }
+		}
+		case( 2 ){
+			if( GetAreaCommonData( "SaveData", "Clear_OverDriveStage_PL03C", false ) ){ frag = true; }
+		}
+	}
+	
+	return frag;
+}
+
+//　何れかの自機がPHをクリア済み
+function IsClearPhantasm(){
+	let IsClear = [
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	];
+	
+	ascent( let i in 0..length(IsClear) ){
+		if( IsClear[i] ){ return true; }
+	}
+	
+	return false;
+}

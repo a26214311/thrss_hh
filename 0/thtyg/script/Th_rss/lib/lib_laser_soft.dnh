@@ -1,0 +1,197 @@
+
+
+//　へにょりレーザー　豆もやしじゃない方
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　新生ミルカニレーザー　ID返るので状況に応じて動きセット
+function CreateLaserC(x,y,angle,av,speed,ac,mx,rgb_h,m,sca,shote){
+	let id		= ObjShot_Create(OBJ_SHOT);
+	
+	ObjMove_SetPosition(id, x, y );
+	ObjMove_SetSpeed(id, speed );
+	ObjMove_SetAcceleration(id, ac );
+	ObjMove_SetMaxSpeed(id, mx );
+	ObjMove_SetAngle(id, angle );
+	ObjMove_SetAngularVelocity(id, av );
+	ObjRender_SetAlpha(id, 0 );
+	ObjShot_SetGraphic(id, shote );
+	ObjShot_Regist(id);
+	
+	Obj_SetValue(id, "Effect_Off", false );
+	
+	LaserC_child01(id, rgb_h, m, sca, shote );
+	return id;
+}
+
+task LaserC_child01(ID,rgb_h,m,sca,shote){
+	let cc		= 0;
+	
+	while( !Obj_IsDeleted(ID) ){
+		let pos		= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		let ang		= ObjMove_GetAngle(ID);
+		
+		if( cc%2 == 0 ){
+			LaserC_child02(pos, ang, rgb_h, m, sca, ID, shote );
+		}
+		
+		cc++;
+		
+		yield;
+	}
+}
+
+task LaserC_child02(pos,ang,rgb_h,m,sca,ID,shote){
+	let sht		= CreateShotA1(pos[0],pos[1],0,ang,shote,0);
+	let gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+	let alpha1	= 0;
+	let alpha2	= 0;
+	let alpha3	= 0;
+	let sca1	= 0;
+	let scaA	= 0;
+	let sca2	= 0;
+	let hc		= 0.6;
+	let rgb_h2	= [0,0,0];
+	let ImgID	= ObjShot_GetImageID(sht);
+	
+	rgb_h2[0]	= 255 - rgb_h[0];
+	rgb_h2[1]	= 255 - rgb_h[1];
+	rgb_h2[2]	= 255 - rgb_h[2];
+	
+	let ToItem_frag	= true;
+	
+	//　エフェクト出さない
+	Obj_SetValue(sht, "Effect_Off", false );
+	
+	while( sca2 < sca && !Obj_IsDeleted(ID) && !Obj_IsDeleted(sht) ){
+		gpos	= [ObjMove_GetX(sht),ObjMove_GetY(sht)];
+		
+		if( ObjMove_GetX(ID) > MinX && ObjMove_GetX(ID) < MaxX && ObjMove_GetY(ID) > MinY && ObjMove_GetY(ID) < MaxY ){
+			ToItem_frag = true;
+		}
+		else{
+			ToItem_frag = false;
+		}
+		
+		sca1 = sca * sin( scaA );
+		
+		ObjRender_SetScaleXYZ(sht, hc + sca1-sca2, hc + sca1-sca2, 0 );
+		ObjRender_SetColor(sht, 255-alpha1, 255-alpha2, 255-alpha3 );
+		
+		if( sca1 < sca ){ scaA += 10; }
+		if( sca2 < sca && sca1 >= sca ){ sca2 += m; }
+		
+		if( alpha1 < rgb_h2[0] ){ alpha1 += 35; }
+		else{ alpha1 = rgb_h2[0]; }
+		if( alpha2 < rgb_h2[1] ){ alpha2 += 35; }
+		else{ alpha2 = rgb_h2[1]; }
+		if( alpha3 < rgb_h2[2] ){ alpha3 += 35; }
+		else{ alpha3 = rgb_h2[2]; }
+		
+		yield;
+	}
+	if( Obj_IsDeleted(ID) ){
+		BulletBreak_Laser01(gpos, ObjMove_GetAngle(sht)+180, rgb_h, BLEND_ADD_ARGB, ImgID );
+		ObjSound_Play( UtilitySE[0] );
+		if( ToItem_frag ){
+			ObjShot_ToItem(sht);
+		}
+	}
+	Obj_Delete(sht);
+}
+
+//　へにょり専用の弾消しエフェクト　他に使わない事
+task BulletBreak_Laser01(pos,angle,rgb_h,Blend,ImgID){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let animC	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	let rectX	= 128;
+	let rectY	= 128;
+	let sca		= 0.4;
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory ~ "../img/effect/bulletbreak.png" );
+	Obj_SetRenderPriorityI(ID, 32 );
+	ObjRender_SetBlendType(ID, Blend );
+	ObjRender_SetAngleXYZ(ID, 0, 0, rand(0,360) );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 0 + rectX*anim1, 0 + rectY*anim2, rectX + rectX*anim1, rectY + rectY*anim2 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	ShotScale_Laser01(ID, ImgID, Blend );
+	
+	while( anim2 < 2 ){
+		ObjSprite2D_SetSourceRect(ID, 0 + rectX*anim1, 0 + rectY*anim2, rectX + rectX*anim1, rectY + rectY*anim2 );
+		ObjRender_SetPosition(ID, pos[0] + animC/2 * cos(angle), pos[1] + animC/2 * sin(angle), 0 );
+		
+		animC++;
+		if( animC > 0 && animC%3 == 0 ){
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+			}
+			anim1++;
+		}
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　サイズ決め
+task ShotScale_Laser01(ID,ImgID,Blend){
+	let sca	= 0;
+	let pn	= 0;
+	
+	if( ImgID <= 352 ){
+		pn = 0;
+	}
+	else{
+		pn = 352;
+	}
+	
+	//　種類で弾消しエフェクトの大きさ変更
+	if( ImgID >= 1+pn && ImgID <= 16+pn ){ sca = 0.3; }			//　丸弾
+	else if( ImgID >= 17+pn && ImgID <= 24+pn ){ sca = 0.4; }	//　中丸弾
+	else if( ImgID >= 25+pn && ImgID <= 32+pn ){ sca = 0.5; }	//　大弾
+	else if( ImgID >= 33+pn && ImgID <= 48+pn ){ sca = 0.3; }	//　二重丸弾
+	else if( ImgID >= 49+pn && ImgID <= 64+pn ){ sca = 0.2; }	//　小弾
+	else if( ImgID >= 65+pn && ImgID <= 80+pn ){ sca = 0.2; }	//　菌弾
+	else if( ImgID >= 81+pn && ImgID <= 96+pn ){ sca = 0.3; }	//　銃弾
+	else if( ImgID >= 97+pn && ImgID <= 112+pn ){ sca = 0.3; }	//　米弾
+	else if( ImgID >= 113+pn && ImgID <= 128+pn ){ sca = 0.3; }	//　星弾
+	else if( ImgID >= 129+pn && ImgID <= 144+pn ){ sca = 0.3; }	//　クナイ弾
+	else if( ImgID >= 145+pn && ImgID <= 160+pn ){ sca = 0.3; }	//　細弾
+	else if( ImgID >= 161+pn && ImgID <= 176+pn ){ sca = 0.3; }	//　札弾
+	else if( ImgID >= 177+pn && ImgID <= 192+pn ){ sca = 0.3; }	//　ゾウリムシ弾
+	else if( ImgID >= 193+pn && ImgID <= 208+pn ){ sca = 0.3; }	//　鱗弾
+	else if( ImgID >= 209+pn && ImgID <= 216+pn ){ sca = 0.4; }	//　大星弾
+	else if( ImgID >= 217+pn && ImgID <= 224+pn ){ sca = 0.4; }	//　蝶弾
+	else if( ImgID >= 225+pn && ImgID <= 232+pn ){ sca = 0.4; }	//　ナイフ弾
+	else if( ImgID >= 233+pn && ImgID <= 240+pn ){ sca = 0.4; }	//　グミ弾
+	else if( ImgID >= 241+pn && ImgID <= 248+pn ){ sca = 0.4; }	//　ハート弾
+	else if( ImgID >= 249+pn && ImgID <= 256+pn ){ sca = 0.4; }	//　矢弾
+	else if( ImgID >= 257+pn && ImgID <= 264+pn ){ sca = 0.4; }	//　神霊弾の元
+	else if( ImgID >= 265+pn && ImgID <= 272+pn ){ sca = 0.5; }	//　神霊弾
+	else if( ImgID >= 273+pn && ImgID <= 288+pn ){ sca = 0.4; }	//　サニーレーザーの先っちょ
+	else if( ImgID >= 289+pn && ImgID <= 296+pn ){ sca = 0.3; }	//　ふぐ刺し
+	else if( ImgID >= 297+pn && ImgID <= 304+pn ){ sca = 0.3; }	//　縦長弾
+	else if( ImgID >= 305+pn && ImgID <= 312+pn ){ sca = 0.3; }	//　デススマのやつ
+	else if( ImgID >= 313+pn && ImgID <= 320+pn ){ sca = 0.4; }	//　炎弾
+	else if( ImgID >= 321+pn && ImgID <= 336+pn ){ sca = 0.3; }	//　水滴弾
+	else if( ImgID >= 337+pn && ImgID <= 344+pn ){ sca = 0.3; }	//　金弾
+	else if( ImgID >= 345+pn && ImgID <= 352+pn ){ sca = 0.4; }	//　へにょりの元
+	else{ sca = 0; }
+	
+	if( Blend == BLEND_ADD_ARGB ){
+		ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	}
+	else{
+		ObjRender_SetScaleXYZ(ID, sca/1.2, sca/1.2, 0 );
+	}
+}

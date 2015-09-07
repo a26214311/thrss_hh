@@ -1,0 +1,194 @@
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//　埴得背景
+task SetBackGroundEffect_05a(ID){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let cc			= 0;
+	let i			= 0;
+	
+	ObjPrim_SetTexture(id[0], spell_tex[14] );
+	ObjPrim_SetTexture(id[1], spell_tex[15] );
+	ObjPrim_SetTexture(id[2], spell_tex[17] );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(id[1], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(id[2], BLEND_SUBTRACT );
+	
+	ascent( i in 0..( length(id) ) ){
+		ObjRender_SetPosition(id[i], CenX, CenY, 0 );
+		Obj_SetRenderPriorityI(id[i], 29 );
+		ObjRender_SetScaleXYZ(id[i], 1, 1, 0 );
+		ObjPrim_SetVertexCount(id[i], 4 );
+		ObjPrim_SetVertexPosition(id[i], 0, 384/-2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 1, 384/-2, 448/2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 2, 384/2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 3, 384/2, 448/2, 0 );
+		ObjPrim_SetVertexUVT(id[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[i], 1, 0, 448 );
+		ObjPrim_SetVertexUVT(id[i], 2, 384, 0 );
+		ObjPrim_SetVertexUVT(id[i], 3, 384, 448 );
+		i++;
+	}
+	
+	loop( 2 ){
+		ObjPrim_SetVertexPosition(id[1+i], 0, 600/-2, 600/-2, 0 );
+		ObjPrim_SetVertexPosition(id[1+i], 1, 600/-2, 600/2, 0 );
+		ObjPrim_SetVertexPosition(id[1+i], 2, 600/2, 600/-2, 0 );
+		ObjPrim_SetVertexPosition(id[1+i], 3, 600/2, 600/2, 0 );
+		ObjPrim_SetVertexUVT(id[1+i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[1+i], 1, 0, 600 );
+		ObjPrim_SetVertexUVT(id[1+i], 2, 600, 0 );
+		ObjPrim_SetVertexUVT(id[1+i], 3, 600, 600 );
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjRender_SetAngleXYZ(id[1], 0, 0, cc/16 );
+		ObjRender_SetAngleXYZ(id[2], 0, 0, cc/-16 );
+		
+		loop( 2 ){
+			ObjPrim_SetVertexUVT(id[1+i], 0, 0, 0 + cc/8 );
+			ObjPrim_SetVertexUVT(id[1+i], 1, 0, 600 + cc/8 );
+			ObjPrim_SetVertexUVT(id[1+i], 2, 600, 0 + cc/8 );
+			ObjPrim_SetVertexUVT(id[1+i], 3, 600, 600 + cc/8 );
+			i++;
+		}
+		i = 0;
+		
+		let rgb = 64 + 64 * sin(cc/4);
+		
+		ObjPrim_SetVertexColor(id[2], 0, 192, rgb, 128 );
+		ObjPrim_SetVertexColor(id[2], 1, rgb, 192, 128 );
+		ObjPrim_SetVertexColor(id[2], 2, 192, rgb, 128 );
+		ObjPrim_SetVertexColor(id[2], 3, rgb, 192, 128 );
+		
+		loop( 4 ){
+			ObjPrim_SetVertexAlpha(id[0], i, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[1], i, alpha1*128 );
+			ObjPrim_SetVertexAlpha(id[2], i, alpha1*255 );
+			ObjPrim_SetVertexColor(id[0], i, 192, 192, 192 );
+			i++;
+		}
+		i = 0;
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 >= 0.5 ){ alphaB += 5; }
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//　垂神背景
+task SetBackGroundEffect_05b(ID){
+	let id			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let alpha2		= 0;
+	let alphaB		= 0;
+	let cc			= 0;
+	let i			= 0;
+	
+	ObjPrim_SetTexture(id[0], spell_tex[15] );
+	ObjPrim_SetTexture(id[1], spell_tex[16] );
+	ObjPrim_SetTexture(id[2], spell_tex[17] );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(id[1], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(id[2], BLEND_SUBTRACT );
+	
+	ascent( i in 0..( length(id) ) ){
+		ObjRender_SetPosition(id[i], CenX, CenY, 0 );
+		Obj_SetRenderPriorityI(id[i], 29 );
+		ObjRender_SetScaleXYZ(id[i], 1, 1, 0 );
+		ObjPrim_SetVertexCount(id[i], 4 );
+		ObjPrim_SetVertexPosition(id[i], 0, 384/-2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 1, 384/-2, 448/2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 2, 384/2, 448/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 3, 384/2, 448/2, 0 );
+		ObjPrim_SetVertexUVT(id[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[i], 1, 0, 448 );
+		ObjPrim_SetVertexUVT(id[i], 2, 384, 0 );
+		ObjPrim_SetVertexUVT(id[i], 3, 384, 448 );
+		i++;
+	}
+	
+	ascent( i in 1..( length(id) ) ){
+		ObjPrim_SetVertexPosition(id[i], 0, 600/-2, 600/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 1, 600/-2, 600/2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 2, 600/2, 600/-2, 0 );
+		ObjPrim_SetVertexPosition(id[i], 3, 600/2, 600/2, 0 );
+		ObjPrim_SetVertexUVT(id[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id[i], 1, 0, 600 );
+		ObjPrim_SetVertexUVT(id[i], 2, 600, 0 );
+		ObjPrim_SetVertexUVT(id[i], 3, 600, 600 );
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		alpha1 = 1 * sin( alphaA );
+		alpha2 = 1 * sin( alphaB );
+		
+		ObjRender_SetAngleXYZ(id[1], 0, 0, cc/16 );
+		ObjRender_SetAngleXYZ(id[2], 0, 0, cc/-16 );
+		
+		ObjPrim_SetVertexUVT(id[0], 0, 0, 0 - cc/4 );
+		ObjPrim_SetVertexUVT(id[0], 1, 0, 448 - cc/4 );
+		ObjPrim_SetVertexUVT(id[0], 2, 384, 0 - cc/4 );
+		ObjPrim_SetVertexUVT(id[0], 3, 384, 448 - cc/4 );
+		
+		ObjPrim_SetVertexUVT(id[2], 0, 0, 0 + cc/8 );
+		ObjPrim_SetVertexUVT(id[2], 1, 0, 600 + cc/8 );
+		ObjPrim_SetVertexUVT(id[2], 2, 600, 0 + cc/8 );
+		ObjPrim_SetVertexUVT(id[2], 3, 600, 600 + cc/8 );
+		
+		let rgb = 64 + 64 * sin(cc/4);
+		
+		ObjPrim_SetVertexColor(id[2], 0, 192, rgb, 128 );
+		ObjPrim_SetVertexColor(id[2], 1, rgb, 192, 128 );
+		ObjPrim_SetVertexColor(id[2], 2, 192, rgb, 128 );
+		ObjPrim_SetVertexColor(id[2], 3, rgb, 192, 128 );
+		
+		loop( 4 ){
+			ObjPrim_SetVertexAlpha(id[0], i, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[1], i, alpha1*128 );
+			ObjPrim_SetVertexAlpha(id[2], i, alpha1*255 );
+			ObjPrim_SetVertexColor(id[0], i, 96, rgb, 128 );
+			i++;
+		}
+		i = 0;
+		
+		cc++;
+		if( alpha1 < 1 ){ alphaA += 2; }
+		if( alpha2 < 1 && alpha1 >= 0.5 ){ alphaB += 5; }
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+	i = 0;
+}

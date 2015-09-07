@@ -1,0 +1,197 @@
+//　少女祈祷中...
+task LoadingDefault( x, y ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let csd		= GetCurrentScriptDirectory();
+	let path	= csd ~ "./../img/title/load00.png";
+	let move1	= 0;
+	let moveA	= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let cc		= 0;
+	
+	ascent( let i in 0..length(ID) ){
+		ObjRender_SetPosition( ID[i], x, y, 0 );
+		ObjPrim_SetTexture( ID[i], path );
+		ObjRender_SetBlendType( ID[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI( ID[i], 82 );
+		ObjSprite2D_SetSourceRect( ID[0], 0, 0, 256, 64 );
+		ObjSprite2D_SetSourceRect( ID[1], 0, 64, 256, 128 );
+		ObjSprite2D_SetDestCenter( ID[i] );
+	}
+	ObjRender_SetScaleXYZ( ID[0], 0.76, 0.76, 0 );
+	ObjRender_SetScaleXYZ( ID[1], 0.6, 0.6, 0 );
+	
+	while( GetCommonData( "LoadFrag", false ) ){
+		alpha1 = 1 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		
+		if( cc%6 == 0 ){
+			//　なんか出す時はココに
+			Butterfly( [x + rand(-98,114),y + rand(-32,48)], rand(0.2,0.4), rand(32,64), 255, 0, [128,192,255] );
+		}
+		
+		ObjRender_SetPosition( ID[1], ObjRender_GetX(ID[0])+100-move1*70, ObjRender_GetY(ID[0])+20, 0 );
+		
+		ObjRender_SetColor( ID[0], 200+55*sin(cc/2), 200+55*sin(cc/2), 200+55*sin(cc/2) );
+		ObjRender_SetColor( ID[1], 225+30*sin(cc*2), 225+30*sin(cc*2), 225+30*sin(cc*2) );
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetAlpha( ID[i], alpha1*255 );
+		}
+		
+		cc += 5;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetColor( ID[0], 200+55*sin(cc/2), 200+55*sin(cc/2), 200+55*sin(cc/2) );
+		ObjRender_SetColor( ID[1], 225+30*sin(cc*2), 225+30*sin(cc*2), 225+30*sin(cc*2) );
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetAlpha( ID[i], 255 - alpha1*255 );
+		}
+		
+		cc += 5;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　少女祈祷中...
+task LoadingDefault_timer( x, y, timer ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let csd		= GetCurrentScriptDirectory();
+	let path	= csd ~ "./../img/title/load00.png";
+	let move1	= 0;
+	let moveA	= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let cc		= 0;
+	
+	ascent( let i in 0..length(ID) ){
+		ObjRender_SetPosition( ID[i], x, y, 0 );
+		ObjPrim_SetTexture( ID[i], path );
+		ObjRender_SetBlendType( ID[i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI( ID[i], 82 );
+		ObjSprite2D_SetSourceRect( ID[0], 0, 0, 256, 64 );
+		ObjSprite2D_SetSourceRect( ID[1], 0, 64, 256, 128 );
+		ObjSprite2D_SetDestCenter( ID[i] );
+	}
+	ObjRender_SetScaleXYZ( ID[0], 0.76, 0.76, 0 );
+	ObjRender_SetScaleXYZ( ID[1], 0.6, 0.6, 0 );
+	
+	loop( timer ){
+		alpha1 = 1 * sin( alphaA );
+		move1 = 1 * sin( moveA );
+		
+		if( cc%6 == 0 ){
+			//　なんか出す時はココに
+			Butterfly( [x + rand(-98,114),y + rand(-32,48)], rand(0.2,0.4), rand(32,64), 255, 0, [128,192,255] );
+		}
+		
+		ObjRender_SetPosition( ID[1], ObjRender_GetX(ID[0])+100-move1*70, ObjRender_GetY(ID[0])+20, 0 );
+		
+		ObjRender_SetColor( ID[0], 200+55*sin(cc/2), 200+55*sin(cc/2), 200+55*sin(cc/2) );
+		ObjRender_SetColor( ID[1], 225+30*sin(cc*2), 225+30*sin(cc*2), 225+30*sin(cc*2) );
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetAlpha( ID[i], alpha1*255 );
+		}
+		
+		cc += 5;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetColor( ID[0], 200+55*sin(cc/2), 200+55*sin(cc/2), 200+55*sin(cc/2) );
+		ObjRender_SetColor( ID[1], 225+30*sin(cc*2), 225+30*sin(cc*2), 225+30*sin(cc*2) );
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetAlpha( ID[i], 255 - alpha1*255 );
+		}
+		
+		cc += 5;
+		if( alpha1 < 1 ){ alphaA += 5; }
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　蝶のエフェクト
+task Butterfly(pos,sca,dis,angle,plus,rgb_h){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),ObjPrim_Create(OBJ_SPRITE_2D)];
+	let csd			= GetCurrentScriptDirectory();
+	let sca1		= 0;
+	let scaA		= 0;
+	let dis1		= 0;
+	let disA		= 0;
+	let sp			= rand(16,32);
+	let cc			= 0;
+	let i			= 0;
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../img/effect/bt.png" );
+		Obj_SetRenderPriorityI(ID[i], 82 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjRender_SetScaleXYZ(ID[i], sca, sca, 0 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 64, 128 );
+		ObjSprite2D_SetDestRect(ID[i], 0, -64, 64, 64 );
+		ObjRender_SetColor(ID[i], rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjRender_SetAlpha(ID[i], sca1*255 );
+		i++;
+	}
+	i = 0;
+	
+	while( !Obj_IsDeleted(ID[0]) && !Obj_IsDeleted(ID[1]) && sca < 1 ){
+		
+		dis1 = 1 * sin( disA );
+		sca1 = 1 * sin( scaA );
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], pos[0] + dis1*dis * cos(angle), pos[1] + dis1*dis * sin(angle), 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca - sca1*sca + sca/4 * sin(cc*sp), sca - sca1*sca, 0 );
+			ObjRender_SetAlpha(ID[i], sca1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetAngleXYZ(ID[0], 0, 0, 90+angle );
+		ObjRender_SetAngleXYZ(ID[1], 0, 180, (90+angle)*-1 );
+		
+		angle += plus;
+		
+		cc++;
+		if( dis1 < 1 ){ disA += 1; }
+		if( sca1 < 1 ){ scaA += 1; }
+		else{ break; }
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	i = 0;
+}

@@ -1,0 +1,100 @@
+	#東方弾幕風[Player]
+	#ScriptVersion[3]
+	#ID["SRR_PL03B"]
+	#Title["桃源宮　布都B"]
+	#Text["桃 布都B[r]武装：豪族の舞[r]　雷と炎の天翔装備"]
+	#ReplayName["SRR_PL03B"]
+	
+	let csd				= GetCurrentScriptDirectory();
+	let objPlayer		= GetPlayerObjectID();
+	let objSlowShot		= ID_INVALID;
+	let MinX			= 0;
+	let MinY			= 0;
+	let MaxX			= GetStgFrameWidth;
+	let MaxY			= GetStgFrameHeight;
+	let CenX			= GetStgFrameWidth/2;
+	let CenY			= GetStgFrameHeight/2;
+	let muteki			= 180;
+	
+	#include"./lib/lib_AllSound.dnh"
+	#include"./Obj_PlayerMain03B.dnh"
+	#include"./lib/lib_Player.dnh"
+	#include"./lib/lib_PlayerShot_Futo.dnh"
+	#include"./lib/lib_PlayerBomb_Futo.dnh"
+	
+	@Initialize{
+		LoadPlayerShotData( csd ~ "./Dummy_ShotData.dnh" );
+		SetPlayerSpeed(4,1.8);
+		SetPlayerPower(400);
+		SetPlayerRebirthFrame( PL03_RebirthFrame );
+		SetPlayerDownStateFrame(60);
+		SlowEffect();
+		PlayerDisplay([csd~"./img/pl/pl03a.png","0"]);
+		PlayerOption();
+		StrongStyle_EvolutionSwitch();
+		
+		//　当たり判定制御
+		PlayerCollisionChange();
+		
+		//　移動範囲制限
+		SetPlayerClip( 0+6, 0+24, 384-6, 448-16 );
+	}
+
+	@MainLoop{
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType )
+		case( EV_REQUEST_SPELL ){
+			if( GetPlayerSpell >= 1 ){
+				SetScriptResult( true );
+				CallSpellChanger();
+			}
+			else{
+				SetScriptResult( false );
+			}
+		}
+		case( EV_GRAZE ){
+			AddScore( 10 );
+			GrazeEffect([GetPlayerX(),GetPlayerY()], [255,255,255] );
+			ObjSound_Play( PlayerEnviron_SE[1] );
+		}
+		case( EV_HIT ){
+			//　オートボム
+			if( AutoBomb() ){ CallSpell(); }
+			//　反転エフェクト
+			EnemyBreakDown_th14();
+			//　弾消し
+			ShotDelete();
+			ObjSound_Play( PlayerEnviron_SE[0] );
+		}
+		case( EV_PLAYER_REBIRTH ){
+			SetPlayerSpell( 2 );
+			SetPlayerInvincibilityFrame( muteki );
+			SetPlayerRebirthFrame( PL03_RebirthFrame );
+		}
+	}
+	
+	//　オートボム判定
+	function AutoBomb(){
+		//　オプションオートボム
+		if( GetAreaCommonData("Option", "AutoBomb", 0 ) == 1 ){
+			alternative( GetAreaCommonData("System", "Difficulty", "NULL" ) )
+			case( "Lunatic", "Phantasm", "OverDrive" ){
+				if( GetPlayerSpell() > 0 ){
+					SetPlayerSpell( 1 );
+				}
+			}
+			return true;
+		}
+		//　メガ解除オートボム
+		if( GetAreaCommonData( "MegaEvolution", "Frag", false ) && GetPlayerSpell() > 0 ){
+			//　ボムを 1 にセット この後にオートボムが発動し 0 に
+			SetPlayerSpell( 1 );
+			
+			SetAreaCommonData("MegaEvolution", "Gauge", 0 );
+			return true;
+		}
+		return false;
+	}

@@ -1,0 +1,247 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8　六壬「陰陽結界八方塞」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./lib_enm08_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 70;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, true );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 192, 256, 192, 256 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 2200 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 8, 8 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm08a( enm, true, enemy_tex_path );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "六壬「陰陽結界八方塞」";
+		
+		SpellCounter( GetDifficult, 8, 8 );
+		let sct = GetSpellCounter( GetDifficult, 8, 8 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, CHAR_CUTIN_MODE, enemy_cutin2_pos[0], enemy_cutin2_pos[1], [1,1], enemy_cutin_path2, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_08b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		
+		State;
+		
+		Wait( 160 );
+		SetEffect( enm, 4 );
+
+		while( !Obj_IsDeleted( enm ) ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( Wait( 100 ) ){ return; }
+			let ppos = [ GetPlayerX, GetPlayerY ];
+			let p = rand( 0, 360 );
+			let c = round( rand( 0, 7 ) );
+			let radius = 160;
+			loop( 3 ){
+				SetLaser( ppos, p, radius, c );
+				if( Wait( 10 ) ){ return; }
+				p += 17.5 * r;
+				radius += 96;
+				c++;
+			}
+			let skip = false;
+			loop( 450 ){
+				if( Wait( 1 ) ){ return; }
+				if( GetShotCount( TARGET_ENEMY ) == 0 ){ skip = true; break; }
+			}
+			if( !skip ){
+				EnemyMove( enm, 2, 8 );
+				loop( 100 ){
+					if( Wait( 1 ) ){ return; }
+					if( GetShotCount( TARGET_ENEMY ) == 0 ){ break; }
+				}
+			}
+			r = -r;
+		}
+
+		task SetLaser( ppos, p, radius, c ){
+			let color = [ [ 255, 0, 0 ],
+						  [ 0, 255, 0 ],
+						  [ 0, 0, 255 ],
+						  [ 255, 255, 0 ],
+						  [ 255, 0, 255 ],
+						  [ 100, 100, 255 ],
+						  [ 255, 100, 100 ],
+						  [ 128, 128, 128 ]];
+			let shote = BGW_RED_12 + c % length( color );
+			let delay = 24;
+
+			Border( p );
+			Border( p + 45 );
+
+			task Border( p ){
+				let ag = [ -90, 0, 90, 180 ];
+				let lag = [ 45, 135, -135, -45 ];
+				ObjSound_Play( CreateShotSE[13] );
+				ascent( idx in 0..4 ){
+					let pag = p + ag[ idx ];
+					let pos = [ ppos[0] + radius * cos( pag ), ppos[1] + radius * sin( pag ) ];
+					let angle = p + lag[ idx ];
+					let lmax = radius * cos( 45 ) * 2;
+					let wt = 100;
+					
+					LSet( pag, angle );
+					Set( pos, angle, lmax );
+					task LSet( pag, angle ){
+						let rad = radius;
+						let sht = CreateSwordLaser( pos, angle, lmax, 16, wt - 20, color[ c%length( color ) ], 30 );
+						
+						loop( wt ){
+							let pos = [ ppos[0] + ( radius - rad ) * cos( pag ), ppos[1] + ( radius - rad ) * sin( pag ) ];
+							let leng = ( radius - rad ) * cos( 45 ) * 2;
+							ObjMove_SetPosition( sht, pos[0], pos[1] );
+							ObjLaser_SetLength( sht, leng );
+							rad *= 0.95;
+							if( Wait( 1 ) ){ return; }
+						}
+						//*/
+					}
+					task Set( pos, p, leng ){
+						if( Wait( wt ) ){ return; }
+						ObjSound_Play( CreateShotSE[1] );
+						let bpos = [ pos[0] + ( leng/2 ) * cos( p ), pos[1] + ( leng/2 ) * sin( p ) ];
+						let pa = GetGapAngle( bpos, ppos );
+						let v = radius*1.78;
+						let tpos = [ bpos[0] + v * cos( pa ), bpos[1] + v * sin( pa ) ];
+						
+						let l = 0;
+						let way = round( radius / 12 );
+						let ag = 0;
+						loop( way ){
+							let spos = [ pos[0] + l * cos( p ), pos[1] + l * sin( p ) ];
+							let speed = GetDistance( spos, tpos ) / 800;
+							let angle = GetGapAngle( spos, tpos ) + ag;
+							let sht = CreateShotA2( spos[0], spos[1], 0, angle, speed / ( radius * 0.7 ), speed, shote, delay );
+							NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+							l += leng / ( way - 1 );
+							ag += 180;
+						}
+					}
+				}
+			}
+		}
+
+		
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+	
+	

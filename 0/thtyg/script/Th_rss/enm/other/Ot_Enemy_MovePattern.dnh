@@ -1,0 +1,85 @@
+
+//　定位置移動
+task ObjMove_SetDestAtWeight_Acceleration(objID,pos,weight,speed,acc,mx){
+	let spd = speed;
+	
+	while( !Obj_IsDeleted(objID) ){
+		
+		ObjMove_SetDestAtWeight( objID, pos[0], pos[1], weight, spd );
+		
+		if( spd < mx ){
+			spd += acc;
+		}
+		
+		yield;
+	}
+}
+
+//　円形移動
+task ObjMove_SetDestAtWeight_Circle( objID, pos, distance, angle, spin, weight, speed, acc, mx ){
+	let spd = speed;
+	
+	while( !Obj_IsDeleted(objID) ){
+		let spos = [
+			pos[0] + distance[0] * cos( angle ),
+			pos[1] + distance[1] * sin( angle ),
+		];
+		
+		ObjMove_SetDestAtWeight( objID, spos[0], spos[1], weight, spd );
+		
+		angle += spin;
+		if( spd < mx ){
+			spd += acc;
+		}
+		
+		yield;
+	}
+}
+
+//　追従移動
+task ObjMove_SetDestAtWeight_Obj( CallID, objID, distance, angle, spin, weight, speed, acc, mx ){
+	let spd = speed;
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(objID) ){
+		let spos = [
+			ObjMove_GetX(CallID) + distance[0] * cos( angle ),
+			ObjMove_GetY(CallID) + distance[1] * sin( angle ),
+		];
+		
+		ObjMove_SetDestAtWeight( objID, spos[0], spos[1], weight, spd );
+		
+		angle += spin;
+		if( spd < mx ){
+			spd += acc;
+		}
+		
+		yield;
+	}
+	Obj_Delete( objID );
+}
+
+
+//　追尾移動 特攻ザコ等
+task ObjMove_SetHorming( objID, targetID, spd, acc, angle, d ){
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let spos = [ ObjRender_GetX( targetID ), ObjRender_GetY( targetID ) ];
+
+		let toAngle = atan2( spos[ 1 ] - pos[ 1 ], spos[ 0 ] - pos[ 0 ] );
+		let ret = toAngle - angle;
+		if( ( ret > 0 && ret <= 180 ) || ( ret <= -180 ) ){ angle += d; }
+		else if( ( ret > 180 ) || ( ret < 0 && ret > - 180 ) ){ angle += -d; }
+		if( angle >= 180 ){ angle += -360; }
+		if( angle < -180 ){ angle += 360; }
+
+		spd += acc;
+		
+		pos[ 0 ] = pos[ 0 ] + spd * cos( angle );
+		pos[ 1 ] = pos[ 1 ] + spd * sin( angle );
+
+		ObjMove_SetPosition( objID, pos[ 0 ], pos[ 1 ] );
+		yield;
+	}
+}
+
+

@@ -1,0 +1,112 @@
+
+
+//　Plural用の関数とか
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+
+//　画面震動
+task WorldShake(long,shake){
+	loop( long ){
+		Set2DCameraFocusX( CenX + rand(-shake,shake) );
+		Set2DCameraFocusY( CenY + rand(-shake,shake) );
+		yield;
+	}
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+}
+
+
+//　指定フレーム待機
+function wait(long){
+	loop( long ){ yield; }
+}
+
+
+//　敵の名前表示
+task EnemyNameDisplay( ID, rgb_array, chara_num, set_num ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	let sca		= 0.49;
+	
+	while( GetAreaCommonData("Talk", "counter", 0 ) < set_num ){ yield; }
+	
+	Obj_SetRenderPriorityI(obj, 71 );
+	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "./../img/front/enemy_name.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjRender_SetAlpha(obj, 192 );
+	ObjRender_SetColor(obj, rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	//　座標調整　0は使用しない
+	ObjRender_SetPosition(obj, MinX + 96, MinX+9, 0 );
+	ObjSprite2D_SetSourceRect(obj, 0, 0 + (chara_num-1)*64, 512, 64 + (chara_num-1)*64 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	while( !Obj_IsDeleted(ID) ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(obj, sca, move1*sca, 0 );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(obj, sca + move1*sca, sca + move1*sca, 0 );
+		ObjRender_SetAlpha(obj, 192 - move1*192 );
+		
+		moveA += 10;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+
+//　残りスペカ表示
+task EnemySpellDisplay(ID_BossScene,num){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move1	= 0;
+	let moveA	= 0;
+	let sca		= 1;
+	
+	//　毎フレーム取得する敵の残りステップ
+	let step	= ObjEnemyBossScene_GetInfo(ID_BossScene, INFO_REMAIN_STEP_COUNT );
+	
+	Obj_SetRenderPriorityI(obj, 71 );
+	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "./../img/front/enemy_life.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	ObjRender_SetAlpha(obj, 192 );
+	
+	//　座標調整　0は使用しない
+	ObjRender_SetPosition(obj, MinX + 6 + num*10, MinX+22, 0 );
+	ObjSprite2D_SetSourceRect(obj, 0, 144, 16, 160 );
+	ObjSprite2D_SetDestCenter(obj);
+	
+	while( !Obj_IsDeleted(ID_BossScene) && step > num ){
+		step = ObjEnemyBossScene_GetInfo(ID_BossScene, INFO_REMAIN_STEP_COUNT );
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(obj, move1*sca, move1*sca, 0 );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(obj, sca + move1*sca, sca + move1*sca, 0 );
+		ObjRender_SetAlpha(obj, 192 - move1*192 );
+		
+		moveA += 10;
+		yield;
+	}
+	Obj_Delete(obj);
+}

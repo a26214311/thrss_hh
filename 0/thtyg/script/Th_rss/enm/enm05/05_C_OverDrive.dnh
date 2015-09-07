@@ -1,0 +1,395 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5中ボス　オーバードライブ"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 55;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 2600 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 9, 4 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		CreateSaidaioujouLifeGauge( enm );
+		
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, C_aura_rgb[0], C_aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05a(enm, true, enemy_tex_path00 );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "「インビジブル骨董ハンド」";
+		
+		
+		SpellCounter( GetDifficult, 9, 4 );
+		let sct = GetSpellCounter( GetDifficult, 9, 4 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 192, 192, [1,1], chara_tex[ 49 ], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_05a(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){ 
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	function WaitP( long, ps ){
+		loop( long ){
+			yield;
+			if( PHASE != ps ){ return true; }
+		}
+		return false;
+	}
+
+	let PHASE = 1;
+	
+	//　ショットメイン
+	task MainThread{
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+		
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		
+		Wait( 100 );
+
+		let ps = 1;
+		while( !Obj_IsDeleted( enm ) ){
+			Pattern1_1( ps, 0 );
+			if( WaitP( 240, ps ) ){ return; }
+			Pattern1_2( ps );
+			if( WaitP( 240, ps ) ){ return; }
+			Pattern1_1( ps, 1 );
+			if( WaitP( 240, ps ) ){ return; }
+			Pattern1_2( ps );
+			if( WaitP( 240, ps ) ){ return; }
+		}
+		
+		task Pattern1_1( let ps, let type ){
+			Concentration03_Main( enm, power_rgb, 60 );
+			if( WaitP( 80, ps ) ){ return; }
+			let lp = 5;
+			loop( lp ){
+				let sx = CenX + rand( 20, 120 ) * r;
+				let angle = GetAngleToPlayer( enm );
+				
+				if( angle < -180 ){ angle += 360; }
+				if( angle > 180 ){ angle -= 360; }
+				
+				let v = 24;
+				if( !type ){
+					if( angle <= 90-v ){ angle = 90-v; }
+					if( angle >= 90+v ){ angle = 90+v; }
+				}else{
+					if( angle <= -90-v ){ angle = 270-v; }
+					if( angle >= -90+v ){ angle = 270+v; }
+				}
+				SetFist( sx, angle );
+				r = -r;
+				if( WaitP( 24, ps ) ){ return; }
+			}
+
+			task SetFist( let sx, let ag ){
+				ObjSound_Play( CreateShotSE[3] );
+				let sy = MinY;
+				if( type ){ sy = MaxY; }
+				let color = [ 128, 64, 16 ];
+				let pos = [ sx, sy ];
+				let speed = 6;
+				let angle = ag;
+				let scale = 0.8;
+				let sht = CreateFistShotB( pos, 0, angle, speed/100, speed, color, scale, "RIGHT" );
+				ObjShot_SetSpellResist( sht, true );
+				while( !Obj_IsDeleted( sht ) ){
+					pos = [ ObjMove_GetX( sht ), ObjMove_GetY( sht ) ];
+					if( WaitP( 1, ps ) ){ return; }
+				}
+				
+				ObjSound_Play( CreateShotSE[8] );
+				WorldShake_Single( 15, 4 );
+
+				local{
+					let v = 32;
+					let way = 24;
+					let shote = ADD_BGW_ORANGE_02;
+					let delay = 24;
+					let angle = ag;
+					loop( way ){
+						let sx = pos[0] + v * cos ( angle );
+						let sy = pos[1] + v * sin ( angle );
+						let speed = 1 + 0.5 * sin( angle * 8 );
+
+						let obj = CreateShotA2( sx, sy, 0, angle, speed / 80, speed, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ obj, delay ] );
+						angle += 360 / way;
+					}
+				}
+			}
+		}
+
+		task Pattern1_2( let ps ){
+			let lp = 5;
+			let l = lp;
+			let wt = 20;
+			loop( lp ){
+				let way = 24;
+				let shote = BGW_WHITE_02;
+				let delay	= 32;
+				let ag		= GetAngleToPlayer( enm );
+				loop( way ){
+					let spos = [
+						gpos[0] + 32 * cos( ag ),
+						gpos[1] + 32 * sin( ag ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 0, ag, 0.01, 1, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					ag += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				local{
+					let ag = GetAngleToPlayer( enm );
+					let dist = GetDistance( gpos, [ GetPlayerX, GetPlayerY ] ) / l;
+					let mx = gpos[0] + dist * cos( ag );
+					let my = gpos[1] + dist * sin( ag );
+					let speed = dist / wt;
+					ObjMove_SetDestAtWeight( enm, mx, my, 16, speed );
+				}
+				l--;
+				if( WaitP( wt, ps ) ){ return; }
+			}
+			if( WaitP( 30, ps ) ){ return; }
+			loop( 5 ){
+				ObjSound_Play( CreateShotSE[3] );
+				let speed = 6;
+				let angle = GetAngleToPlayer( enm );
+				let color = [ 212, 212, 212 ];
+				let scale = 0.7;
+				let sht = CreateFistShotB( gpos, 0, angle, speed/60, speed, color, scale, "LEFT" );
+				ObjShot_SetSpellResist( sht, true );
+				SetFist( sht );
+				task SetFist( let sht ){
+					while( !Obj_IsDeleted( sht ) ){ yield; }
+					if( Obj_IsDeleted( enm ) ){ return; }
+					ObjSound_Play( CreateShotSE[8] );
+					WorldShake_Single( 15, 4 );
+				}
+				if( WaitP( 18, ps ) ){ return; }
+			}
+		}
+
+
+		task State{
+			let life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+				alternative( PHASE )
+				case( 1 ){
+					if( life <= 0 ){
+						PHASE = 0;
+						DeleteShotAll( TYPE_SHOT, TYPE_ITEM );
+					}
+				}
+				yield;
+			}
+			PHASE = 0;
+		}
+	}
+	
+
+	function CreateFistShotB( pos, speed, angle, acc, max_speed, rgb_array, scale, type ){
+		let sht		= CreateShotA2( pos[0], pos[1], 0, angle, 0, 0, BGW_RED_01, 0 );
+		
+		ObjRender_SetAlpha( sht, 0 );
+		
+		FistShot_Main( sht, pos, speed, angle, acc, max_speed, [255,255,255], scale, type );
+		CreateFistShot( pos, speed, angle, acc, max_speed, rgb_array, scale*1.05, type );
+		return sht;
+
+		task FistShot_Main( CallID, pos, speed, angle, acc, max_speed, rgb_array, scale, type ){
+			let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+			let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			let count	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			
+			//　拳
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/gupan.png" );
+			Obj_SetRenderPriorityI(ID, 51 );
+			ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+			ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+			ObjSprite2D_SetDestCenter(ID);
+			
+			if( type == "RIGHT" ){
+				ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+			}
+			else{
+				ObjSprite2D_SetSourceRect(ID, 0, 256, 256, 512 );
+			}
+			
+			//　出現
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) && move1 < 1 ){
+				gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				
+				move1 = 1 * sin( moveA );
+				
+				if( count%4 == 0 ){
+					FistVision( ID, [32,255,255], scale, 128, type );
+				}
+				
+				ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+				ObjRender_SetAngleXYZ(ID, 0, 0, ObjMove_GetAngle(CallID) );
+				ObjRender_SetScaleXYZ(ID, move1*scale, move1*scale, 0 );
+				
+				count++;
+				moveA += 5;
+				
+				yield;
+			}
+			
+			//　スピード設定
+			ObjMove_SetSpeed( CallID, speed );
+			ObjMove_SetAcceleration( CallID, acc );
+			ObjMove_SetMaxSpeed( CallID, max_speed );
+			
+			//　メイン
+			move1 = 0;
+			moveA = 0;
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+				gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				
+				move1 = 1 * sin( moveA );
+				
+				if( count%4 == 0 ){
+					FistVision( ID, [32,255,255], scale, 128, type );
+				}
+				
+				ObjShot_SetIntersectionCircleA1( CallID, 70*scale );
+				
+				ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+				ObjRender_SetAngleXYZ(ID, 0, 0, ObjMove_GetAngle(CallID) );
+				
+				count++;
+				moveA += 10;
+				
+				yield;
+			}
+			
+			//　削除
+			move1 = 0;
+			moveA = 0;
+			while( move1 < 1 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+				ObjRender_SetScaleXYZ(ID, scale + move1*scale, scale + move1*scale, 0 );
+				ObjRender_SetAlpha(ID, 255 - move1*255 );
+				
+				count++;
+				moveA += 10;
+				
+				yield;
+			}
+			Obj_Delete( CallID );
+			Obj_Delete( ID );
+		}
+	}
+
+	
+	//　pos1 から見た pos2 への角度を取得
+	function GetGapAngle( pos1, pos2 ){
+		return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+	}

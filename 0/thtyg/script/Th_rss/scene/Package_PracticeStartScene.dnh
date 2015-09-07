@@ -1,0 +1,636 @@
+	let Eflg	= false;
+	let csd		= GetCurrentScriptDirectory();
+
+@Initialize{
+	SetAutoDeleteObject(true);
+
+	SetAreaCommonData("Trance", "High_Score", 0 );
+	SetAreaCommonData("System","select",0);
+	SetAreaCommonData("System","select2",0);
+	SetAreaCommonData("System","R_sector",-3);
+
+	TBackground();
+	PracticeStartMain();
+
+	SetScriptResult("");
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	PlaySEsP(csd~"../se/menucancel.ogg");
+}
+
+task PlaySEsP(se){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option","SE_Volume",100);
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid,se);
+	ObjSound_SetVolumeRate(sid,se_vol);
+	ObjSound_SetLoopEnable(sid,false);
+	ObjSound_Play(sid);
+	loop(180){yield;}
+	Obj_Delete(sid);
+}
+
+task TBackground{
+	let objImage	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objText		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 		= GetCurrentScriptDirectory();
+	let eflg		= GetAreaCommonData("System", "title_end", false );
+	let Rsector		= GetAreaCommonData("System", "R_sector", 0) ;
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let i			= 0;
+	
+	//　背景
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" );
+	Obj_SetRenderPriorityI(objImage, 33 );
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 64, 64, 64 );
+	ObjRender_SetAlpha(objImage, alpha1*255 );
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.56, 0.56, 0 );
+	ObjSprite2D_SetSourceRect(objText, 0, 512, 512, 768 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	while( Rsector != 3 && !eflg ){
+		Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Rsector == -3 ){
+			move1 = 0;
+			moveA = 0;
+			move2 = 0;
+			moveB = 0;
+		}
+		else if( Rsector == 0 ){
+			move1 = 1 * sin( moveA );
+			ObjRender_SetAlpha(objText, 255 - move1*255 );
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		else if(Rsector==-1){
+			move2 = 1 * sin( moveB );
+			ObjRender_SetAlpha(objText, move2*255 );
+			if( move2 < 1 ){ moveB += 5; }
+		}
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		ObjRender_SetAlpha(objImage, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	SetAreaCommonData("System","select",0);
+	SetAreaCommonData("System","select2",0);
+	SetAreaCommonData("System","R_sector",0);
+	CloseScript(GetOwnScriptID());
+}
+
+//----------------------------------------------------
+// ステージ選択
+//----------------------------------------------------
+task PracticeStartMain{
+	let id				= [ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D),
+							ObjPrim_Create(OBJ_SPRITE_2D)];
+	let csd 	= GetCurrentScriptDirectory();
+	let CenX	= 320;
+	let CenY	= 240;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let sca1	= 0;
+	let scaA	= 0;
+	let rgb		= [0,0,0];
+	let i		= 0;
+	let ctr		= 0;
+	let spin1	= 0;
+	let spinA	= 0;
+	let spin2	= 0;
+	let spinB	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let cc		= 0;
+	let stc		= GetCommonData("SelectPlace1",0);
+	let rect1	= [0,256,256,256,256,256];
+	let rectA	= [256,512,512,512,512,512];
+	let rect2	= [256,0,256,256,256,256];
+	let rectB	= [512,256,512,512,512,512];
+	let rect3	= [256,256,0,256,256,256];
+	let rectC	= [512,512,256,512,512,512];
+	let rect4	= [256,256,256,0,256,256];
+	let rectD	= [512,512,512,256,512,512];
+	let rect5	= [256,256,256,256,0,256];
+	let rectE	= [512,512,512,512,256,512];
+	let rect6	= [256,256,256,256,256,0];
+	let rectF	= [512,512,512,512,512,256];
+	let flg		= 0;
+	let mt		= "NULL";
+	let Rsector	= GetAreaCommonData("System","R_sector",0);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let cst		= GetAreaCommonData("SaveData","StageFlg",0);
+	let gx		= 0;
+	let gy		= 0;
+	
+	if( stc != 5 ){
+		mt = "UP"
+	}
+	else{
+		mt = "DOWN";
+	}
+	
+	ObjRender_SetPosition(id[0], CenX, CenY+26, 0 );
+	ObjPrim_SetTexture(id[0], csd ~ "../img/title/et03.png" );
+	Obj_SetRenderPriorityI(id[0], 33 );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjPrim_SetPrimitiveType(id[0], PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(id[0], 1, 1, 0 );
+	ObjPrim_SetVertexCount(id[0], 6 );
+	ObjPrim_SetVertexPosition(id[0], 0, 1024/-2, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 1, 1024/-2, 1024/2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 2, 0, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 3, 0, 1024/2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 4, 1024/2, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 5, 1024/2, 1024/2, 0 );
+	ObjPrim_SetVertexUVT(id[0], 0, 0, 0 );
+	ObjPrim_SetVertexUVT(id[0], 1, 0, 1024 );
+	ObjPrim_SetVertexUVT(id[0], 2, 512, 0 );
+	ObjPrim_SetVertexUVT(id[0], 3, 512, 1024 );
+	ObjPrim_SetVertexUVT(id[0], 4, 1024, 0 );
+	ObjPrim_SetVertexUVT(id[0], 5, 1024, 1024 );
+	ObjPrim_SetVertexColor(id[0], 0, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 1, 32, rgb[1], 128 );
+	ObjPrim_SetVertexColor(id[0], 2, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 3, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 4, 32, rgb[1], 128 );
+	ObjPrim_SetVertexColor(id[0], 5, rgb[0], rgb[1], rgb[2] );
+	
+	loop( 6 ){
+		if( i < 4 ){
+			ObjPrim_SetTexture(id[ 1 + i ], csd ~ "../img/title/sl0s_a.png" );
+		}
+		else{
+			ObjPrim_SetTexture(id[ 1 + i ], csd ~ "../img/title/sl0s_b.png" );
+		}
+		ObjRender_SetBlendType(id[ 1 + i ], BLEND_ALPHA );
+		Obj_SetRenderPriorityI(id[ 1 + i ], 34 );
+		ObjRender_SetScaleXYZ(id[ 1 + i ], 0.75, 0.75, 0 );
+		i++;
+	}
+	i = 0;
+	
+	while( !eflg ){
+		Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Rsector == -3 ){
+			move1 = 1 * sin( moveA );
+			
+			//----------------------------------------------------------------------------------------------------
+			//----------------------------------------------------------------------------------------------------
+			//　難易度選択
+			alternative( stc )
+			case( 0 ){
+				loop( 6 ){
+					ObjRender_SetPosition(id[ 1 + i ], CenX-150 + i*150 +move1*150, (CenY+25)-150 + i*150 +move1*150, 0 );
+					i++;
+				}
+				i = 0;
+			}
+			case( 1 ){
+				if( mt == "UP" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-300 + i*150 +move1*150, (CenY+25)-300 + i*150 +move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+				else if( mt == "DOWN" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX + i*150 -move1*150, (CenY+25) + i*150 -move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+			}
+			case( 2 ){
+				if( mt == "UP" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-450 + i*150 +move1*150, (CenY+25)-450 + i*150 +move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+				else if( mt == "DOWN" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-150 + i*150 -move1*150, (CenY+25)-150 + i*150 -move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+			}
+			case( 3 ){
+				if( mt == "UP" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-600 + i*150 +move1*150, (CenY+25)-600 + i*150 +move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+				else if( mt == "DOWN" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-300 + i*150 -move1*150, (CenY+25)-300 + i*150 -move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+			}
+			case( 4 ){
+				if( mt == "UP" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-750 + i*150 +move1*150, (CenY+25)-750 + i*150 +move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+				else if( mt == "DOWN" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-450 + i*150 -move1*150, (CenY+25)-450 + i*150 -move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+			}
+			case( 5 ){
+				if( mt == "UP" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-750 - i*150 +move1*150, (CenY+25)-750 - i*150 +move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+				else if( mt == "DOWN" ){
+					loop( 6 ){
+						ObjRender_SetPosition(id[ 1 + i ], CenX-600 + i*150 -move1*150, (CenY+25)-600 + i*150 -move1*150, 0 );
+						i++;
+					}
+					i = 0;
+				}
+			}
+			//----------------------------------------------------------------------------------------------------
+			//----------------------------------------------------------------------------------------------------
+			
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			//　選択してない奴のrect変える
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], 0, 0, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], 0, 0, (stc-1)*16 + move1*16 );
+			}
+			ObjSprite2D_SetSourceRect(id[1], rect1[stc]*2, 0, rectA[stc]*2, 256 );
+			ObjSprite2D_SetDestCenter(id[1]);
+			ObjSprite2D_SetSourceRect(id[2], rect2[stc]*2, 256, rectB[stc]*2, 512 );
+			ObjSprite2D_SetDestCenter(id[2]);
+			ObjSprite2D_SetSourceRect(id[3], rect3[stc]*2, 512, rectC[stc]*2, 768 );
+			ObjSprite2D_SetDestCenter(id[3]);
+			ObjSprite2D_SetSourceRect(id[4], rect4[stc]*2, 768, rectD[stc]*2, 1024 );
+			ObjSprite2D_SetDestCenter(id[4]);
+			ObjSprite2D_SetSourceRect(id[5], rect5[stc]*2, 0, rectE[stc]*2, 256 );
+			ObjSprite2D_SetDestCenter(id[5]);
+			ObjSprite2D_SetSourceRect(id[6], rect6[stc]*2, 256, rectF[stc]*2, 512 );
+			ObjSprite2D_SetDestCenter(id[6]);
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			//　フェードイン
+			alpha1 = 1 * sin( alphaA );
+			ObjPrim_SetVertexAlpha(id[0], 0, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 1, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 2, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[0], 3, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[0], 4, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 5, 0 );
+			
+			loop( 6 ){
+				ObjRender_SetAlpha(id[ 1 + i ], alpha1*255 );
+				i++;
+			}
+			i = 0;
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			if( stc != 0 && GetVirtualKeyState(VK_UP) == KEY_PUSH && ctr > 10 ){
+				stc--;
+				mt = "UP";
+				moveA = 0;
+				ctr = 0;
+				SetSelectPlace1(stc);
+				PlaySEsP(csd~"../se/menuselect.ogg");
+			}
+			if( stc < cst && GetVirtualKeyState(VK_DOWN) == KEY_PUSH && ctr > 10 ){
+				stc++;
+				mt = "DOWN";
+				moveA = 0;
+				ctr = 0;
+				SetSelectPlace1(stc);
+				PlaySEsP(csd~"../se/menuselect.ogg");
+			}
+			if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 10 ){
+				SetAreaCommonData("System", "R_sector", 3 );
+				ctr = 0;
+				break;
+			}
+			if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 10 && move1 >= 1 ){
+				SetAreaCommonData("System", "R_sector", 0 );
+				gx = ObjRender_GetX(id[ stc + 1 ]);
+				gy = ObjRender_GetY(id[ stc + 1 ]);
+				ctr = 0;
+				TChangeSelectScene( stc + 1 );
+				PlaySEsP(csd~"../se/menudecide.ogg");
+			}
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			cc++;
+			if( move1 < 1 ){ moveA += 5; }
+			if( alpha1 < 1 ){ alphaA += 5; }
+			else{ ctr++; }
+		}
+		else if( Rsector == 0 ){
+			if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 1 ){
+				SetAreaCommonData("System", "R_sector", -1 );
+				ctr = 0;
+			}
+			
+			sca1 = 1 * sin( scaA );
+			spin1 = 1 * sin( spinA );
+			
+			ObjRender_SetPosition(id[stc+1], gx+spin1*90*2.8, gy-spin1*90*2, 0 );
+			ObjRender_SetScaleXYZ(id[stc+1], 0.75-spin1*0.15, 0.75-spin1*0.15, 0 );
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90, spin1*90, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90, spin1*90, (stc-1)*16 + move1*16 );
+			}
+			
+			alternative( stc )
+			case( 0 ){
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90, spin1*90, 0 );
+			}
+			case( 1 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90, spin1*90, 0 );
+			}
+			case( 2 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90, spin1*90, 0 );
+			}
+			case( 3 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90, spin1*90, 0 );
+			}
+			case( 4 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90, spin1*90, 0 );
+			}
+			case( 5 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90, spin1*90, 0 );
+			}
+			
+			cc++;
+			if( sca1 < 1 ){ scaA += 5; }
+			if( spin1 < 1 ){ spinA += 5; }
+			if( spin1 >= 1 && sca1 >= 1 ){ ctr++; }
+		}
+		else if( Rsector == -1 ){
+			spin2 = 1 * sin( spinB );
+			sca1 = 1 * sin( scaA );
+			
+			ObjRender_SetPosition(id[stc+1], gx+(spin1*90*2.7-spin2*90*2.7), gy-(spin1*90*2-spin2*90*2), 0 );
+			ObjRender_SetScaleXYZ(id[stc+1], 0.6+spin2*0.15, 0.6+spin2*0.15, 0 );
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90-spin2*90, spin1*90-spin2*90, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90-spin2*90, spin1*90-spin2*90, (stc-1)*16 + move1*16 );
+			}
+			
+			alternative( stc )
+			case( 0 ){
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 1 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 2 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 3 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 4 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[6], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 5 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[4], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[5], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			
+			if( sca1 <= 0 ){
+				sca1 = 0;
+				scaA = 0;
+			}
+			if( sca1 <= 0 && spin2 >= 1 ){
+				SetAreaCommonData("System", "R_sector", -3 );
+				spin1 = 0;
+				spinA = 0;
+				spin2 = 0;
+				spinB = 0;
+			}
+			cc++;
+			if( sca1 > 0 ){ scaA += 5; }
+			if( spin2 < 1 ){ spinB += 5; }
+		}
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjPrim_SetVertexAlpha(id[0], 0, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 1, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 2, 255 - alpha1*255 );
+		ObjPrim_SetVertexAlpha(id[0], 3, 255 - alpha1*255 );
+		ObjPrim_SetVertexAlpha(id[0], 4, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 5, 0 );
+		
+		loop( 6 ){
+			ObjRender_SetAlpha(id[ 1 + i ], 255 - alpha1*255 );
+			i++;
+		}
+		i = 0;
+		
+		alphaA += 5;
+		
+		yield;
+	}
+}
+
+task TChangeSelectScene(sc){
+	let csd 			= GetCurrentScriptDirectory();
+	let INDEX_STAGE1	= 1;
+	let INDEX_STAGE2	= 2;
+	let INDEX_STAGE3	= 3;
+	let INDEX_STAGE4	= 4;
+	let INDEX_STAGE5	= 5;
+	let INDEX_STAGE6	= 6;
+	let pathScript		= csd ~ "./Package_RankSelectScene.dnh";
+	
+	alternative(sc)
+	case(INDEX_STAGE1){
+		SetAreaCommonData("System","Stage_Index",1);
+		SetAreaCommonData("System","stg_ST",1);
+	}
+	case(INDEX_STAGE2){
+		SetAreaCommonData("System","Stage_Index",2);
+		SetAreaCommonData("System","stg_ST",2);
+	}
+	case(INDEX_STAGE3){
+		SetAreaCommonData("System","Stage_Index",3);
+		SetAreaCommonData("System","stg_ST",3);
+	}
+	case(INDEX_STAGE4){
+		SetAreaCommonData("System","Stage_Index",4);
+		SetAreaCommonData("System","stg_ST",4);
+	}
+	case(INDEX_STAGE5){
+		SetAreaCommonData("System","Stage_Index",5);
+		SetAreaCommonData("System","stg_ST",5);
+	}
+	case(INDEX_STAGE6){
+		SetAreaCommonData("System","Stage_Index",6);
+		SetAreaCommonData("System","stg_ST",6);
+	}
+	others{//変な値が渡されたらタスク終了
+		SetAreaCommonData("System","R_sector",2);
+		break;
+	}
+
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+
+	while(!IsCloseScript(idScript)){
+		yield;
+	}
+
+	//シーン結果処理
+	let result = GetScriptResult(idScript);
+	if(length(result)==0){
+		//自機選択から難易度選択へ戻る
+	}else{
+	}
+}
+
+task SetSelectPlace1(num1){
+	SetCommonData("SelectPlace1", num1);
+}

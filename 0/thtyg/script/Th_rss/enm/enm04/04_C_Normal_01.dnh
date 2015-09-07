@@ -1,0 +1,278 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　垂神通常01"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./../enm05/lib_enm05_setting.dnh"
+	#include "./../enm05/lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 40;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 90 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 190 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Normal" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 0, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "EndSpellCard", true );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+
+		let speed = [ 3, 2 ];
+		let acc = 0;
+		let mx = 10;
+		let delay = 16;
+		
+		//　発射間隔
+		let wt = 75;
+		//　way数
+		let way = 20;
+		//　ショット画像
+		let shote	= [ BGW_WHITE_21, BGW_BLUE_21 ];
+		
+		let type	= 0;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			way = 12;
+			wt = 100;
+			speed = [ 2, 1 ];
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			way = 24;
+			wt = 60;
+		}
+		case( "Lunatic" ){
+			way = 36;
+			wt = 45;
+		}
+		case( "OverDrive" ){
+		}
+		
+		CallFamily( ID );
+		
+		Wait( 120 );
+		loop{
+			loop( 4 ){
+				let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				let angle = GetAngleToPlayer(ID);
+				let idx = 0;
+				loop( way ){
+					let sht = CreateShotA2( gpos[0], gpos[1], speed[idx%length(speed)], angle, acc, mx, shote[idx%length(shote)], delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+					idx++;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				if( Wait(wt) ){ return; }
+			}
+			EnemyMove(enm, 2, 8 );
+		}
+		function Wait(time){
+			loop( time ){
+				yield;
+				if( Obj_IsDeleted( ID ) ){ return true; }
+			}
+			return false;
+		}
+	}
+	
+	//　使い魔出現
+	task CallFamily( ID ){
+		let fam		= CreateEnemy_Jewel( "BLUE", 0.2, 0, 2 );
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		ObjMove_SetPosition(fam, gpos[0], gpos[1] );
+
+		let way		= 4;
+		let lp		= 16;
+		let wt		= 4;
+		let shotflg = true;
+		let r = 1-round(rand(0,1))*2;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp = 40;
+			shotflg = false;
+		}
+		case( "Normal" ){
+			lp = 32;
+		}
+		case( "Hard" ){
+			lp = 40;
+			way = 6;
+		}
+		case( "Lunatic" ){
+			lp = 24;
+			way = 10;
+		}
+		
+		ObjMove_SetDestAtWeight(fam, gpos[0], gpos[1] - 64, 16, 4 );
+		
+		Wait( 60 );
+		SetShotA;
+		if( shotflg ){
+			SetShotB;
+		}
+		task SetShotA{
+			let p = 90;
+			loop{
+				loop( lp ){
+					let delay = 16;
+					let angle = p;
+					loop( way ){
+						let v = 32;
+						let sx = ObjMove_GetX( fam ) + v * cos( angle );
+						let sy = ObjMove_GetY( fam ) + v * sin( angle );
+						let sht = CreateShotA2( sx, sy, 2, angle, 0, 10, BGW_BLUE_07, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += 360 / way;
+					}
+					p += ( 360 / way ) / lp *r;
+					
+					ObjSound_Play( CreateShotSE[1] );
+					if( Wait(wt) ){ return; }
+				}
+				
+				r = -r;
+				JewelEffect( fam, [255,255,255], 4 );
+				ObjSound_Play( CreateShotSE[7] );
+			}
+		}
+		task SetShotB{
+			let p = 90;
+			loop{
+				loop( lp / 2 ){
+					let delay = 16;
+					let angle = p;
+					loop( way ){
+						let sht = CreateShotA2( ObjMove_GetX(fam), ObjMove_GetY(fam), 1.5, angle, 0, 10, BGB_WHITE_07, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += 360 / way;
+					}
+					p -= ( 720 / way ) / lp *r;
+					
+					ObjSound_Play( CreateShotSE[1] );
+					if( Wait(wt*2) ){ return; }
+				}
+			}
+		}
+		function Wait(time){
+			loop( time ){
+				yield;
+				if( Obj_IsDeleted( enm ) ){ return true; }
+			}
+			return false;
+		}
+	}

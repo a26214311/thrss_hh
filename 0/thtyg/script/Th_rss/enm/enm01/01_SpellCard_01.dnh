@@ -1,0 +1,327 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage1　冥符「早く来過ぎた黒幕」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm01_setting.dnh"
+	#include "./lib_enm01_family.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 70, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+			SetAreaCommonData("anime", "spa", true );
+		}
+		
+		//　移動
+		alternative( count )
+		case( 256 ){
+			//EnemyMove(enm, 2, 8 );
+		}
+		case( 300 ){
+			count = 64;
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 1, 0 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "冥符「早く来過ぎた黒幕」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "悪夢「墨染の戸帳」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "冥符「西行彩隠し」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "冥符「西行彩隠し」";
+		}
+		
+		SpellCounter( GetDifficult, 1, 0 );
+		let sct = GetSpellCounter( GetDifficult, 1, 0 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_01(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 3, 8 ];
+		//　a値
+		let alpha	= 0;
+		//　ショット画像
+		let shote	= ADD_BGW_PURPLE_11;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 3, 8 ];
+			alpha	= 64;
+		}
+		case( "Normal" ){
+			lp		= [ 5, 12 ];
+			alpha	= 64;
+		}
+		case( "Hard" ){
+			shote	= ADD_BGW_BLUE_11;
+			lp		= [ 7, 16 ];
+			alpha	= 96;
+		}
+		case( "Lunatic" ){
+			shote	= ADD_BGW_BLUE_11;
+			lp		= [ 9, 20 ];
+			alpha	= 96;
+		}
+		case( "OverDrive" ){
+			shote	= ADD_BGW_AQUA_11;
+			lp		= [ 13, 24 ];
+			alpha	= 128;
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( count >= 60 ){
+				count = 0;
+				angle += (360/lp[0])/2;
+			}
+			
+			//　固定ADD細弾
+			if( frame > 0 && frame%6 == 0 ){
+				ascent( i in 0..(lp[0]) ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 1.6, 90+i*(360/lp[0]) + angle, 0, 10, shote, 16 );
+					ObjRender_SetScaleXYZ(sht, 2, 2, 0 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+			
+			//　自機狙いnway蝶弾
+			if( frame > 0 && frame%64 == 0 ){
+				ascent( i in 0..(lp[1]) ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 1.6, GetAngleToPlayer(ID) + i*(360/lp[1]), 0, 10, BGW_BLUE_16, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			
+			//　Hard以上の追加弾
+			if( GetDifficult == "Hard" || GetDifficult == "Lunatic" || GetDifficult == "OverDrive" ){
+				if( frame > 0 && frame%64 == 0 ){
+					ascent( i in 0..(lp[1]) ){
+						let sht1 = CreateShotA2( gpos[0], gpos[1], 2, GetAngleToPlayer(ID) + i*(360/lp[1]), 0, 10, BGW_PURPLE_16, 16 );
+						NotifyEventAll( EV_USER + 40, [ sht1, 16 ] );
+						
+						if( GetDifficult == "Lunatic" || GetDifficult == "OverDrive" ){
+							let sht2 = CreateShotA2( gpos[0], gpos[1], 2.4, GetAngleToPlayer(ID) + i*(360/lp[1]), 0, 10, BGW_AQUA_16, 16 );
+							NotifyEventAll( EV_USER + 40, [ sht2, 16 ] );
+						}
+						if( GetDifficult == "OverDrive" ){
+							let sht3 = CreateShotA2( gpos[0], gpos[1], 2.8, GetAngleToPlayer(ID) + i*(360/lp[1]), 0, 10, BGW_BLUE_16, 16 );
+							NotifyEventAll( EV_USER + 40, [ sht3, 16 ] );
+						}
+					}
+					ObjSound_Play( CreateShotSE[0] );
+				}
+			}
+			
+			let rang = rand( 0, 360 );
+			let spos = [
+				gpos[0] + 384 * cos( rang ),
+				gpos[1] + 384 * sin( rang ),
+			];
+			CreateFog( ID, spos, rand(1,2), rang+180, [32,0,64], alpha, 90 );
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	
+	task CreateFog(CallID,pos,speed,angle,rgb_array,alpha,long){
+		let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let count	= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		
+		ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+		ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg1img/enmeffect01a.png" );
+		Obj_SetRenderPriorityI(ID, 61 );
+		ObjRender_SetBlendType(ID, BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(ID, 0, 0, rand(0,360) );
+		ObjRender_SetScaleXYZ(ID, 1, 1, 0 );
+		ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+		ObjSprite2D_SetDestCenter(ID);
+		
+		while( !Obj_IsDeleted(CallID) && count < long ){
+			let gpos = [
+				ObjRender_GetX(ID) + speed * cos( angle ),
+				ObjRender_GetY(ID) + speed * sin( angle ),
+			];
+			
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjRender_SetAlpha(ID, move1*alpha );
+			
+			count++;
+			if( move1 < 1 ){ moveA += 1; }
+			
+			yield;
+		}
+		move1 = 0;
+		moveA = 0;
+		while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+			let gpos = [
+				ObjRender_GetX(ID) + speed * cos( angle ),
+				ObjRender_GetY(ID) + speed * sin( angle ),
+			];
+			
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjRender_SetAlpha(ID, alpha - move1*alpha );
+			
+			count++;
+			if( move1 < 1 ){ moveA += 1; }
+			
+			yield;
+		}
+		Obj_Delete(ID);
+	}

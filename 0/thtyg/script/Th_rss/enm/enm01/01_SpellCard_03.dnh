@@ -1,0 +1,504 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage1　幽火「誘蝶灯」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm01_setting.dnh"
+	#include "./lib_enm01_family.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,128,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+			SetFan(enm);
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			//　敵ダメージレート 第2引数:ボムバリア
+			SetDamageRate(enm, 70, false );
+			ShotMain(enm);
+		}
+		
+		//　移動
+		alternative( count )
+		case( 256 ){
+			//EnemyMove(enm, 2, 8 );
+		}
+		case( 300 ){
+			count = 64;
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 1, 2 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, false, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay01(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "幽火「誘蝶灯」";
+		}
+		case( "Hard", "Lunatic" ){
+/* to be translated */			spell_text = "輪廻「幽々式最終天国」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "輪廻「幽々式最終天国」";
+		}
+		
+		SpellCounter( GetDifficult, 1, 2 );
+		let sct = GetSpellCounter( GetDifficult, 1, 2 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_01(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let angle	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 3, 1 ];
+
+		//　蝶弾way数
+		let way		= 16;
+		//　蝶弾発射間隔
+		let wt		= 64;
+		//　へにょりrgb値
+		let rgb		= [32,16,128];
+		//　ショット画像
+		let shote	= [ BGW_BLUE_16, BGW_PURPLE_16 ];
+		
+		//　レーザー色
+		let rgb_count = 0;
+		let laser_rgb = [
+			[128,64,255],
+			[255,64,128],
+		];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 3, 1 ];
+			way		= 9;
+			wt		= 72;
+		}
+		case( "Normal" ){
+			lp		= [ 3, 2 ];
+			wt		= 64;
+		}
+		case( "Hard" ){
+			lp		= [ 5, 4 ];
+			rgb		= [32,64,128];
+			wt		= 56;
+		}
+		case( "Lunatic" ){
+			lp		= [ 5, 5 ];
+			rgb		= [32,64,128];
+			wt		= 48;
+		}
+		case( "OverDrive" ){
+			lp		= [ 9, 5 ];
+			rgb		= [64,64,128];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			if( count >= 300 ){
+				count = 0;
+			}
+			
+			//　全方位蝶弾
+			if( frame > 0 && frame%wt == 0 ){
+				let angd	= rand(0,360);
+				let av		= [ -4, 4 ];
+				
+				ascent( i in 0..way ){
+					CreateShot_Curve( gpos, 1.4, angd + i*(360/way), shote[ angle%2 ], av[ angle%2 ] );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				angle++;
+			}
+			
+			//　レーザー展開
+			if( count == 60 ){
+				ascent( i in 0..(lp[0]) ){
+					CallLaser( ID, 96, 90+i*(360/lp[0]), 270, laser_rgb[ rgb_count%2 ] );
+					CallLaser( ID, 96, 90+i*(360/lp[0]), -270, laser_rgb[ 1 - rgb_count%2 ] );
+				}
+				ObjSound_Play( CreateShotSE[10] );
+				rgb_count++;
+				SetAreaCommonData("anime", "spa", true );
+			}
+			
+			//　自機狙いnway蝶弾
+			if( frame == 120 ){
+				let p = 90;
+				alternative( lp[1] )
+				case( 2 ){ p = 0; }
+				case( 4 ){ p = 45; }
+				ascent( i in 0..(lp[1]) ){
+					GhostLaser( ID, gpos, p + i*(360/lp[1]), 2, rgb );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	
+	
+	
+	
+	//　反魂蝶
+	task CreateShot_Curve( pos, speed, angle, shote, av ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, 0, 10, shote, 16 );
+		
+		NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+		
+		ObjMove_AddPatternA2(sht, 30, NO_CHANGE, NO_CHANGE, 0.05, av, 10 );
+		ObjMove_AddPatternA2(sht, 90, NO_CHANGE, NO_CHANGE, -0.1, 0, speed );
+	}
+	
+	//　反魂レーザー
+	task CallLaser(CallID,dis,angleD,angleM,rgb_array){
+		let laser	= CreateStraightLaser01( CallID, [ObjMove_GetX(CallID),ObjMove_GetY(CallID)],
+												angleD, 512, 16, rgb_array, true, 120, 300 );
+		let move1	= 0;
+		let moveA	= 0;
+		
+		while( !Obj_IsDeleted(laser) && !Obj_IsDeleted(CallID) ){
+			let gpos	= [ObjMove_GetX(CallID),ObjMove_GetY(CallID)];
+			let angle	= angleD + move1*angleM;
+			
+			move1 = 1 * sin( moveA );
+			
+			ObjMove_SetPosition(laser, gpos[0] + dis * cos(angle), gpos[1] + dis * sin(angle) );
+			ObjStLaser_SetAngle(laser, angle );
+			
+			if( move1 < 1 ){ moveA += 1; }
+			else{ break; }
+			
+			yield;
+		}
+	}
+	
+	//　しつこいへにょりレーザー
+	task GhostLaser(CallID,pos,angle,speed,rgb_array){
+		let sht		= CreateLaserC( pos[0], pos[1], angle, 0, speed, 0, 10, rgb_array, 0.02, 1, ADD_BGW_WHITE_30 );
+		let count	= 0;
+		let spos	= [ 0, 0 ];
+		let angleToPlayer = 0;
+		let d		= 1;
+
+		alternative( GetDifficult )
+		case( "Hard" ){
+			d = 1.12;
+		}
+		case( "Lunatic" ){
+			d = 1.24;
+		}
+		case( "OverDrive" ){
+		}
+		
+		
+		ObjShot_SetAutoDelete(sht, false );
+		ObjShot_SetSpellResist(sht, true );
+		
+		//　先端の蝶弾
+		let tip = [
+			CreateShotA2( pos[0], pos[1], 0, 0, 0, 10, BGW_WHITE_16, 0 ),
+			CreateShotA2( pos[0], pos[1], 0, 0, 0, 10, ADD_BGW_WHITE_16, 0 ),
+			CreateShotA2( pos[0], pos[1], 0, 0, 0, 10, ADD_BGW_WHITE_16, 0 ),
+		];
+		ascent( let i in 0..( length(tip) ) ){
+			ObjShot_SetAutoDelete(tip[i], false );
+			ObjShot_SetSpellResist(tip[i], true );
+			ObjShot_SetIntersectionEnable(tip[i], false );
+			ObjRender_SetScaleXYZ(tip[i], 1 + i*0.2, 1 + i*0.2, 0 );
+			ObjRender_SetAlpha(tip[i], 255 - i*96 );
+		}
+		
+		while( !Obj_IsDeleted(sht) && !Obj_IsDeleted(CallID) ){
+			
+			if( count == 1 ){
+				spos = [ GetPlayerX(), GetPlayerY() ];
+			}
+			
+			ascent( i in 0..( length(tip) ) ){
+				ObjMove_SetPosition( tip[i], ObjMove_GetX(sht), ObjMove_GetY(sht) );
+				ObjMove_SetAngle( tip[i], ObjMove_GetAngle(sht) );
+			}
+			
+			if( GetDistance( spos, [ObjMove_GetX(sht),ObjMove_GetY(sht)] ) <= 16 && count > 8 || count > 300 ){
+				if( GetDifficult == "OverDrive" ){
+					ascent( let i in 0..3 ){
+						CreateShotA2( ObjMove_GetX(sht), ObjMove_GetY(sht), 0, ObjMove_GetAngle(sht)+i*120, 0.001, 0.8, BGW_BLUE_08, 16 );
+					}
+					ObjSound_Play( CreateShotSE[1] );
+				}
+				count = 0;
+			}
+			
+			angleToPlayer = atan2( spos[1] - ObjMove_GetY(sht), spos[0] - ObjMove_GetX(sht) );
+			
+			if( sin(angleToPlayer - ObjMove_GetAngle(sht)) > 0 ){
+				ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) + d );
+			}
+			else{
+				ObjMove_SetAngle(sht, ObjMove_GetAngle(sht) - d );
+			}
+			
+			count++;
+			
+			yield;
+		}
+		Obj_Delete(sht);
+	}
+	
+	
+	//　カリスマ扇展開
+	task SetFan(CallID){
+		let ID		= [
+			ObjPrim_Create(OBJ_SPRITE_2D),
+			ObjPrim_Create(OBJ_SPRITE_2D),
+		];
+		let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let move1	= 0;
+		let moveA	= 0;
+		let count	= 0;
+		let fan_se	= PlayBossEndSE( csd ~ "./../../se/flare2.ogg" );
+		
+		ascent( let i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg1img/enmeffect01b.png" );
+			Obj_SetRenderPriorityI(ID[i], 31 );
+			ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+			ObjRender_SetScaleXYZ(ID[i], move1, 1, 0 );
+			ObjSprite2D_SetSourceRect(ID[i], 0, 0, 512, 256 );
+			ObjSprite2D_SetDestCenter(ID[i]);
+		}
+		
+		ObjRender_SetAlpha(ID[0], 192 );
+		
+		ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+		ObjRender_SetAlpha(ID[1], 64 );
+		
+		ObjSound_Play( CreateShotSE[5] );
+		
+		while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+			gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			
+			move1 = 1 * sin( moveA );
+			
+			let rgb = 200 - 55 * sin( count );
+			
+			ascent( i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			}
+			ObjRender_SetScaleXYZ(ID[0], move1, 0.1, 0 );
+			ObjRender_SetScaleXYZ(ID[1], move1*1.04, 0.2, 0 );
+			ObjRender_SetColor(ID[1], rgb, rgb, rgb );
+			
+			ButterflyPower( CallID, [ gpos[0] + move1*rand(-256,256), gpos[1] ], rand(0.2,0.4),
+								rand(64,384), 90+rand(-32,32), 0, [128,32,255] );
+			
+			moveA += 1;
+			
+			yield;
+		}
+		move1 = 0;
+		moveA = 0;
+		
+		ObjSound_Play( UtilitySE[9] );
+		
+		loop( 60 ){
+			gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			
+			ascent( i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			}
+			
+			ButterflyPower( CallID, [ gpos[0] + rand(-256,256), gpos[1] ], rand(0.2,0.4),
+								rand(64,384), 90+rand(-32,32), 0, [128,32,255] );
+			
+			yield;
+		}
+		
+		//　バーン！
+		ObjSound_Play( fan_se );
+		ascent( i in 0..16 ){
+			ButterflyPower( CallID, gpos, 0.9, 128, i*(360/16), 0, [255,32,255] );
+			ButterflyPower( CallID, gpos, 0.9, 256, i*(360/16), 0, [255,32,255] );
+			ButterflyPower( CallID, gpos, 0.9, 384, i*(360/16), 0, [255,32,255] );
+		}
+		
+		while( !Obj_IsDeleted(CallID) ){
+			gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+			
+			move1 = 1 * sin( moveA );
+			
+			//　完全に出現した時点で当たり判定登録
+			ObjEnemy_SetIntersectionCircleToShot(CallID, gpos[0]-128, gpos[1], 64 );
+			ObjEnemy_SetIntersectionCircleToShot(CallID, gpos[0]+128, gpos[1], 64 );
+			
+			let rgb = 200 - 55 * sin( count );
+			let sca = 0 - 0.04 * sin( count );
+			
+			ascent( i in 0..( length(ID) ) ){
+				ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			}
+			ObjRender_SetScaleXYZ(ID[0], 1, 0.1 + move1*0.9, 0 );
+			ObjRender_SetScaleXYZ(ID[1], 1.04 + sca, 0.2 + move1*0.84 + sca, 0 );
+			ObjRender_SetColor(ID[1], rgb, rgb, rgb );
+			
+			if( count%8 == 0 ){
+				ButterflyPower( CallID, [ gpos[0] + rand(-256,256), gpos[1] + rand(0,-128) ], rand(0.2,0.4),
+									rand(64,256), 90+rand(-16,16), 0, [255,32,128] );
+			}
+			
+			count++;
+			if( move1 < 1 ){ moveA += 1; }
+			
+			yield;
+		}
+		Obj_Delete(fan_se);
+		Obj_Delete(ID[0]);
+		Obj_Delete(ID[1]);
+	}
+	
+	//　再生時間が長めの効果音だと変な感じになるので、ローカルで用意
+	function PlayBossEndSE( se_path ){
+		let se		= ObjSound_Create();
+		let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+		se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+		ObjSound_Load(se, se_path );
+		ObjSound_SetVolumeRate(se, se_vol );
+		ObjSound_SetLoopEnable(se, false );
+		ObjSound_SetSoundDivision(se, SOUND_SE );
+		
+		return se;
+	}

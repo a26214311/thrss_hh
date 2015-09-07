@@ -1,0 +1,410 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage5　山幸「サウザントアンカー」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm05_setting.dnh"
+	#include "./lib_enm05_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 60;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 80, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 5, 3 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b( enm, true, enemy_tex_path2 );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "山幸「サウザントアンカー」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "怒符「アンガーアンカー」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "海幸「おめでタイ輝針アンカー」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "海幸「おめでタイ輝針アンカー」";
+		}
+		
+		SpellCounter( GetDifficult, 5, 3 );
+		let sct = GetSpellCounter( GetDifficult, 5, 3 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_05b(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		let j		= 0;
+		
+		//　弾種類
+		let shote	=[
+			[ ADD_BGW_GREEN_21, ADD_BGW_AQUA_21, ADD_BGW_BLUE_21 ],
+			[ ADD_BGW_PURPLE_18, ADD_BGW_RED_18, ADD_BGW_ORANGE_18 ],
+		];
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　角度
+		let angle	= 0;
+
+		//　発射間隔
+		let wtA		= 4;
+		let wtB		= 2;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp			= [ 3, 0 ];
+			wtB			= 5;
+		}
+		case( "Normal" ){
+			lp			= [ 5, 0 ];
+		}
+		case( "Hard" ){
+			lp			= [ 9, 0 ];
+		}
+		case( "Lunatic" ){
+			lp			= [ 9, 0 ];
+		}
+		case( "OverDrive" ){
+			lp			= [ 11, 0 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜め
+			if( count == 180 ){
+				Concentration03_Main(enm, power_rgb, 60 );
+				EnemyMove(enm, 2, 8 );
+				SetAreaCommonData( "anime", "spa", false );
+				count = -30;
+				frame = -30;
+			}
+			
+			if( frame == 30 ){
+				angle = GetAngleToPlayer(ID);
+				CreateShot( gpos, 0, angle, 0.1, 20, ADD_BGW_WHITE_03, 32, 60, lp[0], 256 );
+				SetAreaCommonData( "anime", "spa", true );
+			}
+			if( frame == 60 ){
+				CreateShot( gpos, 0, angle+180, 0.1, 20, ADD_BGW_WHITE_03, 32, 60, lp[0], -256 );
+			}
+			
+			count++;
+			frame++;
+			
+			yield;
+		}
+	
+		task CreateShot( pos, speed, angle, acc, max_speed, shote, delay, active, way, wide ){
+			let ag = angle - wide / 2;
+			loop( way ){
+				CreateAnchorShot( pos, speed, ag, acc, max_speed, shote, delay, active );
+				ag += wide / ( way - 1 );
+				ObjSound_Play( CreateShotSE[7] );
+				loop( wtA ){
+					if( Obj_IsDeleted(enm) ){ break; }
+					yield;
+				}
+			}
+		}
+		
+		task CreateAnchorShot( pos, speed, angle, acc, max_speed, shote, delay, active ){
+			let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+			let sht		= CreateShotA2( pos[0], pos[1], 0, angle, 0, 0, shote, delay );
+			let gpos	= [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+			let g_frag	= false;	//　停止フラグ
+			let count	= 0;
+			let move1	= 0;
+			let moveA	= 0;
+			let cgs_shote = [
+				ADD_BGW_BLUE_27,
+				ADD_BGW_AQUA_27,
+			];
+			let rgb_array = [ 255, 255, 255 ];
+			
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			
+			//　アンカー
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/anchor01a.png" );
+			Obj_SetRenderPriorityI(ID, 50 );
+			ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+			ObjSprite2D_SetSourceRect(ID, 0, 0, 128, 128 );
+			ObjSprite2D_SetDestCenter(ID);
+			
+			alternative( GetDifficult )
+			case( "Easy" , "Normal" ){
+				cgs_shote	= [
+					ADD_BGW_BLUE_27,
+					ADD_BGW_AQUA_27,
+				];
+				rgb_array = [ 255, 32, 32 ];
+			}
+			case( "Hard" ){
+				cgs_shote	= [
+					ADD_BGW_RED_27,
+					ADD_BGW_ORANGE_27,
+				];
+				ObjSprite2D_SetSourceRect(ID, 0, 128, 128, 256 );
+				rgb_array = [ 32, 255, 255 ];
+			}
+			case( "Lunatic", "OverDrive" ){
+				cgs_shote	= [
+					BGW_YELLOW_29,
+					BGW_WHITE_29,
+					BGW_ORANGE_29,
+					BGW_BLUE_29,
+				];
+				ObjSprite2D_SetSourceRect(ID, 0, 256, 128, 384 );
+				rgb_array = [ 32, 32, 255 ];
+			}
+			
+			//　出現
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(sht) && move1 < 1 ){
+				gpos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+				
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+				ObjRender_SetAngleXYZ(ID, 0, 0, ObjMove_GetAngle(sht) );
+				ObjRender_SetScaleXYZ(ID, move1, 2-move1, 0 );
+				
+				moveA += 5;
+				
+				yield;
+			}
+			
+			//　スピード設定
+			ObjMove_SetSpeed( sht, speed );
+			ObjMove_SetAcceleration( sht, acc );
+			ObjMove_SetMaxSpeed( sht, max_speed );
+			
+			//　メイン
+			move1 = 0;
+			moveA = 0;
+			while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(sht) && move1 < 1 ){
+				gpos = [ ObjMove_GetX(sht), ObjMove_GetY(sht) ];
+				
+				move1 = 1 * sin( moveA );
+				
+				let sht_ang = ObjMove_GetAngle(sht);
+				let spos = [
+					gpos[0] + move1*32 * cos( sht_ang+180 ),
+					gpos[1] + move1*32 * sin( sht_ang+180 ),
+				];
+				
+				ObjRender_SetPosition(ID, spos[0], spos[1], 0 );
+				ObjRender_SetAngleXYZ(ID, 0, 0, sht_ang );
+				
+				if( !g_frag ){
+					//　まだ壁に当たっていない時
+					if( gpos[0] < MinX || gpos[0] > MaxX || gpos[1] < MinX || gpos[1] > MaxY ){
+						ObjMove_SetSpeed( sht, 0 );
+						ObjMove_SetAcceleration( sht, 0 );
+						ObjMove_SetMaxSpeed( sht, 0 );
+						AnchorStopEffect( ID, rgb_array, 6 );
+						WorldShake_Single( 16, 4 );
+						ObjSound_Play( CreateShotSE[3] );
+						g_frag = true;
+						count = 0;
+					}
+					//　残像エフェクト
+					if( count%2 == 0 ){
+						AnchorVision( ID, rgb_array, 255 );
+					}
+					count++;
+				}
+				else{
+					//　壁に接触後
+					
+					if( count > active && count%wtB == 0 ){
+						CreateGravityShot(
+							gpos,
+							[ rand(1,3), (angle+180)+rand(-16,16) ],
+							[ 0.02, angle ],
+							[ 10, angle ],
+							cgs_shote[ count%length(cgs_shote) ],
+							rand(16,32)
+						);
+					}
+					
+					if( count%16 == 0 && GetDifficult == "Lunatic" ){
+						let fish_shote;
+						let fish_rgb;
+						
+						fish_shote	= BGW_RED_05;
+						fish_rgb	= [255,32,32];
+						
+						let obj = CreateGravityShot(
+							gpos,
+							[ rand(2,4), (angle+180)+rand(-8,8) ],
+							[ 0.02, angle ],
+							[ 10, angle ],
+							fish_shote,
+							rand(16,32)
+						);
+						FishBullet( obj, fish_rgb, 255 );
+					}
+					
+					if( move1 < 1 && count > active ){ moveA += 5; }
+					count++;
+				}
+				
+				yield;
+			}
+			
+			//　削除
+			move1 = 0;
+			moveA = 0;
+			while( move1 < 1 ){
+				move1 = 1 * sin( moveA );
+				
+				ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+				ObjRender_SetScaleXYZ(ID, 1+move1, 1+move1, 0 );
+				ObjRender_SetAlpha(ID, 255 - move1*255 );
+				
+				moveA += 10;
+				
+				yield;
+			}
+			Obj_Delete( ID );
+			//　削除エフェクトだけ出るようにする
+			Obj_SetValue( sht, "Item_Off", true );
+			//　アイテムとして削除
+			ObjShot_ToItem( sht );
+		}
+	}

@@ -1,0 +1,384 @@
+
+#include "./../PowerSetting.dnh"
+#include "./lib_Switch.dnh"
+#include "./lib_Evolution.dnh"
+
+task PlayerDisplay(path){
+	let mid				= ObjPrim_Create(OBJ_SPRITE_2D);
+	let Anime			= 0;
+	let MoveAnimeL		= 0;
+	let MoveAnimeR		= 0;
+	let GetLR			= "NoData";
+	let StateChange		= false;
+	let shotf			= false;
+	let frame			= 0;
+	let count			= 0;
+	let timer			= 0;
+	let rgb				= [0,255];
+	let rgbp			= 0;
+	let sca1			= 0;
+	let scaA			= 0;
+	
+	ObjRender_SetPosition(mid, GetPlayerX, GetPlayerY, 0 );
+	ObjPrim_SetTexture(mid, path[0] );
+	Obj_SetRenderPriorityI(mid, 38 );
+	ObjRender_SetBlendType(mid, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(mid, 0, 0, 0 );
+	ObjRender_SetScaleXYZ(mid, 1, 1, 0 );
+	ObjRender_SetAlpha(mid, 255 );
+	
+	loop{
+		Anime++;
+		if( Anime >= 20 ){ Anime = 0; }
+		if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ){ MoveAnimeL++; }
+		if( GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ){ MoveAnimeR++; }
+		if( GetVirtualKeyState(VK_LEFT) == KEY_PUSH ){ GetLR  ="LEFT"; }
+		if( GetVirtualKeyState(VK_RIGHT) == KEY_PUSH ){ GetLR = "RIGHT"; }
+		if(MoveAnimeL >= 8 ){ MoveAnimeL = 6; }
+		if(MoveAnimeR >= 8 ){ MoveAnimeR = 6; }
+		
+		if( GetVirtualKeyState(VK_LEFT) == KEY_FREE ){
+			if( MoveAnimeL > 0 ){ MoveAnimeL--; }
+		}
+		if( GetVirtualKeyState(VK_RIGHT) == KEY_FREE ){
+			if( MoveAnimeR > 0 ){ MoveAnimeR--; }
+		}
+		
+		
+		if( GetLR == "LEFT" && MoveAnimeL > 0 ){
+			if(MoveAnimeL >= 0 && MoveAnimeL < 2 ){
+				ObjSprite2D_SetSourceRect(mid, 0, 64, 64, 128 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeL >= 2 && MoveAnimeL < 4 ){
+				ObjSprite2D_SetSourceRect(mid, 64, 64, 128, 128 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeL >= 4 && MoveAnimeL < 6 ){
+				ObjSprite2D_SetSourceRect(mid, 128, 64, 192, 128 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeL >= 6 && MoveAnimeL < 8 ){
+				ObjSprite2D_SetSourceRect(mid, 192, 64, 256, 128 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+		}
+		if( GetLR == "RIGHT" &&  MoveAnimeR > 0 ){
+			if(MoveAnimeR >= 0 && MoveAnimeR < 2){
+				ObjSprite2D_SetSourceRect(mid, 0, 128, 64, 192 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeR >= 2 && MoveAnimeR < 4 ){
+				ObjSprite2D_SetSourceRect(mid, 64, 128, 128, 192 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeR >= 4 && MoveAnimeR < 6 ){
+				ObjSprite2D_SetSourceRect(mid, 128, 128, 192, 192 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if(MoveAnimeR >= 6 && MoveAnimeR < 8 ){
+				ObjSprite2D_SetSourceRect(mid, 192, 128, 256, 192 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+		}
+		if(GetVirtualKeyState(VK_LEFT)==KEY_FREE&&
+			GetVirtualKeyState(VK_RIGHT)==KEY_FREE&&
+			MoveAnimeR <= 0 && MoveAnimeL <= 0 ){
+			if( Anime >= 0 && Anime <= 5 ){
+				ObjSprite2D_SetSourceRect(mid, 0, 0, 64, 64 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if( Anime >= 5 && Anime <= 10 ){
+				ObjSprite2D_SetSourceRect(mid, 64, 0, 128, 64 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if( Anime >= 10 && Anime <= 15 ){
+				ObjSprite2D_SetSourceRect(mid, 128, 0, 192, 64 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+			if( Anime >= 15 && Anime <= 20 ){
+				ObjSprite2D_SetSourceRect(mid, 192, 0, 256, 64 );
+				ObjSprite2D_SetDestCenter(mid);
+			}
+		}
+		
+		//　復帰点滅
+		if( GetPlayerInvincibilityFrame <= 0 ){
+			ObjRender_SetColor(mid, 255, 255, 255 );
+		}
+		else{
+			ObjRender_SetColor(mid, rgb[rgbp], rgb[rgbp], rgb[rgbp] );
+			rgbp++;
+			if( rgbp >= 2 ){ rgbp = 0; }
+		}
+		
+		//　テクスチャ不可視化
+		if( GetPlayerState == STATE_HIT || GetPlayerState == STATE_DOWN || GetPlayerState == STATE_END ){
+			ObjRender_SetAlpha(mid, 0 );
+		}
+		else{
+			ObjRender_SetAlpha(mid, 255 );
+		}
+		
+		ObjRender_SetPosition(mid, GetPlayerX, GetPlayerY, 0 );
+		
+		yield;
+	}
+}
+
+task SlowEffect(){
+	let eff			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D)];
+	let core		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let alpha		= 0;
+	let slowf		= false;
+	let cc			= 0;
+	let move1		= 90;
+	let moveA		= 0;
+	let i			= 0;
+	
+	loop( length(eff) ){
+		ObjRender_SetPosition(eff[i], GetPlayerX, GetPlayerY, 0 );
+		ObjPrim_SetTexture(eff[i], csd ~ "./img/eff/eff_default.png" );
+		Obj_SetRenderPriorityI(eff[i], 49 );
+		ObjRender_SetBlendType(eff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(eff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(eff[i], 1, 1, 0 );
+		ObjSprite2D_SetSourceRect(eff[i], 0, 128, 64, 192 );
+		ObjSprite2D_SetDestCenter(eff[i]);
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetPosition(core, GetPlayerX, GetPlayerY, 0 );
+	ObjPrim_SetTexture(core, csd~"./img/eff/eff_default.png" );
+	Obj_SetRenderPriorityI(core, 49 );
+	ObjRender_SetBlendType(core, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(core, 0, 0, 0 );
+	ObjRender_SetScaleXYZ(core, 1, 1, 0 );
+	ObjSprite2D_SetSourceRect(core, 27, 155, 37, 165 );
+	ObjSprite2D_SetDestCenter(core);
+	
+	loop{
+		ObjRender_SetPosition(eff[0], GetPlayerX, GetPlayerY, 0 );
+		ObjRender_SetPosition(eff[1], GetPlayerX, GetPlayerY, 0 );
+		ObjRender_SetPosition(core, GetPlayerX, GetPlayerY ,0 );
+		
+		if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ){ slowf = true; }
+		if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_PULL ){ slowf = false; }
+		if( alpha < 100 && slowf ){ alpha += 100/10; }
+		if( alpha > 0 && !slowf ){ alpha -= 100/3; }
+		
+		if( GetPlayerState == STATE_DOWN || GetPlayerState == STATE_END ){
+			ObjRender_SetAlpha(eff[0], 0 );
+			ObjRender_SetAlpha(eff[1], 0 );
+			ObjRender_SetAlpha(core, 0 );
+		}
+		else{
+			ObjRender_SetAlpha(eff[0], alpha*1.5 );
+			ObjRender_SetAlpha(eff[1], alpha*1.5 );
+			ObjRender_SetAlpha(core, alpha*2 );
+		}
+		
+		if( slowf ){
+			ObjRender_SetAngleXYZ(eff[0], 0, 0, 20+cc + move1*270 );
+			ObjRender_SetAngleXYZ(eff[1], 0, 0, 20-cc - move1*270 );
+			ObjRender_SetAngleXYZ(core, 0, 0, 20-cc );
+			ObjRender_SetScaleXYZ(eff[0], 2-move1, 2-move1, 0 );
+			ObjRender_SetScaleXYZ(eff[1], 2-move1, 2-move1, 0 );
+			ObjRender_SetScaleXYZ(core, 2-move1, 2-move1, 0 );
+			if( move1 < 1 ){ moveA += 5; }
+			else{ cc++; }
+			move1 = 1 * sin( moveA );
+		}
+		else{
+			move1=0;
+			moveA=0;
+			cc=0;
+		}
+		
+		yield;
+	}
+}
+
+task GrazeEffect(pos,rgb_h){
+	loop( 2 ){
+		GrazeEffect_Child(pos,rgb_h);
+	}
+}
+
+task GrazeEffect_Child(pos,rgb_h){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let cc		= rand(0,360);
+	let sca		= rand(0.4,0.6);
+	let sca1	= 0;
+	let scaA	= 0;
+	let dis		= rand(64,128);
+	let dis1	= 0;
+	let disA	= 0;
+	
+	ObjRender_SetPosition(id, pos[0] + dis1*sin(cc), pos[1] + dis1*cos(cc), 0 );
+	ObjPrim_SetTexture(id, csd ~ "./img/eff/eff_default.png" );
+	Obj_SetRenderPriorityI(id, 39 );
+	ObjRender_SetBlendType(id, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(id, 0, 0, cc );
+	ObjRender_SetScaleXYZ(id, sca-sca1, sca-sca1, 0 );
+	ObjSprite2D_SetSourceRect(id, 97, 192, 97+32, 192+32 );
+	ObjSprite2D_SetDestCenter(id);
+	ObjRender_SetAlpha(id, 128 );
+	ObjRender_SetColor(id, rgb_h[0], rgb_h[1], rgb_h[2] );
+	
+	while( sca1 < sca ){
+		scaA += 5;
+		sca1 = sca * sin( scaA );
+		disA += 5;
+		dis1 = 1 * sin( disA );
+		ObjRender_SetPosition(id, pos[0] + dis1*dis *sin(cc), pos[1] + dis1*dis *cos(cc), 0 );
+		ObjRender_SetScaleXYZ(id, sca-sca1, sca-sca1, 0 );
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+task OonusaEffect(pos,rgb_h){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let cc		= rand(0,360);
+	let sca		= rand(0.2,1);
+	let sca1	= 0;
+	let scaA	= 0;
+	let dis		= rand(64,128);
+	let dis1	= 0;
+	let disA	= 0;
+	let animC	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	
+	ObjRender_SetPosition(id, pos[0] + dis1*sin(cc), pos[1] + dis1*cos(cc), 0 );
+	ObjPrim_SetTexture(id, csd ~ "./img/eff/oonusa_01b.png" );
+	Obj_SetRenderPriorityI(id, 39 );
+	ObjRender_SetBlendType(id, BLEND_ADD_ARGB );
+	ObjRender_SetAngleXYZ(id, 0, 0, cc );
+	ObjRender_SetScaleXYZ(id, sca-sca1, sca-sca1, 0 );
+	ObjSprite2D_SetSourceRect(id, 0+128*anim1, 0+128*anim2, 128+128*anim1, 128+128*anim2 );
+	ObjSprite2D_SetDestCenter(id);
+	ObjRender_SetColor(id, rgb_h[0], rgb_h[1], rgb_h[2] );
+	
+	while( sca1 < sca && anim2 < 2 ){
+		sca1 = sca * sin( scaA );
+		dis1 = 1 * sin( disA );
+		ObjSprite2D_SetSourceRect(id, 0+128*anim1, 0+128*anim2, 128+128*anim1, 128+128*anim2 );
+		ObjRender_SetPosition(id, pos[0] + dis1*dis *sin(cc), pos[1] + dis1*dis *cos(cc), 0 );
+		ObjRender_SetScaleXYZ(id, sca-sca1, sca-sca1, 0 );
+		
+		scaA += 5;
+		disA += 5;
+		animC++;
+		if( animC%2 == 0 ){
+			anim1++;
+			if( anim1 >= 4 ){
+				anim1 = 0;
+				anim2++;
+			}
+		}
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+task EnemyBreakDown_th14(){
+	let pos	= [GetPlayerX,GetPlayerY];
+	EnemyBreakDownC_th14(pos,[48,0],BLEND_INV_DESTRGB,60);
+	EnemyBreakDownC_th14(pos,[-48,0],BLEND_INV_DESTRGB,60);
+	EnemyBreakDownC_th14(pos,[0,48],BLEND_INV_DESTRGB,60);
+	EnemyBreakDownC_th14(pos,[0,-48],BLEND_INV_DESTRGB,60);
+	loop(12){ yield; }
+	EnemyBreakDownC_th14(pos,[0,0],BLEND_INV_DESTRGB,60);
+	loop(32){ yield; }
+	EnemyBreakDownC_th14(pos,[0,0],BLEND_INV_DESTRGB,60-32);
+}
+
+task EnemyBreakDownC_th14(posD,posM,blend,long){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let pos			= [ posD[0]+posM[0], posD[1]+posM[1] ];
+	let sca1		= 0;
+	let scaA		= 0;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, csd~"./img/eff/Effect03.png" );
+	Obj_SetRenderPriorityI(id, 41 );
+	ObjRender_SetBlendType(id, blend );
+	ObjRender_SetAngleXYZ(id, 0, 0, 0) ;
+	ObjRender_SetScaleXYZ(id, sca1, sca1, 0 );
+	ObjSprite2D_SetSourceRect(id, 0, 0, 512, 512 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( !Obj_IsDeleted(id) && sca1 < 1 ){
+		if( sca1 < 1 ){ sca1 += scaA; }
+		if( scaA < 1 ){ scaA += 0.0008; }
+		ObjRender_SetScaleXYZ(id, sca1*4.8, sca1*4.8, 0 );
+		
+		ObjRender_SetAngleXYZ(id, 0, 0, sca1*360) ;
+		
+		yield;
+	}
+	loop(long){
+		if( Obj_IsDeleted(id) ){ break; }
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+//　ユーティリティ
+task ShotDelete(){
+	let dis1		= 0;
+	let disA		= 0;
+	
+	while( dis1 < 1 ){
+		disA += 3;
+		dis1 = 1 * sin( disA );
+		DeleteShotInCircle(TYPE_SHOT, TYPE_FADE, GetPlayerX, GetPlayerY, dis1*512 );
+		yield;
+	}
+}
+
+
+//　波紋が広がるエフェクト
+task CreateWaveEffect(CallID,scale,rgb_array,alpha){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let EC		= GetAreaCommonData("Option","Effect_Cut",0);
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let count	= 0;
+	
+	ObjRender_SetPosition(ID, ObjMove_GetX(CallID), ObjMove_GetY(CallID), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/eff/enm_effect01.png" );
+	Obj_SetRenderPriorityI(ID, 71 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjRender_SetAlpha(ID, alpha );
+	ObjSprite2D_SetSourceRect(ID, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move2 < 1 && !Obj_IsDeleted(CallID) ){
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		ObjRender_SetPosition(ID, ObjMove_GetX(CallID), ObjMove_GetY(CallID), 0 );
+		ObjRender_SetAngleZ(ID, count*128 );
+		ObjRender_SetScaleXYZ(ID, move1*scale + move2, move1*scale + move2, 0 );
+		ObjRender_SetAlpha(ID, alpha - move2*alpha );
+		
+		count++;
+		if( move1 < 1 ){ moveA += 10; }
+		if( move1 > 0.8 ){ moveB += 5; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}

@@ -1,0 +1,263 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage7　炎風「スーパーローテーション」"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm07_setting.dnh"
+	#include "./lib_enm07_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　制限時間
+	let SET_TIMER	= 56;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate( enm, 0, 0 );
+		ObjEnemy_Regist( enm );
+		
+		//　初期化
+		EnemyInitialize( enm );
+		
+		//　体力0まで待機
+		EndEnemy( enm );
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate( enm, 100, false );
+		ShotScore( enm );
+		
+		//　スペルカード宣言
+		CallSpellCard( enm, 0 );
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 128, 80, 128, 80 );
+
+		ShotMain;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 1700 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 7, 1 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	
+	//　初期化
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea( "anime" );
+		SetAreaCommonData( "anime", "spa", false );
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar( ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura( ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm07a( enm, true, enemy_tex_path00 );
+		//　敵位置初期化
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-112, 8, 4 );
+	}
+	
+	//　スペカ宣言
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+/* to be translated */		let spell_text = "炎風「スーパーローテーション」";
+		
+		SpellCounter( GetDifficult, 7, 1 );
+		let sct = GetSpellCounter( GetDifficult, 7, 1 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path[0], 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_07a(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	//　遅延
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain{
+		Wait( 180 );
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait( 60 );
+		SetWave;
+		let lp = 0;
+		while( !Obj_IsDeleted( enm ) ){
+			SetShot;
+			
+			if( Wait( 80 ) ){ return; }
+			EnemyMove( enm, 2, 8 );
+			if( Wait( 70 ) ){ return; }
+			lp++;
+			if( lp % 5 == 0 ){
+				Concentration03_Main( enm, power_rgb, 60 );
+				if( Wait( 80 ) ){ return; }
+				r = -r;
+				CreateWaveEffect( enm, [255,255,255], 32 );
+				ObjSound_Play( CreateShotSE[ 5 ] );
+				if( Wait( 20 ) ){ return; }
+			}
+		}
+
+		task SetShot{
+			let way = 24;
+			local{
+				let p = GetAngleToPlayer( enm );
+				let speed = 1.6;
+				let angle = p;
+				let shote = BGW_ORANGE_02;
+				let delay = 20;
+				loop( way ){
+					let sx = gpos[0] + 36 * cos( angle );
+					let sy = gpos[1] + 36 * sin( angle );
+					let sht = CreateShotA2( sx, sy, 0, angle, speed / 30, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+			}
+		}
+
+		task SetWave{
+			let rot = 90;
+			let wide = 600;
+
+			let rb = 1;
+			let rtp = rand( 0, 64 );
+			let count = 0;
+			let wd = -300;
+			while( wd < 300 ){
+				SetLine( wd, rtp, rb );
+				rtp += 6;
+				count++;
+				wd += 15;
+				if( count % 2 == 0 ){ rb = -rb; }
+				Wait( 1 );
+			}
+			Wait( 120 );
+			CreateWaveEffect( enm, [255,255,255], 32 );
+			ObjSound_Play( CreateShotSE[ 5 ] );
+			let rp = 0;
+			while( !Obj_IsDeleted( enm ) ){
+				rot += rp;
+				if( rp < 0.5 && r == 1 ){ rp += 0.003; }
+				if( rp > -0.5 && r == -1 ){ rp -= 0.003; }
+				yield;
+			}
+			
+			task SetLine( let v, let rtp, let r ){
+				let ax = CenX + ( wide / 2 ) * cos( rot - 180 );
+				let ay = CenY + ( wide / 2 ) * sin( rot - 180 );
+				let bx = ax + v * cos( rot + 90 );
+				let by = ay + v * sin( rot + 90 );
+				let way = 6;
+				rtp = ( rtp * r ) + ( wide / way );
+				let rotate = rtp % ( wide / way );
+				loop( way ){
+					SetShot( rotate, r );
+					ObjSound_Play( CreateShotSE[ 1 ] );
+					rotate += wide / way;
+					Wait( 2 );
+				}
+				while( !Obj_IsDeleted( enm ) ){
+					ax = CenX + ( wide / 2 ) * cos( rot - 180 );
+					ay = CenY + ( wide / 2 ) * sin( rot - 180 );
+					bx = ax + v * cos( rot + 90 );
+					by = ay + v * sin( rot + 90 );
+					yield;
+				}
+				
+				task SetShot( let rotate, let r ){
+					let sx = bx + rotate * cos( rot );
+					let sy = by + rotate * sin( rot );
+					let shote = BGW_RED_27;
+					let delay = 60;
+					if( r == -1 ){ shote = BGW_PURPLE_27; }
+					let obj = CreateShotA1( sx, sy, 0, rot, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ obj, delay ] );
+					ObjShot_SetAutoDelete( obj, false );
+					ObjShot_SetSpellResist( obj, true );
+					let rtp = 0;
+					loop( delay ){ yield; }
+					while( !Obj_IsDeleted( obj ) ){
+						sx = bx + rotate * cos( rot );
+						sy = by + rotate * sin( rot );
+
+						ObjMove_SetPosition( obj, sx, sy );
+						ObjMove_SetAngle( obj, 90 - 90 * r + rot );
+						rotate += rtp * r;
+						if( rotate > wide ){ rotate -= wide; }
+						if( rotate < 0 ){ rotate += wide; }
+						if( rtp < 0.8 ){ rtp += 0.004; }
+						yield;
+					} 
+				}
+			}
+		}
+
+		task State{
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				yield;
+			}
+		}
+	}
+
+	

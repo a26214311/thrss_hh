@@ -1,0 +1,414 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage8中ボス　オーバードライブ"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm08_setting.dnh"
+	#include "./../enm03/lib_IceShot.dnh"
+	
+	let enm;
+	let spl;
+	
+	
+	//　制限時間
+	let SET_TIMER	= 122;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 100, false );
+		ShotScore(enm);
+		
+		
+		//　削除上限
+		SetShotAutoDeleteClip(96,96,96,96);
+
+		MainThread;
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 8400 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 9, 9 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+
+		ObjMove_SetPosition(enm, CenX, CenY-96 );
+		Concentration02( enm, [CenX,CenY-96] );
+		ExplotionBlur( [255,255,255] );
+		
+		Wait( 90 );
+		CallSpellCard( enm );
+		
+		CreateSaidaioujouLifeGauge( enm );
+		
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path_c );
+	}
+
+	task CallSpellCard(ID){
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "「幻想瑠璃城」";
+		
+		SpellCounter( GetDifficult, 9, 9 );
+		let sct = GetSpellCounter( GetDifficult, 9, 9 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path1, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_03_R(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	let PHASE = 1;
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	function WaitP( long, ps ){
+		loop( long ){
+			yield;
+			if( PHASE != ps ){ return true; }
+		}
+		return false;
+	}
+	
+	task MainThread{
+		let gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		Wait( 210 );
+		while( PHASE == 1 ){
+			let ps = 1;
+			Pattern1_1( ps );
+			if( WaitP( 180, ps ) ){ break; }
+			Pattern1_2( ps );
+			if( WaitP( 80, ps ) ){ break; }
+			EnemyMove( enm, 2, 8 );
+			if( WaitP( 160, ps ) ){ break; }
+			Pattern1_3( ps, r );
+			if( WaitP( 180, ps ) ){ break; }
+			EnemyMove( enm, 2, 8 );
+			if( WaitP( 180, ps ) ){ break; }
+			r = -r;
+		}
+		Wait( 100 );
+		Pattern2_0( PHASE );
+		Wait( 150 );
+		Pattern2_1( PHASE );
+		Wait( 80 );
+
+		while( !Obj_IsDeleted( enm ) ){
+			EnemyMove( enm, 2, 8 );
+			if( Wait( 240 ) ){ return; }
+		}
+		
+		
+		task Pattern1_1( let ps ){
+			let p = GetAngleToPlayer( enm );
+			let way = 3;
+			let speed = 1.7;
+			let gra = [ ADD_BGW_AQUA_05, ADD_BGW_BLUE_01 ];
+			let wt = 3;
+			let lp = 0;
+			loop( 70 ){
+				let rb = 1;
+				loop( 1 ){
+					let angle = p * rb;
+					loop( way ){
+						let sht = CreateShotA1( gpos[0], gpos[1], speed, angle, gra[ lp % length( gra ) ], 0 );
+						SetShot( sht );
+						angle += 360 / way;
+					}
+					rb = -rb;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				p += 16 * r;
+				speed += 0.023;
+				lp++;
+				if( WaitP( wt, ps ) ){ return; }
+			}
+			task SetShot( let obj ){
+				let speed = ObjMove_GetSpeed( obj );
+				while( speed > 0 ){
+					if( Obj_IsDeleted( obj ) ){ return; }
+					speed -= 0.02;
+					ObjMove_SetSpeed( obj, speed );
+					yield;
+				}
+				ObjMove_SetSpeed( obj, 0 );
+				loop( 30 ){
+					yield;
+					if( Obj_IsDeleted( obj ) ){ return; }
+				}
+				let posA = [ ObjMove_GetX( obj ), ObjMove_GetY( obj ) ];
+				let posB = [ ObjMove_GetX( GetPlayerObjectID ), ObjMove_GetY( GetPlayerObjectID ) ];
+				let ag = GetGapAngle( gpos, posB );
+				let lg = GetDistance( gpos, posB );
+
+				lg /= 1.2;
+				let posC = [ gpos[0] + lg * cos( ag ), gpos[1] + lg * sin( ag ) ];
+				ag = GetGapAngle( posA, posC );
+
+				Obj_SetValue( obj, "Item_Off", true );
+				ObjShot_ToItem( obj );
+				local{
+					let wide = 120;
+					let way = 3;
+					let gra = BGW_WHITE_13;
+					let delay = 12;
+					let angle = ag - wide / 2;
+					loop( way ){
+						let sht = CreateShotA2( posA[0], posA[1], 0, angle, 0.01, 5, gra, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						angle += wide / ( way - 1 );
+					}
+				}
+			}
+		}
+
+		task Pattern1_2( let ps ){
+			let speed = 3;
+			let p = GetAngleToPlayer( enm );
+			loop( 5 ){
+				let way = 9;
+				let gra = BGW_WHITE_03;
+				let delay = 20;
+				let angle = p;
+				loop( way ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 0, angle, speed / 60, speed, gra, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				p += 360 / way / 2;
+				speed /= 1.2;
+				if( WaitP( 30, ps ) ){ return; }
+			}
+		}
+
+		task Pattern1_3( let ps, let r ){
+			let way = 6;
+			let p = rand( 0, 360 );
+			loop( 8 ){
+				let angle = p;
+				loop( way ){
+					SetShot( angle );
+					angle += 360 / way;
+				}
+				if( WaitP( 40, ps ) ){ break; }
+				p += 24 * r;
+			}
+			task SetShot( let ag ){
+				let v = 128;
+				let bx = gpos[0] + v * cos( ag );
+				let by = gpos[1] + v * sin( ag );
+				
+				let dist = 26;
+				let way = 15;
+				let p = ag;
+				loop( way ){
+					let tx = bx + dist * cos( p );
+					let ty = by + dist * sin( p );
+					let speed = GetDistance( gpos, [ tx, ty ] ) / 90;
+					let angle = atan2( ty - gpos[1], tx - gpos[0] );
+					let shote = BGW_BLUE_16;
+					let delay = 12;
+
+					let sht = CreateShotA1( gpos[0], gpos[1], speed, angle, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					p += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+			}
+		}
+
+		task Pattern2_0( let ps ){
+			let way = 3;
+			let radius = [ 36, 128, 296 ];
+			let spn = 0.42;
+			let p = rand( 0, 360 );
+			let col = 0;
+			let lp = 0;
+			loop( 3 ){
+				let angle = p;
+				loop( way ){
+					CreateCircleShot( enm, angle, spn, 0, radius[lp], col, ADD_BGW_RED_03, r );
+					angle += 360 / way;
+					col++;
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				spn -= 0.06;
+				way += 1;
+				p += 90;
+				lp++;
+				r = -r;
+			}
+			function CreateCircleShot( CallID, angle, spin, disD, disM, col, shote, r ){
+				let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+				let sht		= CreateShotA2( gpos[0], gpos[1], 0, angle, 0, 0, shote + col%8, 0 );
+				NotifyEventAll( EV_USER + 40, [ sht, 0 ] );
+				
+				ObjShot_SetAutoDelete( sht, false );
+				ObjShot_SetSpellResist( sht, true );
+				
+				UpDate( CallID, sht, angle, spin, disD, disM );
+				
+				return sht;
+				
+				task UpDate( CallID, ObjID, angle, spin, disD, disM ){
+					let count	= 0;
+					let move1	= 0;
+					let moveA	= 0;
+					let gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+					ObjShot_SetIntersectionEnable(ObjID, false );
+					
+					while( !Obj_IsDeleted(CallID) ){
+						
+						move1 = 1 * sin( moveA );
+						
+						angle = angle + spin * r;
+						
+						let distance = disD + move1*disM;
+						ObjMove_SetPosition(ObjID, gpos[0] + distance * cos( angle ), gpos[1] + distance * sin( angle ) );
+						ObjRender_SetScaleXYZ(ObjID, move1, move1, 0 );
+						
+						if( move1 < 1 ){ moveA += 1; }
+						else{
+							if( count == 0 ){
+//								IceEffect( CallID, ObjID, rand(0.8,1) );
+							}
+							ObjShot_SetIntersectionEnable(ObjID, true );
+							count++;
+						}
+						
+						if( count > 0 && count%3 == 0 && count%60 < 48 ){
+							let spos = [
+								ObjMove_GetX( ObjID ),
+								ObjMove_GetY( ObjID ),
+							];
+							let way = 2;
+							let speed = 0.8;
+							let ag = angle + 90 * r;
+							loop( way ){
+								let sht = CreateShotA2( spos[0], spos[1], 0, ag, speed/60, speed, BGB_RED_08+col%8, 8 );
+								NotifyEventAll( EV_USER + 40, [ sht, 8 ] );
+								ObjShot_SetSpellResist( sht, true );
+								ag += 360 / way;
+							}
+							ObjSound_Play( CreateShotSE[2] );
+						}
+						
+						yield;
+					}
+					Obj_Delete( ObjID );
+				}
+			}
+		}
+
+		task Pattern2_1( let ps ){
+			while( !Obj_IsDeleted( enm ) ){
+				let way = 24;
+				let p = GetAngleToPlayer( enm );
+				let speed = 1.4;
+				let angle = p;
+				let gra = BGW_WHITE_16;
+				let delay = 10;
+				loop( way ){
+					let sht = CreateShotA2( gpos[0], gpos[1], 0, angle, speed / 60, speed, gra, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += 360 / way;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				if( WaitP( 70, ps ) ){ return; }
+			}
+		}
+		
+		task State{
+			let life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+			while( !Obj_IsDeleted( enm ) ){
+				gpos = [ ObjMove_GetX( enm ), ObjMove_GetY( enm ) ];
+				life = ObjEnemy_GetInfo( enm, INFO_LIFE );
+				alternative( PHASE )
+				case( 1 ){
+					if( life < 4800 ){
+						PHASE = 2;
+						DeleteShotAll( TYPE_SHOT, TYPE_ITEM );
+						ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+					}
+				}
+				case( 2 ){
+					if( life <= 0 ){
+						PHASE = 0;
+					}
+				}
+				yield;
+			}
+			PHASE = 0;
+		}
+	}

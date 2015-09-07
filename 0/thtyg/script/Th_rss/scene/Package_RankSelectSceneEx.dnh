@@ -1,0 +1,609 @@
+
+/*
+#東方弾幕風[Package]
+#Title["ポーズ"]
+#Image[""]
+#Text["ver 0.01a"]
+*/
+
+//　難易度選択　ＥＸ
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+
+
+	let csd				= GetCurrentScriptDirectory();
+	
+	//　使用する効果音
+	let se = [
+		PlaySEsP( csd ~ "./../se/menuselect.ogg" ),
+		PlaySEsP( csd ~ "./../se/menudecide.ogg" ),
+		PlaySEsP( csd ~ "./../se/menucancel.ogg" ),
+	];
+	
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	SetAreaCommonData("System","R_sector",0);
+	
+	TBackground();
+	TRankSelectScene();
+	
+	SetScriptResult("");
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	PlaySEsP_Exit( csd ~ "../se/menucancel.wav" );
+	Obj_DeleteArray( se );
+}
+
+
+task TBackground(){
+	let objImage	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objText		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 		= GetCurrentScriptDirectory();
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	let flg			= 0;
+	let ctr			= 0;
+	let Rsector		= GetAreaCommonData("System","R_sector",0);
+	let eflg		= GetAreaCommonData("System","title_end",false);
+	
+	//　背景
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" );
+	Obj_SetRenderPriorityI(objImage, 33 );
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 64, 64, 64 );
+	ObjRender_SetAlpha(objImage, alpha1*255 );
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.56, 0.56, 0 );
+	ObjSprite2D_SetSourceRect(objText, 0, 0, 512, 256 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+	
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	while( Rsector != 3 && !eflg ){
+		Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Rsector == 0 ){
+			move1 = 0;
+			moveA = 0;
+			move2 = 0;
+			moveB = 0;
+		}
+		else if( Rsector == 1 ){
+			move1 = 1 * sin( moveA );
+			ObjRender_SetAlpha(objText, 255 - move1*255 );
+			if( move1 < 1 ){ moveA += 5; }
+		}
+		else if( Rsector == 2 ){
+			move2 = 1 * sin( moveB );
+			ObjRender_SetAlpha(objText, move2*255 );
+			if( move2 < 1 ){ moveB += 5; }
+		}
+		
+		ctr++;
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, 255 - alpha1*255 );
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	SetAreaCommonData("System", "R_sector", 0 );
+	Obj_Delete(objImage);
+	Obj_Delete(objText);
+	CloseScript( GetOwnScriptID() );
+}
+
+
+//----------------------------------------------------
+// 難易度選択
+//----------------------------------------------------
+task TRankSelectScene{
+	let id		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let csd 	= GetCurrentScriptDirectory();
+	let Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+	let eflg	= GetAreaCommonData("System", "title_end", false );
+	let CenX	= 320;
+	let CenY	= 240;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	let sca1	= 0;
+	let scaA	= 0;
+	let rgb		= [0,0,0];
+	let i		= 0;
+	let ctr		= 0;
+	let spin1	= 0;
+	let spinA	= 0;
+	let spin2	= 0;
+	let spinB	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let cc		= 0;
+	let stc		= 0;
+	let rect1	= [0,512,512];
+	let rectA	= [512,1024,1024];
+	let rect2	= [512,0,512];
+	let rectB	= [1024,512,1024];
+	let rect3	= [512,512,0];
+	let rectC	= [1024,1024,512];
+	let flg		= 0;
+	let mt		= "UP";
+	let gx		= 0;
+	let gy		= 0;
+	
+	//　選択項目最大値
+	let sltmx	= 0;
+	
+	//　ﾌｧﾝﾀｽﾞﾑのフラグ
+	let rph		= GetAreaCommonData( "SaveData", "Standby_PhantasmStage", true );
+	if( rph ){ sltmx = 1; }
+	
+	//　OD出現フラグ
+	let rod		= IsClearPhantasm();
+	if( rod ){ sltmx = 2; }
+	
+	ObjRender_SetPosition(id[0], CenX, CenY+26, 0 );
+	ObjPrim_SetTexture(id[0], csd ~ "../img/title/et03.png" );
+	Obj_SetRenderPriorityI(id[0], 33 );
+	ObjRender_SetBlendType(id[0], BLEND_ALPHA );
+	ObjPrim_SetPrimitiveType(id[0], PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(id[0], 1, 1, 0 );
+	ObjPrim_SetVertexCount(id[0], 6 );
+	ObjPrim_SetVertexPosition(id[0], 0, 1024/-2, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 1, 1024/-2, 1024/2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 2, 0, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 3, 0, 1024/2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 4, 1024/2, 1024/-2, 0 );
+	ObjPrim_SetVertexPosition(id[0], 5, 1024/2, 1024/2, 0 );
+	ObjPrim_SetVertexUVT(id[0], 0, 0, 0 );
+	ObjPrim_SetVertexUVT(id[0], 1, 0, 1024 );
+	ObjPrim_SetVertexUVT(id[0], 2, 512, 0 );
+	ObjPrim_SetVertexUVT(id[0], 3, 512, 1024 );
+	ObjPrim_SetVertexUVT(id[0], 4, 1024, 0 );
+	ObjPrim_SetVertexUVT(id[0], 5, 1024, 1024 );
+	ObjPrim_SetVertexColor(id[0], 0, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 1, 32, rgb[1], 128 );
+	ObjPrim_SetVertexColor(id[0], 2, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 3, rgb[0], rgb[1], rgb[2] );
+	ObjPrim_SetVertexColor(id[0], 4, 32, rgb[1], 128 );
+	ObjPrim_SetVertexColor(id[0], 5, rgb[0], rgb[1], rgb[2] );
+	
+	loop( 3 ){
+		ObjPrim_SetTexture( id[1+i], csd ~ "../img/title/rank_select01.png" );
+		ObjRender_SetBlendType( id[1+i], BLEND_ALPHA );
+		Obj_SetRenderPriorityI( id[1+i], 34 );
+		ObjRender_SetScaleXYZ( id[1+i], 0.7, 0.7, 0 );
+		i++;
+	}
+	i = 0;
+	
+	while( !eflg ){
+		Rsector	= GetAreaCommonData("System", "R_sector", 0 );
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		if( Rsector == 0 ){
+			move1 = 1 * sin( moveA );
+			move2 = 1 * sin( moveB );
+			
+			//----------------------------------------------------------------------------------------------------
+			//----------------------------------------------------------------------------------------------------
+			//　難易度選択
+			alternative( stc )
+			case( 0 ){
+				ObjRender_SetPosition( id[1], CenX-150+move1*150, (CenY+25)-150+move1*150, 0 );
+				ObjRender_SetPosition( id[2], CenX+move2*150, (CenY+25)+move2*150, 0 );
+				ObjRender_SetPosition( id[3], CenX+150+move2*150, (CenY+25)+150+move2*150, 0 );
+			}
+			case( 1 ){
+				if( mt == "UP" ){
+					ObjRender_SetPosition( id[1], CenX-300+move1*150, (CenY+25)-300+move1*150, 0 );
+					
+					ObjRender_SetPosition( id[2], CenX-150+move2*150, (CenY+25)-150+move2*150, 0 );
+					ObjRender_SetPosition( id[3], CenX+move2*150, (CenY+25)+move2*150, 0 );
+				}
+				else if( mt == "DOWN" ){
+					ObjRender_SetPosition( id[1], CenX-move1*150, (CenY+25)-move1*150, 0 );
+					ObjRender_SetPosition( id[2], CenX+150-move2*150, (CenY+25)+150-move2*150, 0 );
+					ObjRender_SetPosition( id[3], CenX+300-move2*150, (CenY+25)+300-move2*150, 0 );
+				}
+			}
+			case( 2 ){
+				ObjRender_SetPosition( id[1], CenX-150-move1*150, (CenY+25)-150-move1*150, 0 );
+				ObjRender_SetPosition( id[2], CenX-move2*150, (CenY+25)-move2*150, 0 );
+				ObjRender_SetPosition( id[3], CenX+150-move2*150, (CenY+25)+150-move2*150, 0 );
+			}
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			//　選択してない奴のrect変える
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], 0, 0, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], 0, 0, (stc-1)*16 + move1*16 );
+			}
+			ObjSprite2D_SetSourceRect(id[1], rect1[stc], 0, rectA[stc], 256 );
+			ObjSprite2D_SetDestCenter(id[1]);
+			ObjSprite2D_SetSourceRect(id[2], rect2[stc], 256, rectB[stc], 512 );
+			ObjSprite2D_SetDestCenter(id[2]);
+			ObjSprite2D_SetSourceRect(id[3], rect3[stc], 512, rectC[stc], 768 );
+			ObjSprite2D_SetDestCenter(id[3]);
+			
+			alpha1 = 1 * sin( alphaA );
+			ObjPrim_SetVertexAlpha(id[0], 0, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 1, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 2, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[0], 3, alpha1*255 );
+			ObjPrim_SetVertexAlpha(id[0], 4, 0 );
+			ObjPrim_SetVertexAlpha(id[0], 5, 0 );
+			ObjRender_SetAlpha(id[1], alpha1*255 );
+			
+			//　Phantasm
+			if( rph ){
+				ObjRender_SetAlpha(id[2], alpha1*255 );
+			}
+			else{
+				ObjRender_SetAlpha(id[2], 0 );
+			}
+			
+			//　OD
+			if( rod ){
+				ObjRender_SetAlpha(id[3], alpha1*255 );
+			}
+			else{
+				ObjRender_SetAlpha(id[3], 0 );
+			}
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			//　操作　PH、OD出てる時のみ
+			if( rph ){
+				if( stc > 0 && GetVirtualKeyState(VK_UP) == KEY_PUSH && ctr > 10 ){
+					mt = "UP";
+					moveA = 0;
+					moveB = 0;
+					ctr = 0;
+					stc--;
+					ObjSound_Play( se[0] );
+				}
+				if( stc < sltmx && GetVirtualKeyState(VK_DOWN) == KEY_PUSH && ctr > 10 ){
+					mt = "DOWN";
+					moveA = 0;
+					moveB = 0;
+					ctr = 0;
+					stc++;
+					ObjSound_Play( se[0] );
+				}
+			}
+			if( GetVirtualKeyState(VK_CANCEL) == KEY_PUSH && ctr > 10 ){
+				SetAreaCommonData("System", "R_sector", 3 );
+				ctr = 0;
+				ObjSound_Play( se[2] );
+				break;
+			}
+			if( GetVirtualKeyState(VK_OK) == KEY_PUSH && ctr > 10 && move1 >= 1 ){
+				SetAreaCommonData("System", "R_sector", 1 );
+				gx = ObjRender_GetX( id[stc+1] );
+				gy = ObjRender_GetY( id[stc+1] );
+				ctr = 0;
+				TChangeSelectScene(stc);
+				ObjSound_Play( se[1] );
+			}
+			//------------------------------------------------------------------------------------
+			//------------------------------------------------------------------------------------
+			
+			
+			cc++;
+			if( move1 < 1 ){ moveA += 5; }
+			if( move2 < 1 ){ moveB += 5; }
+			if( alpha1 < 1 ){ alphaA += 5; }
+			else{ ctr++; }
+		}
+		else if( Rsector == 1 ){
+			if( false && ctr > 1 && GetVirtualKeyState(VK_CANCEL) == KEY_PUSH ){
+				SetAreaCommonData("System", "R_sector", 2 );
+				ctr = 0;
+			}
+			
+			sca1 = 1 * sin( scaA );
+			spin1 = 1 * sin( spinA );
+			
+			ObjRender_SetPosition(id[stc+1], gx + spin1*180, gy + spin1*180, 0 );
+			ObjRender_SetScaleXYZ(id[stc+1], 0.7 - sca1*0.15, 0.7 - sca1*0.15, 0 );
+			
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90, spin1*90, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90, spin1*90, (stc-1)*16 + move1*16 );
+			}
+			
+			alternative( stc )
+			case( 0 ){
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+			}
+			case( 1 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90, spin1*90, 0 );
+			}
+			case( 2 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90, spin1*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90, spin1*90, 0 );
+			}
+			
+			cc++;
+			if( sca1 < 1 ){ scaA += 5; }
+			if( spin1 < 1 ){ spinA += 5; }
+			if( spin1 >= 1 && sca1 >= 1 ){ ctr++; }
+		}
+		else if( Rsector == 2 ){
+			sca1 = 1 * sin( scaA );
+			spin2 = 1 * sin( spinB );
+			
+			ObjRender_SetPosition(id[stc+1], gx + 180-spin2*180, gy + 180-spin2*180, 0 );
+			ObjRender_SetScaleXYZ(id[stc+1], 0.55 + spin2*0.15, 0.55 + spin2*0.15, 0 );
+			
+			if( mt == "UP" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90 - spin2*90, spin1*90 - spin2*90, (stc+1)*16 - move1*16 );
+			}
+			else if( mt == "DOWN" ){
+				ObjRender_SetAngleXYZ(id[0], spin1*90 - spin2*90, spin1*90 - spin2*90, (stc-1)*16 + move1*16 );
+			}
+			
+			alternative( stc )
+			case( 0 ){
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 1 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[3], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			case( 2 ){
+				ObjRender_SetAngleXYZ(id[1], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+				ObjRender_SetAngleXYZ(id[2], spin1*90-spin2*90, spin1*90-spin2*90, 0 );
+			}
+			
+			if( sca1 <= 0 ){
+				sca1 = 0;
+				scaA = 0;
+			}
+			if( sca1 <= 0 && spin2 >= 1 ){
+				SetAreaCommonData("System", "R_sector", 0 );
+				spin1 = 0;
+				spinA = 0;
+				spin2 = 0;
+				spinB = 0;
+			}
+			if( sca1 > 0 ){ scaA += 5; }
+			if( spin2 < 1 ){ spinB += 5; }
+			cc++;
+		}
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !eflg ){
+		eflg	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjPrim_SetVertexAlpha(id[0], 0, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 1, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 2, 128 - alpha1*128 );
+		ObjPrim_SetVertexAlpha(id[0], 3, 128 - alpha1*128 );
+		ObjPrim_SetVertexAlpha(id[0], 4, 0 );
+		ObjPrim_SetVertexAlpha(id[0], 5, 0 );
+		
+		ObjRender_SetAlpha(id[1], 255 - alpha1*255 );
+		if( rph ){
+			ObjRender_SetAlpha(id[2], 255 - alpha1*255 );
+		}
+		if( rod ){
+			ObjRender_SetAlpha(id[3], 255 - alpha1*255 );
+		}
+		
+		alphaA += 5;
+		
+		yield;
+	}
+}
+
+task DrawVerUp(x, y, sca ){
+	let id		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let Rsector	= GetAreaCommonData("System","R_sector",0);
+	let alpha1	= 0;
+	let alphaA	= 0;
+	
+	ObjRender_SetPosition(id, x, y, 0 );
+	ObjPrim_SetTexture(id, csd ~ "../img/title/release_text.png" );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(id, 34 );
+	ObjRender_SetScaleXYZ(id, sca, sca, 0 );
+	ObjRender_SetAlpha(id, alpha1 );
+	ObjSprite2D_SetSourceRect(id, 0, 512-64, 512, 512 );
+	ObjSprite2D_SetDestCenter(id);
+
+	while( !eflg && Rsector == 0 ){
+		Rsector		= GetAreaCommonData("System","R_sector",0);
+		eflg		= GetAreaCommonData("System","title_end",false);
+		
+		if( alpha1 < 1 ){ alphaA += 5; }
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetAlpha(id, alpha1*255 );
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( !eflg && alpha1 < 1 ){
+		eflg		= GetAreaCommonData("System","title_end",false);
+		
+		alphaA += 5;
+		alpha1 = 1 * sin( alphaA );
+		ObjRender_SetAlpha(id, 255 - alpha1*255 );
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+task TChangeSelectScene(sc){
+	let csd 			= GetCurrentScriptDirectory();
+	let INDEX_EXTRA		= 0;
+	let INDEX_PHANTASM	= 1;
+	let INDEX_OVERDRIVE	= 2;
+	let pathScript		= csd ~ "./Package_PlayerSelectScene.dnh";
+	
+	alternative(sc)
+	case( INDEX_EXTRA ){
+		SetAreaCommonData("System", "stflg", true );	//　起動を許可
+		SetAreaCommonData("System", "Difficulty", "Extra" );
+		SetAreaCommonData("System", "Stage_Index", 7 );
+	}
+	case( INDEX_PHANTASM ){
+		SetAreaCommonData("System", "stflg", true );
+		SetAreaCommonData("System", "Difficulty", "Phantasm" );
+		SetAreaCommonData("System", "Stage_Index", 8 );
+	}
+	case( INDEX_OVERDRIVE ){
+		SetAreaCommonData("System", "stflg", true );
+		SetAreaCommonData("System", "Difficulty", "OverDrive" );
+		SetAreaCommonData("System", "Stage_Index", 1 );
+	}
+	others{
+		//　変な値が渡されたらタスク終了
+		SetAreaCommonData("System", "R_sector", 2 );
+		break;
+	}
+	
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+	
+	while(!IsCloseScript(idScript)){
+		yield;
+	}
+	
+	//　シーン結果処理
+	let result = GetScriptResult(idScript);
+	if( length(result) == 0 ){
+		//　自機選択から難易度選択へ戻る時にしたい処理を書く
+	}
+	else{
+	}
+}
+
+//　渡された配列の中に入っているオブジェクトを全て削除
+task Obj_DeleteArray( obj_array ){
+	ascent( let i in 0..( length(obj_array) ) ){
+		Obj_Delete( obj_array[i] );
+	}
+}
+
+//　このスクリプト中でアクティブなサウンドオブジェクト
+function PlaySEsP(path){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	
+	return sid;
+}
+
+//　出る時用
+task PlaySEsP_Exit(path){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid, path );
+	ObjSound_SetVolumeRate(sid, se_vol );
+	ObjSound_SetLoopEnable(sid, false );
+	ObjSound_Play(sid);
+	loop( 180 ){ yield; }
+	Obj_Delete(sid);
+}
+
+//　何れかの自機がPHをクリア済み
+function IsClearPhantasm(){
+	let IsClear = [
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	];
+	
+	ascent( let i in 0..length(IsClear) ){
+		if( IsClear[i] ){ return true; }
+	}
+	
+	return false;
+}

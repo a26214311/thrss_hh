@@ -1,0 +1,60 @@
+	#UserItemData
+	
+	item_image = "./../img/item00.png"
+	
+	//　弾変化点アイテム
+	ItemData{	id = 1		rect = (32,64,64,96)	out = (32,96,64,128)	render = ADD_ARGB	}
+	
+	//　残機かけら　ボムかけら
+	ItemData{	id = 2		rect = (0,0,32,32)		out = (0,32,32,64)		render = ALPHA	}
+	ItemData{	id = 3		rect = (32,0,64,32)		out = (32,32,64,64)		render = ALPHA	}
+	
+	//　残機Up　ボムUp
+	ItemData{	id = 4		rect = (64,0,96,32)		out = (64,32,96,64)		render = ALPHA	}
+	ItemData{	id = 5		rect = (96,0,128,32)	out = (96,32,128,64)	render = ALPHA	}
+	
+	//　P　S　点　F
+	ItemData{	id = 6		rect = (128,0,160,32)	out = (128,32,160,64)	render = ALPHA	}
+	ItemData{	id = 7		rect = (160,0,192,32)	out = (160,32,192,64)	render = ALPHA	}
+	ItemData{	id = 8		rect = (192,0,224,32)	out = (192,32,224,64)	render = ALPHA	}
+	ItemData{	id = 9		rect = (224,0,256,32)	out = (224,32,256,64)	render = ALPHA	}
+	
+	//　結晶アイテム　点　残機　ボム
+	ItemData{
+		id				= 10
+		AnimationData{
+			animation_data	= ( 6, 64,64,96,96 )
+			animation_data	= ( 6, 96,64,128,96 )
+			animation_data	= ( 6, 64,96,96,128 )
+			animation_data	= ( 6, 96,96,128,128 )
+		}
+		render			= ALPHA
+	}
+	
+	ItemData{
+		id				= 11
+		AnimationData{
+			animation_data	= ( 6, 128,64,160,96 )
+			animation_data	= ( 6, 160,64,192,96 )
+			animation_data	= ( 6, 128,96,160,128 )
+			animation_data	= ( 6, 160,96,192,128 )
+		}
+		render			= ALPHA
+	}
+	
+	ItemData{
+		id				= 12
+		AnimationData{
+			animation_data	= ( 6, 192,64,224,96 )
+			animation_data	= ( 6, 224,64,256,96 )
+			animation_data	= ( 6, 192,96,224,128 )
+			animation_data	= ( 6, 224,96,256,128 )
+		}
+		render			= ALPHA
+	}
+
+	//　点(大）
+	ItemData{	id = 13		rect = (0,128,48,176)	out = (192,32,224,64)	render = ALPHA	}
+
+	//　点（特大）
+	ItemData{	id = 14		rect = (48,128,112,192)	out = (192,32,224,64)	render = ALPHA	}

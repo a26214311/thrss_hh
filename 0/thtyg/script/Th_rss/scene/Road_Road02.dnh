@@ -1,0 +1,836 @@
+function Road02(){
+	let enm_num = GetEnemyIntersectionPosition(CenX, CenY, 512 );
+	let plural;
+	let midboss_flg = false;
+	let compile_file_h	= [0,0];
+	
+	plural		= [csd ~ "./enm/Plural_stage02A.dnh",
+					csd ~ "./enm/Plural_stage02B.dnh"];
+	
+	//　中ボスロード開始
+	compile_file_h[0]	= LoadScriptInThread(plural[0]);
+	LoadBossScript(compile_file_h[0]);
+	
+	
+	
+	
+	//　nフレーム待機
+	function FrameWait( n ){
+		loop( n ){ yield };
+	}
+	//　自機ボム終了まで待機
+	function WaitForSpell(){
+		while( IsPlayerSpellActive() ){ yield; }
+	}
+	//　敵の数が 0 になるまで待機
+	function WaitForZeroEnemy(){
+		let AllEnemy	= GetAllEnemyID();
+		let AllBoss		= GetEnemyBossObjectID();
+		let AllScene	= GetEnemyBossSceneObjectID();
+		while( length(AllEnemy) > 0 || length(enm_num) != 0 || length(AllBoss)!=0 || AllScene!=ID_INVALID ){
+			AllEnemy	= GetAllEnemyID();
+			AllBoss		= GetEnemyBossObjectID();
+			AllScene	= GetEnemyBossSceneObjectID();
+			yield;
+		}
+	}
+	//　すべての敵を削除
+	function VanishAllEnemy(){
+		let AllEnemy	= GetAllEnemyID();
+		let i			= 0;
+		while(i<length(AllEnemy)){
+			Obj_Delete(AllEnemy[i]);
+			i++;
+		}
+	}
+	
+	//テスト用敵でーたー
+	/*
+	local{
+		E_Pattern_Road02_6B( 20 );
+		E_Pattern_Road02_6D( 20 );
+		while( true ){ yield; }
+	}
+	//*/
+	
+	
+	Stage02_WorldManager();
+	
+	FrameWait(60);
+	
+	//　引数2に情報セット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+	//　[ テクスチャ番号(0~2), 画像rect番号 ]
+	NotifyEventAll( EV_USER + 2, [ 0, 3 ] );
+	DeleteMusic();
+	PlayMusic( 3, true, 0 );
+	
+	// 横切り妖精右
+	task E_Pattern_Road02_3A( lp, by ){
+		loop( lp ){
+			CreateEnemy_Road02_3( [MaxX+64,by], [MinX-128,by], [512,128], 270, -3 );
+			loop( 6 ){ yield; }
+		}
+	}
+	// 横切り妖精左
+	task E_Pattern_Road02_3B( lp, by ){
+		loop( lp ){
+			CreateEnemy_Road02_3( [MinX-64,by], [MaxX+128,by], [512,128], 270, 3 );
+			loop( 6 ){ yield; }
+		}
+	}
+
+	task E_Pattern_Road02_6A( lp ){
+		loop( lp ){
+			CreateEnemy_Road02_6( [MaxX+64,CenY-96], [MinX-128,CenY-64], [384,512], 90, 3 );
+			loop( 6 ){ yield; }
+		}
+	}
+	task E_Pattern_Road02_6B( lp ){
+		loop( lp ){
+			CreateEnemy_Road02_6( [MinX-64,CenY-96], [MaxX+128,CenY-64], [384,512], 90, -3 );
+			loop( 6 ){ yield; }
+		}
+	}
+	task E_Pattern_Road02_6C( lp ){
+		loop( lp ){
+			CreateEnemy_Road02_6( [MaxX+64,CenY-32], [MinX-64,CenY-96], [420,416], 120, 3 );
+			loop( 6 ){ yield; }
+		}
+	}
+	task E_Pattern_Road02_6D( lp ){
+		loop( lp ){
+			CreateEnemy_Road02_6( [MinX-64,CenY-32], [MaxX+64,CenY-96], [420,416], 60, -3 );
+			loop( 6 ){ yield; }
+		}
+	}
+
+	//　特攻ザコ妖精
+	task E_Pattern_Road02_8A( lp, bx, wide ){
+		loop( lp ){
+			let pos = [ bx + wide * cos( frame * 8 ), MinY - 48 ];
+//			let ag = atan2( ObjMove_GetY( GetPlayerObjectID ) - pos[ 1 ], ObjMove_GetX( GetPlayerObjectID ) - pos[ 0 ] );
+			let ag = 90;
+			
+			CreateEnemy_Road02_8( pos, 2.5, ag );
+			loop( 8 ){ yield; }
+		}
+	}
+	
+	let i = 0;
+	
+	//------------------Phase0---------------
+	
+	ascent( i in 0..15 ){
+		CreateEnemy_Road02_7( [ MinX-64, MinY+128+128*cos(frame*13.7)  ], [ MaxX+256, CenY-64 ], [128,512], 270, 4 );
+		CreateEnemy_Road02_7( [ MaxX+64, MinY+128+128*cos(frame*9.7) ], [ MinX-256, CenY-64 ], [128,512], 270, -4 );
+		FrameWait(15);
+	}
+	ascent( i in 0..15 ){
+		CreateEnemy_Road02_7( [ MinX-64, MinY+128+128*cos(frame*13.7) ], [ MaxX+256, CenY-64 ], [128,512], 90, 2 );
+		CreateEnemy_Road02_7( [ MaxX+64, MinY+128+128*cos(frame*9.7) ], [ MinX-256, CenY-64 ], [128,512], 90, -2 );
+		FrameWait(15);
+	}
+	
+	StageTitleDisplay(180, csd ~ "./img/stg/stg2img/stg_t02a.png", [128,64,32] );
+	FrameWait(300);
+	
+	//-----------------PhaseA-----------------
+	E_Pattern_Road02_8A( 15, CenX + 96, 30 );
+	
+	loop( 1 ){
+		ascent( i in 0..5 ){
+			CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+			loop( 8 ){ yield; }
+		}
+	}
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MaxX-32-i*32, MinY-64 ], [ MaxX-32-i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+		}
+	}
+	FrameWait( 70 );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			CreateEnemy_Road02_2( [ CenX-60,MinY+70 ], [ CenX, MinY - 256 ] );
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX-60,MinY+120 ], [ CenX, MinY - 256 ] );
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX-60,MinY+170 ], [ CenX, MinY - 256 ] );
+		}
+	}
+	CreateEnemy_Road02_2( [ CenX+60,MinY+70 ], [ CenX, MinY - 256 ] );
+	FrameWait( 50 );
+	CreateEnemy_Road02_2( [ CenX+60,MinY+120 ], [ CenX, MinY - 256 ] );
+	FrameWait( 50 );
+	CreateEnemy_Road02_2( [ CenX+60,MinY+170 ], [ CenX, MinY - 256 ] );
+	if( IsOverDrive ){
+		E_Pattern_Road02_8A( 12, CenX - 96, 30 );
+	}
+	FrameWait( 80 );
+
+	E_Pattern_Road02_3B( 10, CenY - 96 );
+	FrameWait( 50 );
+	E_Pattern_Road02_3B( 10, CenY - 36 );
+	if( IsOverDrive ){
+		E_Pattern_Road02_8A( 12, CenX + 96, 30 );
+	}
+	FrameWait( 90 );
+	if( IsOverDrive ){
+		CreateEnemy_Road02_2( [ CenX + 75, MinY + 150 ], [ CenX, MinY - 256 ] );
+		CreateEnemy_Road02_2( [ CenX - 75, MinY + 150 ], [ CenX, MinY - 256 ] );
+	}
+	FrameWait( 90 );
+
+	E_Pattern_Road02_8A( 24, CenX - 96, 30 );
+	
+	loop( 2 ){
+		ascent( i in 0..5 ){
+			CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+			loop( 8 ){ yield; }
+		}
+		FrameWait( 24 );
+	}
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			loop( 2 ){
+				ascent( i in 0..5 ){
+					CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+					loop( 8 ){ yield; }
+				}
+				FrameWait( 24 );
+			}
+		}
+	}
+	FrameWait( 90 );
+	ascent( i in 0..5 ){
+		CreateEnemy_Road02_2( [ CenX-70 + 48*i, MinY+70 + 30*i ], [ CenX, MinY - 256 ] );
+		FrameWait( 20 );
+		if( IsOverDrive ){
+			CreateEnemy_Road02_2( [ CenX-94 + 48*i, MinY+86 + 30*i ], [ CenX, MinY - 256 ] );
+		}
+		FrameWait( 20 );
+	}
+	FrameWait( 90 );
+	
+	E_Pattern_Road02_3A( 12, CenY - 144 );
+	FrameWait( 60 );
+	E_Pattern_Road02_3A( 10, CenY - 80 );
+	FrameWait( 50 );
+	E_Pattern_Road02_3A( 8, CenY - 26 );
+	FrameWait( 120 );
+	loop( 1 ){
+		ascent( i in 0..5 ){
+			CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+			loop( 8 ){ yield; }
+		}
+		FrameWait( 50 );
+		ascent( i in 0..5 ){
+			CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+			loop( 8 ){ yield; }
+		}
+	}
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+			FrameWait( 50 );
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+		}
+	}
+	FrameWait( 90 );
+	ascent( i in 0..5 ){
+		CreateEnemy_Road02_2( [ CenX+70 - 48*i, MinY+70 + 30*i ], [ CenX, MinY - 256 ] );
+		FrameWait( 10 );
+		if( IsOverDrive ){
+			CreateEnemy_Road02_2( [ CenX+94 - 48*i, MinY+86 + 30*i ], [ CenX, MinY - 256 ] );
+		}
+		FrameWait( 5 );
+	}
+
+	FrameWait( 90 );
+
+	E_Pattern_Road02_8A( 15, CenX + 70, 30 );
+
+	FrameWait( 100 );
+	if( IsOverDrive ){
+		CreateEnemy_Road02_2( [ CenX+50, MinY+130 ], [ CenX, MinY - 256 ] );
+		CreateEnemy_Road02_2( [ CenX-50, MinY+130 ], [ CenX, MinY - 256 ] );
+		CreateEnemy_Road02_2( [ CenX+90, MinY+100 ], [ CenX, MinY - 256 ] );
+		CreateEnemy_Road02_2( [ CenX-90, MinY+100 ], [ CenX, MinY - 256 ] );
+	}
+
+	E_Pattern_Road02_8A( 15, CenX - 70, 30 );
+
+	FrameWait( 90 );
+	
+	local{
+		let lp = 2;
+		let wt = 70;
+		if( IsOverDrive ){
+			lp = 3;
+			wt = 47;
+		}
+		loop( lp ){
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+			}
+			FrameWait( wt );
+			
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+			}
+			FrameWait( wt );
+		}
+	}
+
+	E_Pattern_Road02_3A( 10, CenY - 100 );
+	E_Pattern_Road02_3B( 10, CenY - 100 );
+	
+	FrameWait( 90 );
+
+	E_Pattern_Road02_3A( 10, CenY - 166 );
+	E_Pattern_Road02_3B( 10, CenY - 166 );
+	
+	FrameWait( 320 );
+	//　中ボス＆早回し地帯
+	
+	WaitForZeroEnemy();
+	VanishAllEnemy();
+	WaitForSpell();
+	DeleteShotAll(TYPE_ALL, TYPE_ITEM);
+	FrameWait(60);
+	midboss_flg = true;
+	RegistBoss();
+	FrameWait(120);
+	IsBossDeleted;
+	task IsBossDeleted{
+		WaitForZeroEnemy();
+		FrameWait( 120 );
+		midboss_flg = false;
+		//　次ボスロード開始
+		compile_file_h[1]	= LoadScriptInThread(plural[1]);
+		LoadBossScript(compile_file_h[1]);
+	}
+	FrameWait( 800 );
+	//*/
+	
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			E_Pattern_Road02_3B( 10, CenY - 96 );
+			FrameWait( 50 );
+			E_Pattern_Road02_3B( 10, CenY - 36 );
+			if( IsOverDrive ){
+				FrameWait( 50 );
+				CreateEnemy_Road02_5( [ CenX-64, MinY+72 ], [ CenX, MinY-256 ] );
+				CreateEnemy_Road02_5( [ CenX-84, MinY+112 ], [ CenX, MinY-256 ] );
+				CreateEnemy_Road02_5( [ CenX-44, MinY+112 ], [ CenX, MinY-256 ] );
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			E_Pattern_Road02_3A( 10, CenY - 96 );
+			FrameWait( 50 );
+			E_Pattern_Road02_3A( 10, CenY - 36 );
+			if( IsOverDrive ){
+				FrameWait( 50 );
+				CreateEnemy_Road02_5( [ CenX+64, MinY+72 ], [ CenX, MinY-256 ] );
+				CreateEnemy_Road02_5( [ CenX+84, MinY+112 ], [ CenX, MinY-256 ] );
+				CreateEnemy_Road02_5( [ CenX+44, MinY+112 ], [ CenX, MinY-256 ] );
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		E_Pattern_Road02_3A( 10, CenY - 100 );
+		E_Pattern_Road02_3B( 10, CenY - 100 );
+		if( IsOverDrive ){
+			CreateEnemy_Road02_2( [ CenX+40,MinY+140 ], [ CenX, MinY - 256 ] );
+			CreateEnemy_Road02_2( [ CenX-40,MinY+140 ], [ CenX, MinY - 256 ] );
+		}
+	}
+	FrameWait( 100 );
+	if( !midboss_flg ){
+		E_Pattern_Road02_3A( 10, CenY - 166 );
+		E_Pattern_Road02_3B( 10, CenY - 166 );
+		if( IsOverDrive ){
+			CreateEnemy_Road02_2( [ CenX+80,MinY+160 ], [ CenX, MinY - 256 ] );
+			CreateEnemy_Road02_2( [ CenX-80,MinY+160 ], [ CenX, MinY - 256 ] );
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			E_Pattern_Road02_3A( 10, CenY - 96 );
+			FrameWait( 50 );
+			E_Pattern_Road02_3A( 10, CenY - 36 );
+			if( IsOverDrive ){
+				FrameWait( 50 );
+				let wide = 240;
+				let lp = 8;
+				let sx = CenX - wide / 2;
+				loop( lp ){
+					CreateEnemy_Road02_1( [ sx, MinY-64 ], [ sx, MaxY+256 ] );
+					sx += wide / ( lp - 1 );
+				}
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			E_Pattern_Road02_3B( 10, CenY - 96 );
+			FrameWait( 50 );
+			E_Pattern_Road02_3B( 10, CenY - 36 );
+			if( IsOverDrive ){
+				FrameWait( 50 );
+				let wide = 320;
+				let lp = 8;
+				let sx = CenX - wide / 2;
+				loop( lp ){
+					CreateEnemy_Road02_1( [ sx, MinY-64 ], [ sx, MaxY+256 ] );
+					sx += wide / ( lp - 1 );
+				}
+			}
+		}
+	}
+	FrameWait( 100 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			CreateEnemy_Road02_2( [ CenX+60,MinY+70 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX+90, MinY+95 ], [ CenX, MinY-256 ] );
+			}
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX+60,MinY+120 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX+90, MinY+145 ], [ CenX, MinY-256 ] );
+			}
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX+60,MinY+170 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX+90, MinY+195 ], [ CenX, MinY-256 ] );
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			CreateEnemy_Road02_2( [ CenX-60,MinY+70 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX-90, MinY+95 ], [ CenX, MinY-256 ] );
+			}
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX-60,MinY+120 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX-90, MinY+145 ], [ CenX, MinY-256 ] );
+			}
+			FrameWait( 50 );
+			CreateEnemy_Road02_2( [ CenX-60,MinY+170 ], [ CenX, MinY - 256 ] );
+			if( IsOverDrive ){
+				CreateEnemy_Road02_5( [ CenX-90, MinY+195 ], [ CenX, MinY-256 ] );
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			E_Pattern_Road02_8A( 15, CenX + 70, 30 );
+			FrameWait( 100 );
+			E_Pattern_Road02_8A( 15, CenX - 70, 30 );
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			let lp = 5;
+			let wt = 60;
+			if( IsOverDrive ){ lp = 10; wt = 8; }
+			ascent( i in 0..lp ){
+				CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+			FrameWait( wt );
+			ascent( i in 0..lp ){
+				CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+		}
+	}
+	FrameWait( 200 );
+	if( !midboss_flg ){
+		Set;
+		task Set{
+			let lp = 5;
+			let wt = 60;
+			if( IsOverDrive ){ lp = 10; wt = 8; }
+			ascent( i in 0..lp ){
+				CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+			FrameWait( wt );
+			ascent( i in 0..lp ){
+				CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+		}
+	}
+	FrameWait( 200 );
+	
+	if( !midboss_flg ){
+		E_Pattern_Road02_3A( 10, CenY - 166 );
+		E_Pattern_Road02_3B( 10, CenY - 166 );
+	}
+	//*/
+	while( midboss_flg ){ yield; }
+	//---------------PhaseB--------------
+	
+	
+	FrameWait( 160 );
+	
+	E_Pattern_Road02_6A( 24 );
+	if( IsOverDrive ){
+		E_Pattern_Road02_6C( 24 );
+	}
+	
+	FrameWait( 60 );
+	
+	CreateEnemy_Road02_4( [ MinX, MinY-64 ], [ MinX+64, CenY-128 ], [ MaxX+256, CenY-96 ] );
+
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		SetA;
+		task SetA{
+			loop( 12 ){
+				CreateEnemy_Road02_7( [ MinX-64, MinY+64+32*cos(frame*13.7)  ], [ MaxX+256, MinY+64 ], [128,512], 270, 4 );
+				FrameWait( 8 );
+			}
+		}
+		SetB;
+		task SetB{
+			FrameWait( 60 );
+			CreateEnemy_Road02_2( [ CenX+48, MinY+88 ], [ CenX, MinY-256 ] );
+			FrameWait( 30 );
+			CreateEnemy_Road02_2( [ CenX+80, MinY+120 ], [ CenX, MinY-256 ] );
+			FrameWait( 30 );
+			CreateEnemy_Road02_2( [ CenX+112, MinY+152 ], [ CenX, MinY-256 ] );
+		}
+	}
+	FrameWait( 60 );
+	CreateEnemy_Road02_5( [ CenX+64, MinY+72 ], [ CenX, MinY-256 ] );
+	FrameWait( 30 );
+	CreateEnemy_Road02_5( [ CenX+96, MinY+104 ], [ CenX, MinY-256 ] );
+	FrameWait( 30 );
+	CreateEnemy_Road02_5( [ CenX+128, MinY+136 ], [ CenX, MinY-256 ] );
+
+	FrameWait( 200 );
+
+	E_Pattern_Road02_6B( 24 );
+	if( IsOverDrive ){
+		E_Pattern_Road02_6D( 24 );
+	}
+
+	FrameWait( 120 );
+
+	CreateEnemy_Road02_4( [ MaxX, MinY-64 ], [ MaxX-64, CenY-128 ], [ MinX-256, CenY-96 ] );
+
+	FrameWait( 60 );
+	if( IsOverDrive ){
+		SetA;
+		task SetA{
+			loop( 12 ){
+				CreateEnemy_Road02_7( [ MaxX+64, MinY+64+32*cos(frame*9.7) ], [ MinX-256, MinY+64 ], [128,512], 270, -4 );
+				FrameWait( 8 );
+			}
+		}
+		SetB;
+		task SetB{
+			CreateEnemy_Road02_2( [ CenX-48, MinY+88 ], [ CenX, MinY-256 ] );
+			FrameWait( 30 );
+			CreateEnemy_Road02_2( [ CenX-80, MinY+120 ], [ CenX, MinY-256 ] );
+			FrameWait( 30 );
+			CreateEnemy_Road02_2( [ CenX-112, MinY+152 ], [ CenX, MinY-256 ] );
+		}
+	}
+
+	CreateEnemy_Road02_5( [ CenX-64, MinY+72 ], [ CenX, MinY-256 ] );
+	FrameWait( 30 );
+	CreateEnemy_Road02_5( [ CenX-96, MinY+104 ], [ CenX, MinY-256 ] );
+	FrameWait( 30 );
+	CreateEnemy_Road02_5( [ CenX-128, MinY+136 ], [ CenX, MinY-256 ] );
+
+	FrameWait( 180 );
+	ascent( i in 0..5 ){
+		CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+		loop( 8 ){ yield; }
+	}
+	FrameWait( 60 );
+	ascent( i in 0..5 ){
+		CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+		loop( 8 ){ yield; }
+	}
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			FrameWait( 60 );
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MinX+32 + i*32, MinY-64 ], [ MinX+32 + i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+			FrameWait( 60 );
+			ascent( i in 0..5 ){
+				CreateEnemy_Road02_1( [ MaxX-32 - i*32, MinY-64 ], [ MaxX-32 - i*32, MaxY+256 ] );
+				loop( 8 ){ yield; }
+			}
+		}
+	}
+	
+	FrameWait( 180 );
+
+	E_Pattern_Road02_8A( 18, CenX - 80, 80 );
+
+	CreateEnemy_Road02_5( [ CenX+70, MinY+60 ], [ CenX, MinY-256 ] );
+	CreateEnemy_Road02_5( [ CenX+110, MinY+110 ], [ CenX, MinY-256 ] );
+	CreateEnemy_Road02_5( [ CenX+150, MinY+160 ], [ CenX, MinY-256 ] );
+
+	if( IsOverDrive ){
+		CreateEnemy_Road02_2( [ CenX+90, MinY+85 ], [ CenX, MinY-256 ] );
+		CreateEnemy_Road02_2( [ CenX+130, MinY+135 ], [ CenX, MinY-256 ] );
+	}
+	
+	FrameWait( 150 );
+
+	CreateEnemy_Road02_4( [ MinX, MinY-64 ], [ MinX+64, CenY-128 ], [ MaxX+256, CenY-96 ] );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			FrameWait( 50 );
+			loop( 6 ){
+				CreateEnemy_Road02_7( [ MinX-64, MinY+64+32*cos(frame*13.7)  ], [ MaxX+256, MinY+64 ], [128,512], 270, 4 );
+				FrameWait( 12 );
+			}
+		}
+	}
+
+	FrameWait( 120 );
+
+	E_Pattern_Road02_8A( 18, CenX + 80, 80 );
+
+	CreateEnemy_Road02_5( [ CenX-70, MinY+60 ], [ CenX, MinY-256 ] );
+	CreateEnemy_Road02_5( [ CenX-110, MinY+110 ], [ CenX, MinY-256 ] );
+	CreateEnemy_Road02_5( [ CenX-150, MinY+160 ], [ CenX, MinY-256 ] );
+	
+	if( IsOverDrive ){
+		CreateEnemy_Road02_2( [ CenX-90, MinY+85 ], [ CenX, MinY-256 ] );
+		CreateEnemy_Road02_2( [ CenX-130, MinY+135 ], [ CenX, MinY-256 ] );
+	}
+
+	FrameWait( 150 );
+	
+	CreateEnemy_Road02_4( [ MaxX, MinY-64 ], [ MaxX-64, CenY-128 ], [ MinX-256, CenY-96 ] );
+	
+	FrameWait( 50 );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			loop( 6 ){
+				CreateEnemy_Road02_7( [ MaxX+64, MinY+64+32*cos(frame*9.7) ], [ MinX-256, MinY+64 ], [128,512], 270, -4 );
+				FrameWait( 12 );
+			}
+		}
+	}
+	FrameWait( 150 );
+
+	E_Pattern_Road02_6A( 30 );
+	if( IsOverDrive ){
+		E_Pattern_Road02_6C( 30 );
+	}
+
+	FrameWait( 150 );
+
+	CreateEnemy_Road02_4( [ MinX, MinY-64 ], [ MinX+64, CenY-128 ], [ MaxX+256, CenY-96 ] );
+	if( IsOverDrive ){
+		Set;
+		task Set{
+			FrameWait( 50 );
+			loop( 6 ){
+				CreateEnemy_Road02_7( [ MinX-64, MinY+64+32*cos(frame*13.7)  ], [ MaxX+256, MinY+64 ], [128,512], 270, 4 );
+				FrameWait( 12 );
+			}
+		}
+	}
+
+	E_Pattern_Road02_6B( 30 );
+	if( IsOverDrive ){
+		E_Pattern_Road02_6D( 30 );
+	}
+	
+	
+	FrameWait( 440 );
+	//*/
+	//　ボス
+	WaitForZeroEnemy();
+	VanishAllEnemy();
+	WaitForSpell();
+	DeleteShotAll(TYPE_ALL, TYPE_ITEM);
+	FrameWait(60);
+	RegistBoss();
+	FrameWait(300);
+	WaitForZeroEnemy();
+	FrameWait(120);
+	
+	//　ステージ背景変更奴の添え字初期化
+	ActiveArray_Default( true );
+	
+	//----------------敵の作成--------------------------------
+	task CreateEnemy_Road02_1(posD,posM){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 3, 1, 30, 0, 100, 100, 14 );
+//		Road02_ShotPattern05( enm_obj, ADD_BGW_GREEN_02 );
+		
+		OutDelete( enm_obj, [128,128] );
+		Road02_ShotPattern00( enm_obj, 100, BGW_PURPLE_10 );
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		let dist = ( ( posM[ 0 ] - posD[ 0 ] )^2 + ( posM[ 1 ] - posD[ 1 ] )^2 )^0.5;
+		let ag = atan2( posM[ 1 ] - posD[ 1 ], posM[ 0 ] - posD[ 0 ] ); 
+		dist /= 5;
+		let move_pos = [ posD[ 0 ] + dist * cos( ag ),
+		                 posD[ 1 ] + dist * sin( ag ) ];
+		let wt = 80;
+		let spd = dist / wt;
+		ObjMove_SetDestAtWeight( enm_obj, move_pos[ 0 ], move_pos[ 1 ], 36, spd );
+		loop( wt + 24 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 16, 0, 0.02, 4 );
+		
+	}
+	task CreateEnemy_Road02_2(posD,posE){
+		let enm_obj = CreateEnemy01_Onmyougyoku( "GREEN", 42, 0, 100, 100, 0, 30 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		Road02_ShotPattern01( enm_obj, 220, BGB_GREEN_07 );
+		loop( 300 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 6 );
+	}
+	task CreateEnemy_Road02_3(posD,posM,dis,angle,spin){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 1, 7, 0, 100, 100, 3 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Circle( enm_obj, posM, dis, angle, spin, 16, 6, 0, 10 );
+		Road02_ShotPattern07( enm_obj, BGB_BLUE_14 );
+	}
+	task CreateEnemy_Road02_4( posD, posM, posE ){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 6, 1, 72, 0, 100, 100, 96 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posM, 8, 2, 0.02, 4 );
+		Road02_ShotPattern02( enm_obj, 120, [ BGW_AQUA_03, BGB_PURPLE_11 ] );
+		
+		ascent( i in 0..5 ){
+			let obj = CreateEnemy01_Soul( "BLUE", 12, 0, 100, 100, 2 );
+			Obj_SetValue( obj, "Collision_Player", 0 );
+			ObjMove_SetPosition( obj, posD[0], posD[1] );
+			ObjMove_SetDestAtWeight_Obj( enm_obj, obj, [48,48], i*72, 4, 4, 8, 0, 10 );
+			Road02_ShotPattern04( obj, BGW_GREEN_14 );
+		}
+		ascent( i in 0..5 ){
+			let obj = CreateEnemy01_Soul( "BLUE", 12, 0, 100, 100, 2 );
+			Obj_SetValue( obj, "Collision_Player", 0 );
+			ObjMove_SetPosition( obj, posD[0], posD[1] );
+			ObjMove_SetDestAtWeight_Obj( enm_obj, obj, [64,64], i*72, -4, 4, 8, 0, 10 );
+			Road02_ShotPattern04( obj, BGB_GREEN_14 );
+		}
+		
+		loop( 120 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.02, 3 );
+	}
+	task CreateEnemy_Road02_5(posD,posE){
+		let enm_obj = CreateEnemy01_Onmyougyoku( "YELLOW", 48, 0, 100, 100, 0, 18 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		Road02_ShotPattern03( enm_obj, 240, ADD_BGW_YELLOW_20 );
+		Road02_ShotPattern06( enm_obj, 240, ADD_BGW_YELLOW_04 );
+		loop( 270 ){ yield; }
+		ObjMove_SetDestAtWeight_Acceleration( enm_obj, posE, 16, 0, 0.01, 6 );
+	}
+	task CreateEnemy_Road02_6(posD,posM,dis,angle,spin){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 5, 1, 10, 100, 100, 2 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Circle( enm_obj, posM, dis, angle, spin, 16, 6, 0, 10 );
+		Road02_ShotPattern05( enm_obj, BGB_GREEN_06 );
+	}
+	task CreateEnemy_Road02_7( posD, posM, dis, angle, spin){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Soul( "GREEN", 15, 0, 100, 100, 5 );
+		Road02_ShotPattern08( enm_obj, BGB_GREEN_01 );
+//		Road02_ShotPattern04( enm_obj, ADD_BGW_GREEN_04 );
+		
+		OutDelete( enm_obj, [128,128] );
+		
+		ObjMove_SetPosition( enm_obj, posD[0], posD[1] );
+		ObjMove_SetDestAtWeight_Circle( enm_obj, posM, dis, angle, spin, 16, 0, 0.01, 2 );
+	}
+
+	task CreateEnemy_Road02_8( posD, spd, angle ){
+		//　タイプ　色　体力　無敵　レート　ドロップする点符量
+		let enm_obj = CreateEnemy01_Fairy( 1, 3, 2, 10, 100, 100, 2 );
+		Obj_SetValue( enm_obj, "Collision_Player", 0 );
+		OutDelete( enm_obj, [ 128, 128 ] );
+		Road02_ShotPattern07( enm_obj, BGW_ORANGE_28 );
+		ObjMove_SetPosition( enm_obj, posD[ 0 ], posD[ 1 ] );
+		ObjMove_SetHorming( enm_obj, GetPlayerObjectID, spd, 0.02, angle, 0.75 );
+	}
+	
+	//　ユーティリティ
+	task OutDelete(ID, dis ){
+		let pos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		while(pos[0] < MaxX+dis[0] && pos[0] > MinX-dis[0] && pos[1] < MaxY+dis[1] && pos[1] > MinY-dis[1]){
+			if( Obj_IsDeleted(ID) ){ break; }
+			pos	= [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+			yield;
+		}
+		Obj_Delete(ID);
+	}
+}
+
+//　ステージ背景推移マネージャ
+task Stage02_WorldManager(){
+	let IsActive = GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	
+	SetWorld02();
+	
+}

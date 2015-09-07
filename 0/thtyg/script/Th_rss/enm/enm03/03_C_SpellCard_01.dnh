@@ -1,0 +1,298 @@
+////#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage3　蝕符「白蛆の襲来」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm03_setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 36;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		SetDamageRate(enm, 70, false );
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip(64,64,64,64);
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		//LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection(enm, true, true );
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration01_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 800 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 3, 0 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "SpellCard" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay02(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "蝕符「白蛆の襲来」";
+		}
+		case( "Hard", "Lunatic" ){
+/* to be translated */			spell_text = "符蝕「ホワイトワームホール」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "符蝕「ホワイトワームホール」";
+		}
+		
+		SpellCounter( GetDifficult, 3, 0 );
+		let sct = GetSpellCounter( GetDifficult, 3, 0 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 192, 192, [1,1], enemy_cutin_path1, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_03_R(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let frame	= 0;
+		let count	= 0;
+		let i		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		
+		let shote	= ADD_BGW_WHITE_01;
+		let angle	= 0;
+		let delay	= 0;
+		let fr		= 24;
+
+		let rd_mn	= 0;
+		let rd_mx	= 192;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp		= [ 0, 4 ];
+			fr		= 30;
+			rd_mn = 36;
+		}
+		case( "Normal" ){
+			lp		= [ 0, 8 ];
+			fr		= 30;
+		}
+		case( "Hard" ){
+			lp		= [ 5, 6 ];
+			shote	= ADD_BGW_WHITE_21;
+		}
+		case( "Lunatic" ){
+			lp		= [ 7, 8 ];
+			shote	= ADD_BGW_WHITE_21;
+		}
+		case( "OverDrive" ){
+			lp		= [ 7, 8 ];
+			shote	= ADD_BGW_WHITE_02;
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　パワー溜めから初期化
+			if( frame == 220 ){
+				Concentration01_Main(enm, power_rgb, 60 );
+				EnemyMove(enm, 2, 8 );
+				frame = 0;
+				count = 0;
+				angle = 0;
+				delay = 0;
+				SetAreaCommonData("anime", "spa", false );
+			}
+			
+			//　ワームレーザー
+			if( frame > 0 && frame%fr == 0 ){
+				let dis = rand( rd_mn, rd_mx );
+				ascent( i in 0..2 ){
+					let spos = [
+						gpos[0] + dis * cos( GetAngleToPlayer(enm)-90 + i*180 ),
+						gpos[1] + dis * sin( GetAngleToPlayer(enm)-90 + i*180 ),
+					];
+					
+					CreateWormLaser( spos, 4, GetAngleToPlayer(enm), -0.2, 1.2, shote );
+					let sht = CreateShotA2( spos[0], spos[1], 1.6, GetAngleToPlayer(enm)+180 + rand(-16,16), 0, 10, ADD_BGW_BLUE_16, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				SetAreaCommonData("anime", "spa", true );
+			}
+			
+			//　nway ばら撒き
+			if( frame > 0 && frame%(32-delay) == 0 ){
+				let angle = rand(0,360);
+				ascent( i in 0..(lp[1]) ){
+					let ang = i*(360/lp[1]) + angle + (360/lp[1]/2);
+					let spos = [
+						gpos[0] + 24 * cos( ang ),
+						gpos[1] + 24 * sin( ang ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 0, ang, 0.01, 2, BGW_WHITE_13, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				if( delay < 30 ){ delay += 2; }
+				ObjSound_Play( CreateShotSE[2] );
+			}
+			
+			//　Hard以上追加弾
+			if( GetDifficult == "Hard" || GetDifficult == "Lunatic" || GetDifficult== "OverDrive" ){
+				if( frame > 0 && frame%(32-delay) == 0 ){
+					let angle = rand(0,360);
+					ascent( i in 0..(lp[0]) ){
+						let ang = i*(360/lp[0]) + angle + (360/lp[0]/2);
+						let spos = [
+							gpos[0] + 24 * cos( ang ),
+							gpos[1] + 24 * sin( ang ),
+						];
+						let sht = CreateShotA2( spos[0], spos[1], 0, ang+180, 0.01, 3, BGB_WHITE_13, 16 );
+						NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+					}
+					if( delay < 30 ){ delay += 2; }
+					ObjSound_Play( CreateShotSE[2] );
+				}
+			}
+			
+			frame++;
+			count++;
+			
+			yield;
+		}
+	}
+	
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------------------
+	//　いもむしみたいできもい
+	function CreateWormLaser( gpos, speed, angle, acc, mx, shote ){
+		let sht = CreateLaserC( gpos[0], gpos[1], angle, 0, speed, acc, mx, [128,128,128], 0.1, 0.8, shote );
+		
+		LaserUpdate( sht, speed );
+		
+		return sht;
+	}
+	
+	task LaserUpdate( objID, speed ){
+		let count = 0;
+		let angle = ObjMove_GetAngle(objID);
+		
+		while( !Obj_IsDeleted(objID) ){
+			
+			ObjMove_SetSpeed( objID, ObjMove_GetSpeed(objID) + 0.8 * sin( count*16 ) );
+			
+			count++;
+			
+			yield;
+		}
+	}

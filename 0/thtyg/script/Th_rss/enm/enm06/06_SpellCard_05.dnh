@@ -1,0 +1,395 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　耐久「天の岩戸隠れ」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm06_setting.dnh"
+	#include "./lib_enm06_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 30;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 256, 256+32, 256, 128 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		if( timer < 280 ){
+			SetIntersection( enm, true, true );
+		}
+		
+		//　パワー集中エフェクト
+		if( timer == 120 ){
+			
+		}
+		
+		//　弾幕
+		if( timer == 120 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			//　耐久はボーナス減少しない代わりにボーナス素点を半分に
+			SetScriptResult( SET_SCORE / 2 );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 6, 5 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,true] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		Wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "耐久「天の岩戸隠れ」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "「天照らす鬼道の王」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "「天照らす鬼道の王」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "「天照らす鬼道の王」";
+		}
+		
+		SpellCounter( GetDifficult, 6, 5 );
+		let sct = GetSpellCounter( GetDifficult, 6, 5 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_06(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function Wait( long ){
+		loop( long ){
+			yield;
+			if( Obj_IsDeleted( enm ) ){ return true; }
+		}
+		return false;
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　way数
+		let wayA	= 20;
+		let wayB	= 10;
+		let wayC	= 3;
+
+		//　発射間隔
+		let wtA		= 90;
+		let wtB		= 8;
+		let wtm		= 0;
+		
+		//　距離
+		let dist	= 0;
+		let dp		= 32;
+		let dmax	= 384;
+
+		//　角度補正
+		let agp		= 7;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			wayA = 12;
+			wayB = 9;
+			wayC = 2;
+		}
+		case( "Normal" ){
+		}
+		case( "Hard" ){
+			wayA = 18;
+			wayB = 15;
+			agp = 9;
+			dp = 16;
+			wtm = 2;
+			dmax = 288;
+		}
+		case( "Lunatic" ){
+			wayA = 24;
+			wayB = 18;
+			wayC = 4;
+			dp = 12;
+			wtm = 3;
+			agp = 11;
+			dmax = 288;
+		}
+		case( "OverDrive" ){
+		}
+		
+		//　透明化
+		SetAreaCommonData("anime", "alpha", 128 );
+		FamilyEffect( ID, [255,255,255], 32 );
+		SetAreaCommonData( "anime", "spa", true );
+		ObjSound_Play( CreateShotSE[7] );
+		
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		State;
+		Concentration03_Main( enm, power_rgb, 60 );
+		Wait( 80 );
+		SetShotZ;
+		Wait( 60 );
+		SetShotA;
+		Wait( 100 );
+		SetShotB;
+		Wait( 440 );
+		SetShotC;
+		task State{
+			if( GetDifficult == "Hard" || GetDifficult == "Lunatic" ){
+				ObjMove_SetDestAtWeight(enm, CenX, CenY, 24, 5 );
+			}
+			while( !Obj_IsDeleted( ID ) ){
+				gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+				yield;
+			}
+		}
+		
+		task SetShotZ{
+			//　大岩
+			let dist = 0;
+			loop( 4 ){
+				ascent( i in 0..20 ){
+					CreateShot_Dance01( ID, dist, 270 + i*(360/20), 0, ADD_BGW_ORANGE_22, 16 );
+				}
+				dist += 32;
+				ObjSound_Play( CreateShotSE[0] );
+				ObjSound_Play( CreateShotSE[3] );
+				Wait( 16 );
+			}
+		}
+
+		task SetShotA{
+			//　円状
+			let dist = 128;
+			let ag = GetAngleToPlayer(ID);
+			let idx = 0;
+			while( dist < dmax ){
+				let spin = [ -0.1, 0.1 ];
+				let angle = ag;
+				loop( wayA ){
+					CreateShot_Dance01( ID, dist, angle, spin[ idx % length( spin ) ], BGW_PURPLE_01, 72 );
+					angle += 360 / wayA;
+				}
+				ag += 360 / wayA / 4 * r;
+				dist += dp;
+				idx++;
+				ObjSound_Play( CreateShotSE[1] );
+				Wait( 7 );
+			}
+		}
+
+		task SetShotB{
+			//　鳥
+			let dist = dmax;
+			loop{
+				let ag	= GetAngleToPlayer( ID );
+				loop( wayB ){
+					let spos	= [
+						gpos[0] + dist * cos( ag ),
+						gpos[1] + dist * sin( ag ),
+					];
+					let sht = CreateShot01( spos, 0, ag + 180, 0.01, 1.2, BGW_WHITE_05, 16 );
+					CreateBirdShot( sht, 6 );
+					ag += 360 / wayB;
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				if( wtA > 30 ){ wtA -= wtm; }
+				if( Wait( wtA ) ){ return; }
+			}
+		}
+		
+		task SetShotC{
+			//　炎
+			let dist = 96;
+			let p = rand( 0, 360 );
+			loop{
+				let angle = p;
+				loop( wayC ){
+					let spos	= [
+						gpos[0] + dist * cos( angle ),
+						gpos[1] + dist * sin( angle ),
+					];
+					CreateShot01( spos, 0, angle, 0.01, 1, ADD_BGW_RED_27, 16 );
+					angle += 360 / wayC;
+				}
+				p += ( agp + round( rand( -1, 1 ) ) * agp/2 ) * r;
+				ObjSound_Play( CreateShotSE[1] );
+				if( Wait( wtB ) ){ return; }
+			}
+		}
+	}
+	
+	task CreateShot_Dance01( ID, dist, angle, spin, shote, delay ){
+		let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		let spos	= [
+			gpos[0] + dist * cos( angle ),
+			gpos[1] + dist * sin( angle ),
+		];
+		let move1	= 0;
+		let moveA	= 0;
+		
+		let sht		= CreateShot01( spos, 0, angle, 0, 0, shote, delay );
+		
+		ObjShot_SetAutoDelete( sht, false );
+		ObjShot_SetSpellResist( sht, true );
+		
+		loop( delay ){
+			if( Obj_IsDeleted(ID) ){ break; }
+			yield;
+		}
+		
+		while( !Obj_IsDeleted(ID) ){
+			gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			move1 = 1 * sin( moveA );
+			
+			spos = [
+				gpos[0] + dist * cos( angle ),
+				gpos[1] + dist * sin( angle ),
+			];
+			ObjMove_SetPosition( sht, spos[0], spos[1] );
+			ObjMove_SetAngle( sht, angle );
+			
+			angle += move1*spin;
+			if( move1 < 1 ){ moveA += 1; }
+			
+			yield;
+		}
+		Obj_Delete( sht );
+	}
+	
+	task CreateBirdShot( ID, _rect ){
+		let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let animC	= 0;
+		let anim1	= 0;
+		
+		ObjPrim_SetTexture(obj, csd ~ "./../../img/stg/stg6img/enm6eff_01e.png" );
+		ObjRender_SetBlendType(obj, BLEND_ADD_ARGB );
+		Obj_SetRenderPriorityI(obj, 51 );
+		ObjSprite2D_SetSourceRect(obj, 0 + anim1*64, 0 + _rect*64, 64 + anim1*64, 64 + _rect*64 );
+		ObjSprite2D_SetDestCenter(obj);
+		
+		while( !Obj_IsDeleted(ID) ){
+			let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			let gang = ObjMove_GetAngle(ID);
+			
+			if( GetDistance( gpos, [ ObjMove_GetX(enm), ObjMove_GetY(enm) ] ) < 32 ){ break; }
+			
+			ObjRender_SetPosition(obj, gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(obj, -90 + gang );
+			ObjSprite2D_SetSourceRect(obj, 0 + anim1*64, 0 + _rect*64, 64 + anim1*64, 64 + _rect*64 );
+			
+			animC++;
+			if( animC > 0 && animC%4 == 0 ){ anim1++; }
+			
+			yield;
+		}
+		Obj_Delete( ID );
+		Obj_Delete( obj );
+	}
+	

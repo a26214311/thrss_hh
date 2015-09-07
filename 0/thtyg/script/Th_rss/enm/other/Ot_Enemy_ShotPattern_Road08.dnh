@@ -1,0 +1,1611 @@
+task Road08_ShotPattern01( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID) + rand(-32,32), ObjMove_GetY(objID) + rand(-32,32) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.1;
+	let mx		= 6;
+	let delay	= 32;
+	
+	let lp		= 1;
+	let way		= 5;
+	let wide	= 300;
+	let wt 		= 24;
+
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[32,128,255],
+	];
+	
+	while( !Obj_IsDeleted(objID) ){
+		let spd = speed;
+		loop( lp ){
+			let v = 0;
+			pos = [ ObjMove_GetX(objID) + rand(-v,v), ObjMove_GetY(objID) + rand(-v,v) ];
+			if( pos[0]< MinX || pos[0]>MaxX ){ break; }
+			let p = GetAngleToPlayer( objID ) + round( rand( -2, 2 ) ) * 16;;
+			let spd = 0.5;
+			let obj = DisCharge_IceCrystal02( pos, spd, p, rand( 0.2, 0.6 ), rand(30,120), 255, rgb_array, 41 );
+			let ag = -wide / 2;
+			loop( way ){
+				Crystal_CreateShotA( obj, pos, speed, ag, acc, mx, shote, delay );
+				ag += wide / ( way - 1 );
+			}
+			spd *= 1.2;
+			ObjSound_Play( CreateShotSE[12] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern02( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	let bpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.05;
+	let mx		= 6;
+	let delay	= 32;
+	
+	let way		= 2;
+	let wide	= 180;
+	let lp		= 16;
+	let wt		= 3;
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[128,255,32],
+	];
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let v = 0;
+		angle = ObjMove_GetAngle( objID );
+		pos = [
+			ObjMove_GetX(objID)+rand(-v,v),
+			ObjMove_GetY(objID)+rand(-v,v),
+		];
+		let p = angle + 180;
+		let spd = 0.5;
+		let obj = DisCharge_IceCrystal02( pos, spd, p, rand(0.2,0.6), rand(60,120), 255, rgb_array, 41 );
+		let ag = p - wide / 2;
+		loop( way ){
+			Crystal_CreateShotC( obj, pos, speed, ag, acc, mx, shote, delay );
+			ag += wide / ( way - 1 );
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern03( objID, wait, shote, lp ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let p_pos	= [ ObjMove_GetX( GetPlayerObjectID ), ObjMove_GetY( GetPlayerObjectID ) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.03;
+	let mx		= 5;
+	let delay	= 32;
+	
+	let way		= 10;
+	let wide	= 300;
+	let way_b	= 2;
+	let wide_b	= 120;
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,32,32],
+		[255,32,128],
+		[255,128,32],
+	];
+	
+	if( !Obj_IsDeleted(objID) && way > 0 ){
+		ascent( let j in 0..lp ){
+			if( Obj_IsDeleted(objID) ){ break; }
+			pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle = atan2( p_pos[1]-pos[1], p_pos[0]-pos[0] );
+			let p = angle - wide / 2;
+			loop( way ){
+				let spd = 1.25;
+				let obj = DisCharge_IceCrystal02( pos, spd, p, 0.3, 60, 255, rgb_array, 41 );
+				let ag = p - wide_b / 2;
+				loop( way_b ){
+					Crystal_CreateShotC( obj, pos, speed, ag, acc, mx, shote, delay );
+					ag += wide_b / ( way_b - 1 );
+				}
+				p += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[12] );
+			loop( 8 ){
+				if( Obj_IsDeleted(objID) ){ break; }
+				yield;
+			}
+		}
+	}
+}
+
+task Road08_ShotPattern04A( objID, shote ){
+	let swt = 120;
+	let roundway = 5;
+	let spd = 2;
+	let delay = 15;
+	let wtA = 4;
+	let wtB = 20;
+	loop( swt ){ yield; }
+	
+	let p = GetAngleToPlayer( objID );
+	let wdp = 3;
+	loop( 2 ){
+		let wide = 720;
+		loop( 7 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let ag = p;
+			loop( roundway ){
+				let angle = ag - wide / 2;
+				loop( 2 ){
+					let speed = spd;
+					loop( 2 ){
+						let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+						NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+						speed /= 1.2;
+					}
+					angle += wide;
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			wide += wdp;
+			loop( wtA ){ yield; }
+		}
+		spd += 2;
+		wdp += 2;
+		p += 360 / roundway / 2;
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern04B( objID, shote ){
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let p_pos	= [ ObjMove_GetX( GetPlayerObjectID ), ObjMove_GetY( GetPlayerObjectID ) ];
+	let speed	= 0;
+	let acc		= 0.1;
+	let mx		= 4.6;
+	let delay	= 32;
+	
+	let way		= 7;
+	let swt		= 160;
+	let lp 		= 16;
+	let wt		= 4;
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[32,128,255],
+	];
+	loop( swt ){ yield; }
+	let angle	= GetAngleToPlayer( objID );
+	let scale = 0.6;
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ return; }
+		pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		let p = angle;
+		loop( way ){
+			let obj = DisCharge_IceCrystal02( pos, 2, p, scale, 60, 255, rgb_array, 41 );
+			let ag = 0;
+			Crystal_CreateShotA( obj, pos, speed, ag, acc, mx, shote, delay );
+			p += 360 / way;
+		}
+		angle += 360 / way / 4;
+		speed /= 1.2;
+		scale /= 1.05;
+		ObjSound_Play( CreateShotSE[12] );
+		loop( wt ){ yield; }
+	}
+}
+
+
+task Road08_ShotPattern05( objID, shote ){
+	let pos		= [ 0, 0 ];
+	let speed	= 5;
+	let acc		= -0.1;
+	let mx		= 3;
+	let delay	= 32;
+	
+	let way		= 4;
+	let lp		= 6;
+	let wt		= 9;
+	let swt		= round( rand( 7, 9 ) ) * 20;
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,255,32],
+		[255,128,32],
+		[128,255,32],
+	];
+
+	loop( swt ) { yield; }
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let v = 0;
+		pos = [
+			ObjMove_GetX(objID)+rand(-v,v),
+			ObjMove_GetY(objID)+rand(-v,v),
+		];
+		let spd = 1;
+		let ag = ObjMove_GetAngle( objID ) + 180 + round( rand( -2, 2 ) ) * 60;
+		let obj = DisCharge_IceCrystal02( pos, spd, ag, rand(0.2,0.6), 60, 255, rgb_array, 41 );
+		let angle = 0;
+		loop( way ){
+			Crystal_CreateShotB( obj, ag, angle, shote, 90 );
+			angle += 360 / way;
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern06( objID, shote ){
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.03;
+	let mx		= 4.5;
+	let delay	= 32;
+	
+	let way		= 3;
+	let lp		= 5;
+	let wt		= 36;
+	let wide	= 16;
+	let rd		= 24;
+
+	let swt = round( rand( 1, 3 ) ) * 10;
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,128,32],
+		[255,64,32],
+		[255,255,32],
+	];
+
+	loop( swt ){ yield; }
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		pos = [
+			ObjMove_GetX(objID),
+			ObjMove_GetY(objID),
+		];
+		if( pos[0] > MinX && pos[0] < MaxX ){
+			let ag = angle;
+			loop( way ){
+				let spd = 0.6;
+				let obj = DisCharge_IceCrystal02( pos, spd, ag, rand(0.2,0.6), 90, 255, rgb_array, 41 );
+				Crystal_CreateShotA( obj, pos, speed, round( rand( -1, 1 ) ) * rd, acc, mx, shote, delay );
+				ag += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[12] );
+			angle += ( way / 360 ) / 4;
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern07( objID, shote ){
+	let speed	= 0;
+	let acc		= 0.04;
+	let mx		= 2.5;
+	let delay	= 32;
+	
+	let way		= 3;
+	let lp		= 5;
+	let wt		= 44;
+	let rd		= 24;
+	let swt		= round( rand( 14, 18 ) ) * 10;
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,32,255],
+		[128,32,255],
+		[255,32,128],
+	];
+
+	loop( swt ){ yield; }
+	let angle	= GetAngleToPlayer( objID );
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let pos = [
+			ObjMove_GetX(objID),
+			ObjMove_GetY(objID),
+		];
+		if( pos[0] > MinX && pos[0] < MaxX ){
+			let ag = angle;
+			loop( way ){
+				let obj = DisCharge_IceCrystal02( pos, 0.8, ag, rand(0.2,0.6), 90, 255, rgb_array, 41 );
+				Crystal_CreateShotA( obj, pos, speed, round( rand( -1, 1 ) ) * rd, acc, mx, shote, delay );
+				ag += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[12] );
+			angle += ( way / 360 ) / 4;
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern08( objID, shote ){
+	
+	let speed	= 0;
+	
+	let acc		= 0.05;
+	let mx		= 7;
+	let delay	= 32;
+	
+	let lp		= 2;
+	let way		= 5;
+	let wide	= 4;
+	let wt 		= 36;
+	let swt		= round( rand( 0, 3 ) ) * 10;
+
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[32,128,255],
+	];
+
+	loop( swt ){ yield; }
+	
+	while( !Obj_IsDeleted(objID) ){
+		let spd = speed;
+		loop( lp ){
+			let v = 0;
+			let pos = [ ObjMove_GetX(objID) + rand(-v,v), ObjMove_GetY(objID) + rand(-v,v) ];
+			if( pos[0]< MinX || pos[0]>MaxX ){ break; }
+			let angle = GetAngleToPlayer( objID ) + 180;
+			let obj = DisCharge_IceCrystal02( pos, 0.7, angle, rand(0.2,0.6), rand(30,120), 255, rgb_array, 41 );
+			let ag = -wide / 2;
+			loop( way ){
+				Crystal_CreateShotA( obj, pos, speed, ag, acc, mx, shote, delay );
+				ag += wide / ( way - 1 );
+			}
+			spd *= 1.4;
+			ObjSound_Play( CreateShotSE[12] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern09( objID, shote ){
+	let speed	= 3;
+	let delay	= 8;
+	
+	let way		= 6;
+	let widemax	= 20;
+	let lp		= 20;
+	
+	let acc 	= speed / 70;
+	let mx		= speed * 1.25;
+
+	let swt = 260;
+	
+
+	loop( swt ){ yield; }
+	if( Obj_IsDeleted( objID ) ){ return; }
+	let wide = 0;
+	let i = 0;
+	ObjSound_Play( CreateShotSE[0] );
+	let angle	= GetAngleToPlayer(objID);
+	loop( lp ){
+		if( Obj_IsDeleted( objID ) ){ return; }
+		let pos	= [ ObjMove_GetX( objID ),ObjMove_GetY( objID ) ];
+		let roundway = 3;
+		let p = angle; 
+		loop( way ){
+			let ag = i;
+			loop( roundway ){
+				let s_angle = p + wide * cos( ag );
+				let sht = CreateShotA2( pos[0], pos[1], speed, s_angle, acc, mx, shote[1], delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ag += 360 / roundway;
+			}
+			p += 360 / way;
+		}
+		i += 5;
+		wide += widemax / lp;
+		loop( 2 ){ yield; }
+	}
+	ObjSound_Play( CreateShotSE[1] );
+	speed = 2;
+	loop( 6 ){
+		if( Obj_IsDeleted( objID ) ){ return; }
+		let way = 8;
+		let pos	= [ ObjMove_GetX( objID ),ObjMove_GetY( objID )];
+		let p = GetAngleToPlayer( objID );
+		let angle = p;
+		loop( way ){
+			let sht = CreateShotA2( pos[0], pos[1], speed, angle, 0, 10, shote[0], delay );
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			angle += 360 / way;
+		}
+		speed *= 1.07;
+		loop( 4 ){ yield; }
+	}
+}
+
+task Road08_ShotPattern10( objID, shote ){
+	let swt = 120;
+	let rgb_array = [ 32, 128, 255 ];
+	let way = 5;
+	let width = 18;
+	let del = 216000;
+	loop( swt ){ yield; }
+	if( Obj_IsDeleted( objID ) ){ return; }
+	let p = GetAngleToPlayer( objID );
+	loop( way ){
+		SetLaser( p );
+		p += 360 / way;
+	}
+	task SetLaser( let angle ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let leng = 0;
+		let laser = CreateStraightLaser01( objID, pos, p, leng, width, rgb_array, true, 0, del );
+		ObjSound_Play( CreateShotSE[ 10 ] );
+		while( !Obj_IsDeleted( objID ) ){
+			pos = [ ObjMove_GetX( objID ) + 24 * cos( angle ), ObjMove_GetY( objID ) + 24 * sin( angle ) ];
+			ObjMove_SetPosition( laser, pos[0], pos[1] );
+			ObjStLaser_SetAngle( laser, angle );
+			ObjLaser_SetLength( laser, leng );
+			if( leng < 512 ){ leng += 4; }
+			else{ break; }
+			yield;
+		}
+		Obj_Delete( laser );
+		
+		ObjSound_Play( CreateShotSE[12] );
+		let lmax = leng;
+		leng = 0;
+		while( leng < lmax ){
+			let sx = pos[0] + leng * cos( angle );
+			let sy = pos[1] + leng * sin( angle );
+			let rgb_array	= [
+				[255,255,255],
+				[32,255,255],
+				[32,255,128],
+				[32,128,255],
+			];
+			let sht = DisCharge_IceCrystal02( [ sx, sy ], rand(0.1,0.2), rand(0,360), rand(0.6,0.8), rand(60,120), 255, rgb_array, 41 );
+			let spd = 1.5;
+			loop( 3 ){
+				Crystal_CreateShotA( sht, [ sx, sy ], 0, 0, spd / 60, spd, shote, 16 );
+				spd *= 1.1;
+			}
+			leng += 24;
+		}
+	}
+}
+
+task Road08_ShotPattern12A( objID, shote ){
+	let lp = 5;
+	let delay = 15;
+	let way = 2;
+	let wtA = 4;
+	let wtB = 50;
+	loop( 70 ){ yield; }
+	loop( 4 ){
+		let p = GetAngleToPlayer( objID );
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let speed = 4;
+			let wide = 4;
+			loop( 3 ){
+				let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+				let angle = p - wide / 2;
+				loop( way ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 60, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide / ( way - 1 );
+				}
+				speed /= 1.4;
+				wide += 6;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern12B( objID, shote, i ){
+	let lp = 2;
+	let way = 3;
+	let wide = 60;
+	let spd = 3;
+	let delay = 15;
+	let wtA = 12;
+	let wtB = 110;
+	loop( 80 + ( wtA / 2 ) * i ){ yield; }
+	loop( 2 ){
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let p = round( GetAngleToPlayer( objID ) / 16 ) * 16;
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = p - wide / 2;
+			loop( way ){
+				let speed = spd;
+				let c = 0;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], speed, angle, 0, speed, shote-c, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					speed /= 2;
+					c+=2;
+				}
+				angle += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern13( objID, shote ){
+	let swt = 1 + frame % 6 * 10;
+	let spd = 3.5;
+	let delay = 15;
+	let wide = [ 720, 8, 16 ];
+	let wtA = 5;
+	let wtB = 100;
+	let lp = 0;
+
+	loop( swt ){ yield; }
+	
+	while( !Obj_IsDeleted( objID ) ){
+		let speed = spd;
+		loop( 6 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let p = GetAngleToPlayer( objID );
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 ){
+				let angle = p - wide[ lp % length( wide ) ] / 2;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide[ lp % length( wide ) ];
+				}
+				ObjSound_Play( CreateShotSE[ 1 ] );
+			}
+			speed /= 1.2;
+			lp++;
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern14A( objID, shote ){
+	let roundway = 7;
+	let wide = 160;
+	let delay = 12;
+	let wt = 48;
+	loop( 100 ){ yield; }
+	let r = 1;
+	loop( 12 ){
+		if( Obj_IsDeleted( objID ) ){ return; }
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = GetAngleToPlayer( objID );
+		let ag = p - wide / 2;
+		loop( roundway ){
+			let v = 8;
+			let line = 4;
+			let speed = 3;
+			let way = 1;
+			if( r == -1 ){ way = line; }
+			let wd = v/2 - v/2 * r;
+			loop( line ){
+				let angle = ag - wd / 2;
+				loop( way ){
+					let sht = CreateShotA1( pos[0], pos[1], speed, angle, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wd / ( way - 1 );
+				}
+				speed /= 1.1;
+				wd += v / ( line - 1 ) * r;
+				way += 1 * r;
+			}
+			ag += wide / ( roundway - 1 );
+		}
+		r = -r;
+		ObjSound_Play( CreateShotSE[ 0 ] );
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern14B( enmID, objID, shote, i ){
+	let lp = 12;
+	let delay = 15;
+	let way = 7;
+	let wtA = 2;
+	let wtB = 10;
+	let r = 1;
+	if( i % 2 ){ r = -r; }
+	loop( 90 + i * 15 ){ yield; }
+	let p = atan2( ObjMove_GetY( objID ) - ObjMove_GetY( enmID ), ObjMove_GetX( objID ) - ObjMove_GetX( enmID ) );
+	loop( 12 ){
+		let speed = 2.2;
+		loop( lp ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let angle = p;
+			loop( way ){
+				let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 30, speed, shote, delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			p += 0.5 * r;
+			speed += 0.02;
+			loop( wtA ){ yield; }
+		}
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern15( objID, shote ){
+	let swt = 100;
+	let delay = 15;
+	let roundway = 4;
+	let wide = 10;
+	let way = [ 3, 2, 3 ];
+	let wt = 60;
+	let lp = 0;
+
+	loop( swt ){ yield; }
+	
+	loop( 4 ){
+		let speed = 2;
+		let lp = 0;
+		loop( 3 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let p = GetAngleToPlayer( objID );
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let ag = p;
+			loop( roundway ){
+				let angle = ag - wide / 2;
+				loop( way[ lp % length( way ) ] ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide / ( way[ lp % length( way ) ] - 1 );
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+			lp++;
+			speed /= 1.1;
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern16A( objID, shote ){
+	let swt = 120;
+	let roundway = 6;
+	let speed = 2.4;
+	let delay = 15;
+	let wtA = 4;
+	let wtB = 50;
+	loop( swt ){ yield; }
+	
+	loop( 4 ){
+		let p = GetAngleToPlayer( objID );
+		let wide = 720;
+		let wdp = 1;
+		loop( 8 ){
+			if( Obj_IsDeleted( objID ) ){ return; }
+			let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+			let ag = p;
+			loop( roundway ){
+				let angle = ag - wide / 2;
+				loop( 2 ){
+					let sht = CreateShotA2( pos[0], pos[1], 0, angle, speed / 40, speed, shote, delay );
+					NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+					angle += wide;
+				}
+				ag += 360 / roundway;
+			}
+			ObjSound_Play( CreateShotSE[ 0 ] );
+			wide += wdp;
+			wdp += 2;
+			loop( wtA ){ yield; }
+		}
+		speed += 0.2;
+		loop( wtB ){ yield; }
+	}
+}
+
+task Road08_ShotPattern16B( objID, shote ){
+	
+	let swt 	= 20;
+	let wt		= 3;
+
+	let way		= 1;
+	let rd		= 16;
+	let mx		= 3.4;
+	let delay	= 15;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let speed = 0;
+		let acc = mx / 75;
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY ){
+			let angle = GetAngleToPlayer( objID ) + round( rand( -1, 1 ) ) * rd;
+			loop( way ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, angle, acc, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				angle += 360 / way;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern17( objID, shote ){
+	
+	let swt 	= 50;
+	let wt		= 20;
+	let speed	= 0;
+	
+	let delay	= 9;
+	let line	= 3;
+	let ave		= 10;
+	let seal	= 112;
+
+	loop( swt ){ yield; }
+
+	while( !Obj_IsDeleted( objID ) ){
+		let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		let p = round( GetAngleToPlayer( objID ) / ave ) * ave;
+		let distance = GetObjectDistance( objID, GetPlayerObjectID );
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 && distance > seal ){
+			let mx = 2.8;
+			loop( line ){
+				let sht = CreateShotA2( pos[ 0 ], pos[ 1 ], speed, p, mx/30, mx, shote, delay ); 
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				mx /= 1.06;
+			}
+			ObjSound_Play( CreateShotSE[ 1 ] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+task Road08_ShotPattern00( objID, lp, shote ){
+	
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	if( GetDifficulty != "OverDrive" ){ return; }
+	
+	let pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+	while( !Obj_IsDeleted( objID ) ){
+		pos = [ ObjMove_GetX( objID ), ObjMove_GetY( objID ) ];
+		yield;
+	}
+
+	let wt = 2;
+	let av = lp;
+	let seal = 72;
+	
+	let v = 0;
+	loop( lp ){
+		let dist = Distance( pos, [ GetPlayerX, GetPlayerY ] );
+		if( pos[0]>MinX&&pos[0]<MaxX&&pos[1]>MinY&&pos[1]<MaxY-64 && dist > seal ){
+			let ag = rand( 0, 360 );
+			let sx = pos[0] + rand( 0, v ) * cos( ag );
+			let sy = pos[1] + rand( 0, v ) * sin( ag );
+			
+			let speed = 3.6 + rand( -0.3, 0.3 );
+			let p = atan2( GetPlayerY - sy, GetPlayerX - sx );
+			let angle = p + round( rand( -1, 1 ) ) * av;
+			let delay = 20;
+
+			let sht = CreateShotA2( sx, sy, 0, angle, speed/80, speed, shote, delay );
+			NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+			ObjSound_Play( CreateShotSE[ 14 ] );
+		}
+
+		v += 3;
+		loop( wt ) { yield; }
+	}
+
+	function Distance( pos1, pos2 ){
+		return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+	}
+}
+
+/*
+task Road03_ShotPattern00( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 1;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.04;
+	let mx		= 10;
+	let delay	= 16;
+
+	let r = 1;
+	if( pos[ 0 ] < CenX ){ r = -r; }
+	
+	let way		= 4;
+	let wt		= 15;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+	}
+	case( "Normal" ){
+		way = 4;
+	}
+	case( "Hard" ){
+		way = 4;
+	}
+	case( "Lunatic" ){
+		way = 4;
+	}
+	
+	loop( way ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote[0], delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		Pattern00_ShotMain( sht, shote[1] );
+		ObjSound_Play( CreateShotSE[0] );
+		loop( wt ){ yield; }
+		angle += 360 / way;
+	}
+}
+
+task Pattern00_ShotMain( objID, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+
+	
+	let way		= 1;
+	let wt		= 12;
+	let spd		= 2;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+		wt = 30;
+		spd = 1.4;
+	}
+	case( "Normal" ){
+		way = 1;
+		wt = 12;
+	}
+	case( "Hard" ){
+		way = 3;
+		wt = 12;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		wt = 5;
+		spd = 4;
+	}
+
+	
+	while( !Obj_IsDeleted(objID) ){
+		let spos		= [
+			ObjMove_GetX( objID ) + rand(-16,16),
+			ObjMove_GetY( objID ) + rand(-16,16),
+		];
+		let rgb_array	= [
+			[255,255,255],
+			[32,255,255],
+			[32,255,128],
+			[32,128,255],
+		];
+		let sht = DisCharge_IceCrystal02( spos, rand(0.1,0.2), rand(0,360), rand(0.6,0.8), rand(60,120), 255, rgb_array, 41 );
+		let angle = 0;
+		loop( way ){
+			ObjDelete_CreateShot( sht, spos, 0, angle, spd / 60, spd, shote, 16 );
+			angle += 360 / way;
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		loop( wt ){ yield; }
+		
+		yield;
+	}
+}
+
+//　砕氷ドリルレーザー
+//　レーザー重いのでレーザーそのものはあまり量出したくない
+task Road03_ShotPattern01( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	let count = 0;
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 3;
+	let angle	= GetAngleToPlayer(objID);
+	let delay	= 16;
+	
+	let way		= 4;
+	let widemax	= 16;
+	let lp		= 20;
+	let flg		= true;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 4;
+		flg = false;
+	}
+	case( "Normal" ){
+		way = 4;
+		lp = 20;
+	}
+	case( "Hard" ){
+		way = 4;
+		widemax = 24;
+	}
+	case( "Lunatic" ){
+		way = 4;
+		speed = 5;
+		lp = 40;
+		widemax = 30;
+	}
+	
+	let acc 	= speed / 70;
+	let mx		= speed * 1.25;
+	
+	local{
+		if( Obj_IsDeleted(objID) ){ return; }
+		ascent( let i in 0..(way) ){
+			CreateLaserBeanSprouts( pos, speed, angle + i*(360/way), 0, mx, 0, 16, 16, shote[0], false, 85*2 );
+		}
+		ObjSound_Play( CreateShotSE[0] );
+	}
+	
+	loop( 20 ){ yield; }
+	let wide = 0;
+	let i = 0;
+	loop( lp ){
+		if( Obj_IsDeleted( objID ) || !flg ){ return; }
+		pos	= [
+			ObjMove_GetX( objID ),
+			ObjMove_GetY( objID )
+		];
+		let roundway = 3;
+		let p = angle; 
+		loop( way ){
+			let ag = i;
+			loop( roundway ){
+				let s_angle = p + wide * cos( ag );
+				let sht = CreateShotA2( pos[0], pos[1], speed, s_angle, acc, mx, shote[1], delay );
+				NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+				ag += 360 / roundway;
+			}
+			p += 360 / way;
+		}
+		i += 5;
+		wide += widemax / lp;
+		loop( 2 ){ yield; }
+	}
+}
+
+//　消滅氷結弾　青
+task Road03_ShotPattern02( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID) + rand(-32,32), ObjMove_GetY(objID) + rand(-32,32) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.05;
+	let mx		= 4;
+	let delay	= 32;
+	
+	let lp		= 1;
+	let way		= 3;
+	let wide	= 0;
+	let wt 		= 45;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		lp = 1;
+		way = 3;
+		wide = 0;
+		wt = 90;
+		mx = 1.4;
+	}
+	case( "Normal" ){
+		way = 3;
+		wide = 0;
+		mx = 1.8;
+	}
+	case( "Hard" ){
+		way = 3;
+		wide = 3;
+		wt = 30;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		wide = 300;
+		lp = 2;
+		wt = 30;
+	}
+
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[32,128,255],
+	];
+	
+	while( !Obj_IsDeleted(objID) ){
+		let spd = speed;
+		loop( lp ){
+			let v = 28;
+			pos = [ ObjMove_GetX(objID) + rand(-v,v), ObjMove_GetY(objID) + rand(-v,v) ];
+			if( pos[0]< MinX || pos[0]>MaxX ){ break; }
+			let obj = DisCharge_IceCrystal02( pos, 0, rand(0,360), rand(0.2,0.6), rand(30,120), 255, rgb_array, 41 );
+			let ag = -wide / 2;
+			loop( way ){
+				ObjDelete_CreateShot( obj, pos, speed, ag, acc, mx, shote, delay );
+				ag += wide / ( way - 1 );
+			}
+			spd *= 1.2;
+			ObjSound_Play( CreateShotSE[12] );
+		}
+		loop( wt ){ yield; }
+	}
+}
+
+//　フラクタル弾
+task Road03_ShotPattern03( objID, wait, shote, long ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	let count = 0;
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID) + rand(-32,32), ObjMove_GetY(objID) + rand(-32,32) ];
+	let speed	= 3;
+	let angle	= 90;
+	let acc		= 0.0025;
+	let mx		= 10;
+	let delay	= 16;
+	
+	let way		= 6;
+	let way_w	= 48;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 4;
+	}
+	case( "Normal" ){
+		way = 6;
+	}
+	case( "Hard" ){
+		way = 9;
+	}
+	case( "Lunatic" ){
+		way = 12;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[32,128,255],
+	];
+	
+	while( count < long ){
+		if( !Obj_IsDeleted(objID) && way > 0 && count%6 == 0 ){
+			let pos	= [
+				ObjMove_GetX( objID ),
+				ObjMove_GetY( objID ),
+			];
+			ascent( let i in 0..(way) ){
+				let sht = [
+					CreateShotA2( pos[0], pos[1], speed, -angle + i*(360/way), acc, mx, shote, delay ),
+					CreateShotA2( pos[0], pos[1], speed, angle + i*(360/way), acc, mx, shote, delay ),
+				];
+				NotifyEventAll( EV_USER + 40, [ sht[0], delay ] );
+				NotifyEventAll( EV_USER + 40, [ sht[1], delay ] );
+				ObjMove_SetAngularVelocity(sht[0], 0.7 );
+				ObjMove_SetAngularVelocity(sht[1], -0.7 );
+			}
+			ObjSound_Play( CreateShotSE[0] );
+		}
+		
+		count++;
+		
+		yield;
+	}
+}
+
+//　消滅氷結弾　赤
+task Road03_ShotPattern04( objID, wait, shote, lp ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let p_pos	= [ ObjMove_GetX( GetPlayerObjectID ), ObjMove_GetY( GetPlayerObjectID ) ];
+	let speed	= 5;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= -0.15;
+	let mx		= 1.6;
+	let delay	= 32;
+	
+	let way		= 7;
+	let wide	= 150;
+	let way_b	= 3;
+	let wide_b	= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 4;
+		mx = 2.6;
+	}
+	case( "Normal" ){
+		way = 7;
+	}
+	case( "Hard" ){
+		way = 8;
+		wide_b = 180;
+	}
+	case( "Lunatic" ){
+		way = 9;
+		wide_b = 58;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,32,32],
+		[255,32,128],
+		[255,128,32],
+	];
+	
+	if( !Obj_IsDeleted(objID) && way > 0 ){
+		ascent( let j in 0..lp ){
+			if( Obj_IsDeleted(objID) ){ break; }
+			pos = [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+			angle = atan2( p_pos[1]-pos[1], p_pos[0]-pos[0] );
+			let p = angle - wide / 2;
+			loop( way ){
+				let obj = DisCharge_IceCrystal02( pos, 2, p, 0.6 - j*0.05, 60, 255, rgb_array, 41 );
+				let ag = p - wide_b / 2;
+				loop( way_b ){
+					ObjDelete_CreateShot3( obj, pos, speed, ag, acc, mx, shote, delay );
+					ag += wide_b / ( way_b - 1 );
+				}
+				p += wide / ( way - 1 );
+			}
+			ObjSound_Play( CreateShotSE[12] );
+			loop( 8 ){
+				if( Obj_IsDeleted(objID) ){ break; }
+				yield;
+			}
+		}
+	}
+}
+
+//　消滅氷結弾　黄
+task Road03_ShotPattern05( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID)+rand(-96,96), ObjMove_GetY(objID)+rand(-96,96) ];
+	let speed	= 5;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= -0.1;
+	let mx		= 3;
+	let delay	= 32;
+	
+	let way		= 1;
+	let lp		= 3;
+	let wt		= 9;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 1;
+		lp = 1;
+	}
+	case( "Normal" ){
+		way = 1;
+		lp = 2;
+	}
+	case( "Hard" ){
+		way = 1;
+		lp = 4;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		lp = 6;
+		wt = 8;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,255,32],
+		[255,128,32],
+		[128,255,32],
+	];
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let v = 24;
+		pos = [
+			ObjMove_GetX(objID)+rand(-v,v),
+			ObjMove_GetY(objID)+rand(-v,v),
+		];
+		let obj = DisCharge_IceCrystal02( pos, rand(0.1,0.2), rand(0,360), rand(0.2,0.6), 60, 255, rgb_array, 41 );
+		let angle = 0;
+		loop( way ){
+			ObjDelete_CreateShot2( obj, angle, shote, 90 );
+			angle += 360 / way;
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		loop( wt ){ yield; }
+	}
+}
+
+//　消滅氷結弾　緑
+task Road03_ShotPattern06( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	let bpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 5;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= -0.2;
+	let mx		= 1.4;
+	let delay	= 32;
+	
+	let way		= 2;
+	let wide	= 0;
+	let lp		= 6;
+	let wt		= 10;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		way = 2;
+		wt = 20;
+		lp = 3;
+	}
+	case( "Normal" ){
+		way = 2;
+	}
+	case( "Hard" ){
+		way = 2;
+		wide = 70;
+		lp = 8;
+	}
+	case( "Lunatic" ){
+		way = 4;
+		wide = 120;
+		lp = 8;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[32,255,32],
+		[32,255,128],
+		[128,255,32],
+	];
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		let v = 0;
+		angle = ObjMove_GetAngle( objID );
+		pos = [
+			ObjMove_GetX(objID)+rand(-v,v),
+			ObjMove_GetY(objID)+rand(-v,v),
+		];
+		let obj = DisCharge_IceCrystal02( pos, rand(0.1,0.2), angle, rand(0.2,0.6), rand(60,120), 255, rgb_array, 41 );
+		let ag = angle - wide / 2;
+		loop( way ){
+			ObjDelete_CreateShot3( obj, pos, speed, ag, acc, mx, shote, delay );
+			ag += wide / ( way - 1 );
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		
+		loop( wt ){ yield; }
+	}
+}
+
+//　消滅氷結弾　橙
+task Road03_ShotPattern07( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.04;
+	let mx		= 2.5;
+	let delay	= 32;
+	
+	let way		= 3;
+	let lp		= 2;
+	let wt		= 14;
+	let wide	= 16;
+	let rd		= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		lp = 1;
+		way = 1;
+		mx = 1.5;
+	}
+	case( "Normal" ){
+		way = 1;
+		mx = 2;
+	}
+	case( "Hard" ){
+		way = 3;
+		lp = 2;
+		rd = 1;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		lp = 3;
+		rd = 2;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,128,32],
+		[255,64,32],
+		[255,255,32],
+	];
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		pos = [
+			ObjMove_GetX(objID),
+			ObjMove_GetY(objID),
+		];
+		let ag = angle;
+		loop( way ){
+			let obj = DisCharge_IceCrystal02( pos, 0.8, ag, rand(0.2,0.6), 90, 255, rgb_array, 41 );
+			ObjDelete_CreateShot( obj, pos, speed, wide * round( rand( -rd, rd ) ), acc, mx, shote, delay );
+			ag += 360 / way;
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		angle += ( way / 360 ) / lp;
+		loop( wt ){ yield; }
+	}
+}
+
+//　消滅氷結弾　紫
+task Road03_ShotPattern08( objID, wait, shote ){
+	let GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	loop( wait ){ yield; }
+	
+	let pos		= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+	let speed	= 0;
+	let angle	= GetAngleToPlayer( objID );
+	let acc		= 0.04;
+	let mx		= 2.5;
+	let delay	= 32;
+	
+	let way		= 6;
+	let lp		= 2;
+	let wt		= 14;
+	let wide	= 16;
+	let rd		= 0;
+	
+	alternative( GetDifficulty )
+	case( "Easy" ){
+		lp = 1;
+		way = 1;
+		mx = 1.5;
+	}
+	case( "Normal" ){
+		way = 1;
+		mx = 2;
+	}
+	case( "Hard" ){
+		way = 3;
+		lp = 2;
+		rd = 1;
+	}
+	case( "Lunatic" ){
+		way = 3;
+		lp = 3;
+		rd = 2;
+	}
+	
+	let rgb_array	= [
+		[255,255,255],
+		[255,32,255],
+		[128,32,255],
+		[255,32,128],
+	];
+	
+	loop( lp ){
+		if( Obj_IsDeleted(objID) ){ break; }
+		pos = [
+			ObjMove_GetX(objID),
+			ObjMove_GetY(objID),
+		];
+		let ag = angle;
+		loop( way ){
+			let obj = DisCharge_IceCrystal02( pos, 0.8, ag, rand(0.2,0.6), 90, 255, rgb_array, 41 );
+			ObjDelete_CreateShot( obj, pos, speed, wide * round( rand( -rd, rd ) ), acc, mx, shote, delay );
+			ag += 360 / way;
+		}
+		ObjSound_Play( CreateShotSE[12] );
+		angle += ( way / 360 ) / lp;
+		loop( wt ){ yield; }
+	}
+}
+
+
+
+
+task ObjDelete_CreateShot( objID, pos, speed, angle, acc, mx, shote, delay ){
+	let p = GetAngleToPlayer( objID );
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		p = GetAngleToPlayer( objID );
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > 96 && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, p + angle, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+}
+
+task ObjDelete_CreateShot2( objID, angle, shote, long ){
+	let pos = [ 0, 0 ];
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > 96 && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		AngleToPlayerShot( objID, pos, angle, shote, long );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+}
+
+task ObjDelete_CreateShot3( objID, pos, speed, angle, acc, mx, shote, delay ){
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > 96 && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+}
+
+
+task AngleToPlayerShot( objID, pos, angle, shote, long ){
+	let spd = 1;
+	let sht	= CreateShotA2( pos[0], pos[1], spd, rand(0,360), -spd/long, 0, shote, 16 );
+	NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+	
+	loop( long ){ yield; }
+	
+	ObjMove_SetAngle(sht, atan2( GetPlayerY()-ObjMove_GetY(sht), GetPlayerX()-ObjMove_GetX(sht) ) + angle );
+	ObjMove_SetAcceleration(sht, 0.02 );
+	ObjMove_SetMaxSpeed(sht, 4 );
+}
+
+//*/
+
+task Crystal_CreateShotA( objID, pos, speed, angle, acc, mx, shote, delay ){
+	let p = GetAngleToPlayer( objID );
+	let v = 64;
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		p = GetAngleToPlayer( objID );
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > v && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, p + angle, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+}
+
+task Crystal_CreateShotB( objID, bangle, angle, shote, long ){
+	let pos = [ 0, 0 ];
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	let v = 64;
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > v && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		SetShot( objID, pos, bangle, angle, shote, long );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+
+	task SetShot( objID, pos, bangle, angle, shote, long ){
+		let spd = 1;
+		let sht	= CreateShotA2( pos[0], pos[1], spd, bangle, -spd/long, 0, shote, 16 );
+		NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+		
+		loop( long ){ yield; }
+		
+		ObjMove_SetAngle(sht, atan2( GetPlayerY()-ObjMove_GetY(sht), GetPlayerX()-ObjMove_GetX(sht) ) + angle );
+		ObjMove_SetAcceleration(sht, 0.02 );
+		ObjMove_SetMaxSpeed(sht, 4 );
+	}
+}
+
+task Crystal_CreateShotC( objID, pos, speed, angle, acc, mx, shote, delay ){
+	let d = GetObjectDistance( objID, GetPlayerObjectID );
+	let v = 64;
+	while( !Obj_IsDeleted(objID) ){
+		pos = [
+			ObjRender_GetX( objID ),
+			ObjRender_GetY( objID ),
+		];
+		d = GetObjectDistance( objID, GetPlayerObjectID );
+		yield;
+	}
+	if( d > v && pos[0] > MinX && pos[0] < MaxX && pos[1] > MinY && pos[1] < MaxY ){
+		let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, mx, shote, delay );
+		NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+		ObjSound_Play( CreateShotSE[1] );
+	}
+}

@@ -1,0 +1,191 @@
+
+
+//　設置型レーザー
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　新生設置型レーザー　ID返るので状況に応じて動きセット
+function CreateStraightLaser01(CallID,gpos,angle,length_,width,color,bool_regist,delay,kill){
+	let obj		= ObjShot_Create(OBJ_STRAIGHT_LASER);
+	
+	ObjMove_SetPosition(obj, gpos[0], gpos[1] );
+	ObjStLaser_SetSource(obj, false );
+	ObjStLaser_SetAngle(obj, angle );
+	ObjLaser_SetRenderWidth(obj, width );
+	ObjLaser_SetLength(obj, length_ );
+	ObjShot_SetSpellResist(obj, bool_regist );
+	ObjShot_SetDelay(obj, delay );
+	ObjShot_SetAutoDelete(obj, false );
+	ObjShot_SetGraphic(obj, ADD_BGW_WHITE_29 );
+	ObjRender_SetColor(obj, 0, 0, 0 );
+	ObjShot_Regist(obj);
+	
+	LaserMain(CallID,width,color,bool_regist,delay,kill,obj);
+	
+	return obj;
+}
+
+task LaserMain(CallID,width,color,bool_regist,delay,kill,obj){
+	let source	= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー光源
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let laser	= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー身
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let tip		= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー先端
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let gpos	= [ObjMove_GetX(obj),ObjMove_GetY(obj)];
+	let angle	= ObjStLaser_GetAngle(obj);
+	let length_	= ObjLaser_GetLength(obj);
+	let sca		= [width/2/10 - 0.2, width/2/10 - 0.4];	//　レーザーの太さと大雑把に合わせる
+	let scaXD	= [0.2,0.1];							//　default width
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let timer	= 0;
+	let i		= 0;
+	
+	loop( length(source) ){
+		//　光源
+		ObjPrim_SetTexture(source[i], GetCurrentScriptDirectory ~ "../img/effect/enm_effect01.png" );
+		Obj_SetRenderPriorityI(source[i], 49 );
+		ObjSprite2D_SetSourceRect(source[i], 0, 320, 64, 384 );
+		ObjSprite2D_SetDestCenter(source[i]);
+		//　身
+		ObjPrim_SetTexture(laser[i], GetCurrentScriptDirectory ~ "../img/effect/laser_x32.png" );
+		Obj_SetRenderPriorityI(laser[i], 49 );
+		//　先端
+		ObjPrim_SetTexture(tip[i], GetCurrentScriptDirectory ~ "../img/effect/enm_effect01.png" );
+		Obj_SetRenderPriorityI(tip[i], 49 );
+		ObjSprite2D_SetSourceRect(tip[i], 0, 320, 64, 384 );
+		ObjSprite2D_SetDestCenter(tip[i]);
+		i++;
+	}
+	i = 0;
+	
+	//　光源
+	ObjRender_SetBlendType(source[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(source[0], color[0], color[1], color[2] );
+	ObjRender_SetBlendType(source[1], BLEND_ALPHA );
+	
+	//　身
+	ObjRender_SetBlendType(laser[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(laser[0], color[0], color[1], color[2] );
+//	ObjRender_SetBlendType(laser[1], BLEND_ALPHA );
+	
+	//　先端
+	ObjRender_SetBlendType(tip[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(tip[0], color[0], color[1], color[2] );
+	ObjRender_SetBlendType(tip[1], BLEND_ALPHA );
+	
+	while( timer < kill && !Obj_IsDeleted(CallID) ){
+		gpos	= [ObjMove_GetX(obj),ObjMove_GetY(obj)];
+		angle	= ObjStLaser_GetAngle(obj);
+		length_	= ObjLaser_GetLength(obj);
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		loop( length(source) ){
+			//　光源
+			ObjRender_SetPosition(source[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(source[i], sca[i]*2 - move1*sca[i], sca[i]*2 - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(source[i], 0, 0, -timer*128 );
+			//　身
+			ObjRender_SetPosition(laser[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(laser[i], 0, 0, angle-90 );
+			ObjRender_SetScaleXYZ(laser[i], scaXD[i] + move2*sca[i] + (0.06*(1-i)*move2)*sin(timer*64), 1, 0 );
+			ObjSprite2D_SetSourceRect(laser[i], 0, 0, 32, move1*length_ );
+			ObjSprite2D_SetDestRect(laser[i], -16, 0, 16, move1*length_ );
+			//　先端
+			ObjRender_SetPosition(tip[i], gpos[0] + (move1*length_)*cos(angle), gpos[1] + (move1*length_)*sin(angle), 0 );
+			ObjRender_SetScaleXYZ(tip[i], move1*sca[i], move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(tip[i], 0, 0, -timer*128 );
+			i++;
+		}
+		i = 0;
+		
+		if( timer == delay ){
+			LaserEnableEffect(source[0], color, sca[0]*8 );
+		}
+		if( Obj_IsDeleted( obj ) ){ break; }
+		
+		timer++;
+		if( move1 < 1 ){ moveA += 2; }
+		if( move2 < 1 && timer > delay ){ moveB += 5; }
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	Obj_Delete(obj);	//　ﾚｰｻﾞｰ自体は早めに消去
+	while( move1 < 1 && !Obj_IsDeleted(CallID) ){
+		move1 = 1 * sin( moveA );
+		
+		loop( length(source) ){
+			//　光源
+			ObjRender_SetPosition(source[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(source[i], sca[i] - move1*sca[i], sca[i] - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(source[i], 0, 0, -timer*128 );
+			//　身
+			ObjRender_SetPosition(laser[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(laser[i], 0, 0, angle-90 );
+			ObjRender_SetScaleXYZ(laser[i], sca[i] - move1*sca[i], 1, 0 );
+			//　先端
+			ObjRender_SetPosition(tip[i], gpos[0] + (length_)*cos(angle), gpos[1] + (length_)*sin(angle), 0 );
+			ObjRender_SetScaleXYZ(tip[i], sca[i] - move1*sca[i], sca[i] - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(tip[i], 0, 0, -timer*128 );
+			i++;
+		}
+		i = 0;
+		
+		timer++;
+		if( move1 < 1 ){ moveA += 2; }
+		if( Obj_IsDeleted( obj ) ){ break; }
+		yield;
+	}
+	loop( length(source) ){
+		Obj_Delete(source[i]);
+//		Obj_Delete(laser[i]);
+		Obj_Delete(tip[i]);
+		Fade( i );
+		task Fade( idx ){
+			let alpha = 255;
+			loop( 12 ){
+				alpha -= 20;
+				ObjRender_SetAlpha( laser[idx], alpha );
+				yield;
+			}
+			Obj_Delete( laser[idx] );
+		}
+		i++;
+	}
+	i = 0;
+}
+
+task LaserEnableEffect(ID,color,sca){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ObjRender_GetX(ID),ObjRender_GetY(ID)];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, GetCurrentScriptDirectory ~ "../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 49 );
+	ObjRender_SetBlendType(effect, BLEND_ADD_ARGB );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ObjRender_GetX(ID),ObjRender_GetY(ID)];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}

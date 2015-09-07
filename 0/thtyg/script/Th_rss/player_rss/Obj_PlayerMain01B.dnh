@@ -1,0 +1,388 @@
+task PlayerOption(){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let ID_sub	= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let path	= csd ~ "./img/eff/option01.png";
+	let i		= 0;
+	let sca		= 0.46;
+	let sca1	= 0;
+	let scaA	= 0;
+	let cc		= 0;
+	let dis_d	= 0;
+	let disD	= [32,32];
+	let dis		= [8,24];
+	let dis1	= 0;
+	let disA	= 0;
+	let slowF	= false;
+	let frame	= 0;
+	let count	= 0;
+	let shotF	= false;
+	
+	let plang	= 0;
+	let posD	= [GetPlayerX + dis_d * cos( plang ), GetPlayerY + dis_d * sin( plang ) ];
+	let pos		= [
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 0 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 0 ) ],
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 180 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 180 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( -45 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( -45 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( 225 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( 225 ) ],
+					];
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], pos[i][0], pos[i][1], 0 );
+		ObjPrim_SetTexture(ID[i], path );
+		Obj_SetRenderPriorityI(ID[i], 31 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, cc );
+		ObjRender_SetScaleXYZ(ID[i], sca1, sca1, 0 );
+		ObjRender_SetAlpha(ID[i], 255 );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 32, 32 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	loop( length(ID_sub) ){
+		ObjRender_SetPosition(ID_sub[i], pos[i][0], pos[i][1], 0 );
+		ObjPrim_SetTexture(ID_sub[i], path );
+		Obj_SetRenderPriorityI(ID_sub[i], 31 );
+		ObjRender_SetBlendType(ID_sub[i], BLEND_ADD_ARGB );
+		ObjRender_SetAngleXYZ(ID_sub[i], 0, 0, cc*-1 );
+		ObjRender_SetScaleXYZ(ID_sub[i], sca1, sca1, 0 );
+		ObjSprite2D_SetSourceRect(ID_sub[i], 0, 32, 32, 64 );
+		ObjSprite2D_SetDestCenter(ID_sub[i]);
+		i++;
+	}
+	i = 0;
+	
+	//　1個しか出さない系
+	CreateCommonDataArea("PlayerShot");
+	SetAreaCommonData("PlayerShot", "oonusa", 0 );
+	SetAreaCommonData("PlayerShot", "zabuton", 0 );
+	
+	let frame_oonusa	= 0;
+	let frame_zabuton	= 0;
+	let frame_pinholl	= 0;
+	//　ここまで
+	
+	while( !Obj_IsDeleted( GetPlayerObjectID ) ){
+		posD	= [GetPlayerX + dis_d * cos( plang ), GetPlayerY + dis_d * sin( plang ) ];
+		pos		= [
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 0 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 0 ) ],
+					[posD[0] + (disD[0]+dis1*dis[0]) * cos( 180 ), posD[1] + (disD[0]+dis1*dis[0]) * sin( 180 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( -45 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( -45 ) ],
+					[posD[0] + (disD[1]+dis1*dis[1]) * cos( 225 ), posD[1] + (disD[1]+dis1*dis[1]) * sin( 225 ) ],
+					];
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], pos[i][0], pos[i][1], 0 );
+			ObjRender_SetScaleXYZ(ID[i], sca1*sca, sca1*sca, 0 );
+			ObjRender_SetAngleXYZ(ID[i], 0, 0, cc );
+			ObjRender_SetPosition(ID_sub[i], pos[i][0], pos[i][1], 0 );
+			ObjRender_SetScaleXYZ(ID_sub[i], sca1*sca*1.3 + dis1/10, sca1*sca*1.3 + dis1/10, 0 );
+			ObjRender_SetAngleXYZ(ID_sub[i], 0, 0, cc*-1 );
+			
+			//　テクスチャ不可視化
+			if( GetPlayerState == STATE_HIT || GetPlayerState == STATE_DOWN || GetPlayerState == STATE_END ){
+				ObjRender_SetAlpha(ID[i], 0 );
+				ObjRender_SetAlpha(ID_sub[i], 0 );
+			}
+			else{
+				ObjRender_SetAlpha(ID[i], 255 );
+				ObjRender_SetAlpha(ID_sub[i], 128 + (32+32*dis1) * sin( cc*4 ) );
+			}
+			
+			i++;
+		}
+		i = 0;
+		
+		//　低速フラグ
+		if( GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ){ slowF = true; }
+		else{ frame_zabuton = 0; }
+		
+		//　移動中ならオプション遅れて追従
+		if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ||
+			GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ||
+			GetVirtualKeyState(VK_UP) == KEY_HOLD ||
+			GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+			plang	= GetKeyAngle();
+			if( dis_d < 4 ){
+				dis_d += 0.5;
+			}
+		}
+		else if( dis_d > 0 ){
+			dis_d -= 0.5;
+		}
+		
+		//　ショットフラグ
+		if( GetVirtualKeyState(VK_SHOT) == KEY_HOLD ){
+			shotF = true;
+			count = 0;
+		}
+		else if( shotF ){
+			count++;
+			if( count > 32 ){
+				shotF = false;
+			}
+		}
+		
+		if( GetVirtualKeyState(VK_SHOT) != KEY_HOLD ){
+			frame_oonusa	= 0;
+			frame_pinholl	= 0;
+		}
+		
+		let gpos = [GetPlayerX(),GetPlayerY()];
+		let GetEnemy = GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+		let GetAngleToEnemy = 270;
+		if( length(GetEnemy) > 0 ){
+			GetAngleToEnemy = atan2( GetEnemy[0][1] - gpos[1], GetEnemy[0][0] - gpos[0] );
+		}
+		
+		//　ショットメイン
+		if( shotF && GetPlayerState == STATE_NORMAL && IsPermitPlayerShot() ){
+			
+			//--------八雲ピンホール----------------------------------------------------------------
+			if( frame_pinholl == 1 && IsEvolution ){
+				AddOption01( [-16,-256] );
+				AddOption01( [16,-256] );
+				AddOption01( [-32,-192] );
+				AddOption01( [32,-192] );
+				AddOption01( [-48,-128] );
+				AddOption01( [48,-128] );
+				AddOption01( [-64,-64] );
+				AddOption01( [64,-64] );
+			}
+			//------------------------------------------------------------------------
+			
+			//--------エクストラショット----------------------------------------------------------------
+			if( frame > 0 && frame%2 == 0 && IsEvolution ){
+				let ex_a = 255;
+				let spd = 32;
+				CreatePLExtraShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 32, 270, 0, 100, PL01_ShotPower_CommonEX, 1, 128 );
+				CreatePLExtraShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 32, 270, 0, 100, PL01_ShotPower_CommonEX, 1, 128 );
+				HyperAura( [255,32,32] );
+				ObjSound_Play( Player_SE[0] );
+			}
+			//------------------------------------------------------------------------
+			
+			if( !slowF ){
+				//　高速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame%4 == 0 && !IsEvolution ){
+					CreatePLShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 25, 270, 0, 100, PL01_ShotPower_Common, 1, [255,255,255] );
+					CreatePLShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 25, 270, 0, 100, PL01_ShotPower_Common, 1, [255,255,255] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------パスウェイジョンニードル----------------------------------------------------------------
+				if( frame > 0 && frame%5 == 0 ){
+					CreatePLShot02_REIMU([pos[0][0],pos[0][1]], 30, 270+4, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					CreatePLShot02_REIMU([pos[1][0],pos[1][1]], 30, 270-4, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					CreatePLShot02_REIMU([pos[2][0],pos[2][1]], 30, 270, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					CreatePLShot02_REIMU([pos[3][0],pos[3][1]], 30, 270, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					CreatePLShot02_REIMU([pos[2][0],pos[2][1]], 30, 270-4, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					CreatePLShot02_REIMU([pos[3][0],pos[3][1]], 30, 270+4, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,255] );
+					ObjSound_Play( Player_SE[2] );
+				}
+				//------------------------------------------------------------------------
+			}
+			else{
+				//　低速
+				
+				//--------共通ショット----------------------------------------------------------------
+				if( frame > 0 && frame%4 == 0 && !IsEvolution ){
+					CreatePLShot01_REIMU([GetPlayerX-8,GetPlayerY-8], 30, 270, 0, 100, PL01_ShotPower_Common, 1, [255,128,128] );
+					CreatePLShot01_REIMU([GetPlayerX+8,GetPlayerY-8], 30, 270, 0, 100, PL01_ShotPower_Common, 1, [255,128,128] );
+					ObjSound_Play( Player_SE[0] );
+				}
+				//------------------------------------------------------------------------
+				
+				//--------パスウェイジョンニードル----------------------------------------------------------------
+				if( frame > 0 && frame%4 == 0 ){
+					loop( length(ID) ){
+						CreatePLShot02_REIMU([pos[i][0],pos[i][1]], 30, 270, 0, 100, PL01_ShotPower_Needle, PL01_ShotPenet_Needle, [255,255,128] );
+						i++;
+					}
+					i = 0;
+					ObjSound_Play( Player_SE[2] );
+				}
+				//------------------------------------------------------------------------
+				
+			}
+			frame++;
+			frame_oonusa++;
+			frame_zabuton++;
+			if( IsEvolution ){ frame_pinholl++; }
+			else{ frame_pinholl = 0; }
+		}
+		else{
+			frame = 0;
+		}
+		
+		cc += 2;
+		if( sca1 < 1 ){ scaA += 2; }
+		sca1 = 1 * sin( scaA );
+		if( slowF ){
+			loop( length(ID_sub) ){
+				ObjSprite2D_SetSourceRect(ID_sub[i], 32, 32, 64, 64 );
+				i++;
+			}
+			i = 0;
+			if( dis1 > 0 ){ disA += 15; }
+			else{
+				slowF = false;
+				dis1 = 0;
+				disA = 0;
+			}
+			dis1 = 1 * sin(disA);
+		}
+		else{
+			loop( length(ID_sub) ){
+				ObjSprite2D_SetSourceRect(ID_sub[i], 0, 32, 32, 64 );
+				i++;
+			}
+			i = 0;
+			if( dis1 < 1 ){ disA += 15; }
+			dis1 = 1 * sin(disA);
+		}
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		Obj_Delete(ID_sub[i]);
+		i++;
+	}
+	i = 0;
+}
+
+//　八雲ピンホール　オプション
+task AddOption01(addpos){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let scaX	= 0.6;
+	let scaY	= 0.4;
+	let move1	= 0;
+	let moveA	= 0;
+	let animC	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	
+	ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./img/eff/opt_01a.png" );
+	Obj_SetRenderPriorityI(ID, 32 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(ID, scaX*move1, scaY, 0 );
+	ObjRender_SetAlpha(ID, 128 );
+	ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( GetVirtualKeyState(VK_SHOT) != KEY_FREE && IsEvolution ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+		ObjRender_SetScaleXYZ(ID, scaX*move1 + 0.01*sin( animC*8 ), scaY + 0.01*cos( animC*8 ), 0 );
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+		
+		if( animC%4 == 0 ){
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0], GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, PL01_ShotPower_EXTRA02, 1, [255,64,255] );
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0] - 8, GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, PL01_ShotPower_EXTRA02, 1, [255,64,255] );
+			CreatePLShot02B_REIMU([GetPlayerX() + addpos[0] + 8, GetPlayerY() + addpos[1]],
+									32, 270, 0, 100, PL01_ShotPower_EXTRA02, 1, [255,64,255] );
+		}
+		
+		if( animC%4 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){
+					anim2 = 0;
+				}
+			}
+		}
+		
+		animC++;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		ObjRender_SetPosition(ID, GetPlayerX() + addpos[0], GetPlayerY() + addpos[1], 0 );
+		ObjRender_SetScaleXYZ(ID, scaX - scaX*move1 + 0.01*sin( animC*8 ), scaY + 0.01*cos( animC*8 ), 0 );
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + 128*anim2, 128 + 128*anim1, 128 + 128*anim2 );
+		
+		if( animC%4 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+				if( anim2 >= 2 ){
+					anim2 = 0;
+				}
+			}
+		}
+		
+		animC++;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　移動方向で角度変化
+function GetKeyAngle(){
+	let frag	= [false,false,false,false];
+	let angle	= 0;
+	
+	if( GetVirtualKeyState(VK_LEFT) == KEY_HOLD ){
+		frag[0] = true;
+	}
+	if( GetVirtualKeyState(VK_RIGHT) == KEY_HOLD ){
+		frag[1] = true;
+	}
+	if( GetVirtualKeyState(VK_UP) == KEY_HOLD ){
+		frag[2] = true;
+	}
+	if( GetVirtualKeyState(VK_DOWN) == KEY_HOLD ){
+		frag[3] = true;
+	}
+	
+	if( frag[0] ){
+		angle = 0;
+	}
+	if( frag[1] ){
+		angle = 180;
+	}
+	if( frag[2] ){
+		angle = 90;
+	}
+	if( frag[3] ){
+		angle = 270;
+	}
+	
+	if( frag[0] && frag[2] ){
+		angle = 45;
+	}
+	if( frag[0] && frag[3] ){
+		angle = 315;
+	}
+	if( frag[1] && frag[2] ){
+		angle = 135;
+	}
+	if( frag[1] && frag[3] ){
+		angle = 225;
+	}
+	
+	return angle;
+}

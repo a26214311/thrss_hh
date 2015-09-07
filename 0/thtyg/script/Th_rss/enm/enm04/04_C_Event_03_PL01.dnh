@@ -1,0 +1,210 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　中ボススペカ後会話　霊夢"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./../enm05/lib_enm05_setting.dnh"
+	#include "./../../lib/lib_balloon.dnh"
+	#include "./04_TalkSpeed_Setting.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 999;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy_Event(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{ }
+	
+	@MainLoop{
+		
+		//　会話タスク呼び出し
+		if( frame == 120 ){
+			Main(enm);
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　魔方陣も出てる
+		RedMagicCircle( 1, 0 );
+		
+		//　ｵｰﾗ出しとく
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm05b(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	task Main(CallID){
+		let frame	= 0;
+		let count	= 0;
+		let ctr		= 0;
+		let mpos	= [ 0, 24 ];
+		
+		//　自機組のテクスチャ　01がプレイヤー　02がパートナー
+		let player_texture01 = [
+			player_tex[0],player_tex[1],player_tex[2],player_tex[3],player_tex[4],
+			player_tex[5],player_tex[6],player_tex[7],player_tex[8],player_tex[9],
+		];
+		let player_texture02 = [
+			player_tex[10],player_tex[11],player_tex[12],player_tex[13],
+		];
+		
+		//　敵のテクスチャ
+		let enemy_texture01 = [
+			chara_tex[22],chara_tex[23],chara_tex[24],chara_tex[25],chara_tex[26],
+			chara_tex[27],chara_tex[28],chara_tex[29],chara_tex[30],chara_tex[31],
+		];
+		
+		//　共通データ作成　会話カウンタ作成
+		CreateCommonDataArea("Talk");
+		SetAreaCommonData("Talk", "counter", count );
+		
+		while( !Obj_IsDeleted(CallID) ){
+			SetForbidPlayerShot( true );
+			SetForbidPlayerSpell( true );
+			
+			//　会話表示
+			if( frame == 1 ){
+				alternative( count )
+				case( 0 ){
+					let text = [
+/* to be translated */						"いかんいかん、",
+/* to be translated */						"このような所で油を売っている場合ではありませんわ",
+					];
+					CreateCharacterTexture( [ CenX-96+mpos[0], CenY+64+mpos[1] ], [true,false], "back", false, [0,0,0], 1, count, player_texture01[0], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [true,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+300+mpos[0], CenY+64+mpos[1] ], [true,false], "front", false, [0,0,0], 1, count, enemy_texture01[3], 512 );
+					CreateBalloonManager_Reverse( [ CenX-64+mpos[0], CenY+32+mpos[1] ], 4, text, count, 0 );
+				}
+				case( 1 ){
+					let text = [
+/* to be translated */						"　あっ、何処へ行く！",
+						"NULL",
+					];
+					CreateCharacterTexture( [ CenX-96+mpos[0], CenY+64+mpos[1] ], [false,false], "front", true, [0,0,0], 1, count, player_texture01[3], 512 );
+					CreateCharacterTexture( [ CenX-128+mpos[0], CenY+64+mpos[1] ], [false,false], "back", false, [0,0,0], 0.48, count, player_texture02[0], 512 );
+					CreateCharacterTexture( [ CenX+300+mpos[0], CenY+64+mpos[1] ], [false,false], "back", true, [0,0,0], 1, count, enemy_texture01[3], 512 );
+					CreateBalloonManager( [ CenX-32+mpos[0], CenY+32+mpos[1] ], 1, text, count, 0 );
+				}
+				case( 2 ){
+				}
+				others{
+					SetAreaCommonData("Talk", "counter", 0 );
+					ObjEnemy_SetLife( CallID, 0 );
+					break;
+				}
+			}
+			
+			//　移動ウェイト
+			if( count == 2 ){
+				count = WaitForZeroSpeed( CallID, count );
+				SetAreaCommonData("Talk", "counter", count );
+			}
+			
+			//　カウンタ加算
+			frame++;
+			if( ObjMove_GetSpeed(CallID) <= 0 && count != 2 ){ ctr++; }
+			else{ ctr = 0; }
+			
+			//　会話自動進行
+			if( ctr > 0 && ctr%AutoTalk == 0 ){
+				count++;
+				frame = 0;
+				SetAreaCommonData("Talk", "counter", count );
+			}
+			
+			yield;
+		}
+		SetForbidPlayerShot( false );
+		SetForbidPlayerSpell( false );
+	}
+	
+	task _PlayMusic(){
+		//　引数2に情報セット　ｲﾍﾞﾝﾄ側でその情報を取り出す
+		//　[ テクスチャ番号(0~2), 画像rect番号 ]
+		NotifyEventAll( EV_USER + 2, [ 0, 6 ] );
+		//　流れている曲を削除
+		DeleteMusic();
+		//　BGM再生
+		PlayMusic( 6, true, 0 );
+	}
+	
+	//　速度 0 まで待機
+	function WaitForZeroSpeed( ID, count ){
+		//　アイテム放出
+		NotifyEventAll( EV_USER + 33, 0 );
+		NotifyEventAll( EV_USER + 34, 0 );
+		NotifyEventAll( EV_USER + 39, [ CenX, CenY-128 ] );
+		//　移動
+		ObjMove_SetDestAtWeight(ID, MinX-96, MinY-96, 8, 8 );
+		//　速度 0 まで待機
+		while( ObjMove_GetSpeed(ID) > 0 ){ yield; }
+		//　1秒待機
+		loop( 30 ){ yield; }
+		//　カウント + 1 を返す
+		return count + 1;
+	}

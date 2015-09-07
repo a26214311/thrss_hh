@@ -1,0 +1,573 @@
+
+
+//　スペルカード（ボム）
+//-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
+
+//　自機当たり判定
+task PlayerCollisionChange(){
+	let frame1	= 0;
+	let frame2	= 0;
+	
+	while( GetPlayerState() != STATE_END ){
+		let EVfrag	= GetAreaCommonData("MegaEvolution", "Frag", false );
+		
+		if( frame1 == 1 ){
+			//　パワーアップ時
+			ObjPlayer_ClearIntersection( objPlayer );
+			ObjPlayer_AddIntersectionCircleA1( objPlayer, 0, 0, 0.001, 40 );
+		}
+		if( frame2 == 1 ){
+			//　通常時
+			ObjPlayer_ClearIntersection( objPlayer );
+			ObjPlayer_AddIntersectionCircleA1( objPlayer, 0, 0, 1, 20 );
+		}
+		
+		if( EVfrag ){
+			frame2 = 0;
+			frame1++;
+		}
+		else{
+			frame1 = 0;
+			frame2++;
+		}
+		
+		yield;
+	}
+}
+
+//　溜め撃ち
+task CallSpellChanger(){
+	let GetPlayerID	= GetPlayerObjectID();
+	let frag		= GetAreaCommonData("MegaEvolution", "Frag", false );
+	let frame		= 0;
+	let frame_max	= 15;
+	
+	while( GetVirtualKeyState( VK_SPELL ) != KEY_FREE && frame <= frame_max && !frag ){
+		if( GetAreaCommonData("MegaEvolutionGauge", "Gauge", 0 ) < 6 ){ break; }
+		SetPlayerInvincibilityFrame(60);
+		frame++;
+		yield;
+	}
+	
+	SetPlayerSpell( GetPlayerSpell - 1 );
+	
+	if( frame < frame_max ){
+		if( !GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+			//　通常時はいつものボム
+			_CallSpell();
+		}
+		else{
+			//　パワーアップ時は強化ボム
+			_CallSpell_PowerUp();
+		}
+	}
+	else{
+		//　メガシンカ
+		MegaEvolution();
+		_CallSpell_PowerUp();
+	}
+}
+
+//　封印
+task _CallSpell(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let frame		= 0;
+	let count		= 0;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	SetPlayerInvincibilityFrame(420);
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/se_nep00.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	while( IsPermitPlayerSpell() && frame < 300 ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		
+		if( frame%16 == 0 && count < 3 ){
+			SpellCard01_Main(64 + count*128, rand(0,360) );
+			count++;
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	ObjSound_Play( PlayerEnviron_SE[3] );
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+//　永夜四重結界
+task _CallSpell_PowerUp(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let frame		= 0;
+	let count		= 0;
+	let pos			= [ GetPlayerX(), GetPlayerY() ];
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	SetPlayerInvincibilityFrame(420);
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	let obj_spell = ObjSpell_Create();
+	ObjSpell_SetDamage(obj_spell, 1 );
+	ObjSpell_Regist(obj_spell);
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/se_nep00.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	CreatePolygonCircle(pos, 4, 128, 35, [0,0], 240, [128,32,255], false );
+	CreatePolygonCircle(pos, 4, 128, 35, [45,0], 240, [128,32,255], false );
+	
+	while( IsPermitPlayerSpell() && frame < 300 ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, pos[0], pos[1], 256 );
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		Set2DCameraFocusX(CenX+rand(-4,4));
+		Set2DCameraFocusY(CenY+rand(-4,4));
+		
+		ObjSpell_SetIntersectionCircle(obj_spell, pos[0], pos[1], 128 );
+		ObjSpell_SetIntersectionCircle(obj_spell, pos[0], pos[1], 256 );
+		
+		if( frame%2 == 0 && count < 16 ){
+			let ang = [1,-1];
+			let rgb = [
+				[255,32,64],
+				[255,255,255],
+			];
+			CreatePolygonCircle(pos, 3, 32+count*32, 35, [0,ang[count%2]], count*4, rgb[count%2], true );
+			ObjSound_Play( PlayerEnviron_SE[5] );
+			count++;
+			if( count >= 16 ){
+				ascent( let i in 0..4 ){
+					CreatePolygonCircle(pos, 4+i*2, 96 + i*32, 35, [45,ang[count%2]], 240-i*30, [255,128-i*32,255], false );
+					CreatePolygonCircle(pos, 4+i*2, 96 + i*32, 35, [45,-ang[count%2]], 240-i*30, [255,128-i*32,255], false );
+				}
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	ObjSound_Play( PlayerEnviron_SE[3] );
+	Obj_Delete(obj_spell);
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+
+//　パワーアップ
+task MegaEvolution(){
+	let objManage	= GetSpellManageObject();
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData("Option", "SE_Volume", 100 );
+	let frame		= 0;
+	let count		= 0;
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	//　ゲージ管理　引数は霊夢が0　魔理沙が1　布都は2　それ以外を渡すとエラー
+	GaugeContorol( 0 );
+	
+	CreatePolygon_PlayerSUBT(objManage, 16, 384, 31, [0,-8], [255,255,255] );
+	CreatePolygon_PlayerUT(objManage, 16, 256, 31, [0,8], BLEND_ALPHA, [128,0,255] );
+	
+	SetPlayerInvincibilityFrame(180);
+	
+	ObjSound_Play( PlayerEnviron_SE[2] );
+	
+	ObjSound_Load(se, GetCurrentScriptDirectory() ~ "./../se/flare2.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	SnowflakePower( GetPlayerObjectID() );
+	
+	while( IsPermitPlayerSpell() && frame < 60 ){
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 128 );
+		
+		if( frame%1 == 0 ){
+			let fxn = frame*rand(1,6);
+			ascent( let i in 0..6 ){
+				PlayerBraid_Effect( fxn, i*60 + fxn, [1,1], [0,0,0 + i*60 + fxn], [64,64,128] );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	Set2DCameraFocusX(CenX);
+	Set2DCameraFocusY(CenY);
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+	Obj_Delete(se);
+	Obj_Delete(objManage);
+}
+
+task SpellCard01_Main(dis,D){
+	let sht		= [CreateShotA2(GetPlayerX(), GetPlayerY(), 0, 0, 0, 0, 1, 0 ),
+					CreateShotA2(GetPlayerX(), GetPlayerY(), 0, 0, 0, 0, 1, 0 ),
+					CreateShotA2(GetPlayerX(), GetPlayerY(), 0, 0, 0, 0, 1, 0 ),
+					CreateShotA2(GetPlayerX(), GetPlayerY(), 0, 0, 0, 0, 1, 0 ),
+					CreateShotA2(GetPlayerX(), GetPlayerY(), 0, 0, 0, 0, 1, 0 )];
+	let move1	= 0;
+	let moveA	= 0;
+	let r		= [255,96,96,255,255];
+	let g		= [96,255,96,255,96];
+	let b		= [96,96,255,96,255];
+	let i		= 0;
+	let cc		= 0;
+	let gpos	= [ObjMove_GetX(sht[0]),ObjMove_GetY(sht[1])];
+	
+	loop( length(sht) ){
+		ObjShot_SetAutoDelete(sht[i], false );
+		ObjShot_SetSpellResist(sht[i], true );
+		ObjShot_SetDamage(sht[i], 3 );
+		ObjShot_SetPenetration(sht[i], 512 );
+		SpellCard01(sht[i],[r[i],g[i],b[i]]);
+		i++;
+	}
+	i = 0;
+	
+	//　周囲に回転展開
+	while( IsPermitPlayerSpell() && move1 < 1 ){
+		loop( length(sht) ){
+			ObjMove_SetPosition(sht[i], GetPlayerX() + move1*dis * cos(D+i*72-move1*180),
+								GetPlayerY() + move1*dis * sin(D+i*72-move1*180) );
+			i++;
+		}
+		i = 0;
+		
+		if( move1 < 1 ){ moveA += 1; }
+		move1 = 1 * sin( moveA );
+		
+		yield;
+	}
+	
+	//　1秒待機
+	loop(30){ yield; }
+	
+	loop( length(sht) ){
+		ObjMove_SetAngle(sht[i], 270 );
+		ObjMove_SetSpeed(sht[i], 0 );
+		ObjMove_SetAcceleration(sht[i], 0.06 );
+		ObjMove_SetMaxSpeed(sht[i], 20 );
+		ObjShot_SetPenetration(sht[i], 4 );
+		i++;
+	}
+	i = 0;
+	
+	//　削除待ち
+	while( IsPermitPlayerSpell() && IsPlayerSpellActive() ){
+		loop( length(sht) ){
+			gpos = [ObjMove_GetX(sht[i]),ObjMove_GetY(sht[i])];
+			let GetEnemy	= GetEnemyIntersectionPosition( gpos[0], gpos[1], 8 );
+			
+			if( length(GetEnemy) > 0 ){
+				let GetAngleToEnemy =  atan2( GetEnemy[0][1] - gpos[1], GetEnemy[0][0] - gpos[0] );
+				
+				if( sin( GetAngleToEnemy - ObjMove_GetAngle(sht[i]) ) > 0 ){
+					ObjMove_SetAngle(sht[i], ObjMove_GetAngle(sht[i]) + 2 );
+				}
+				else{
+					ObjMove_SetAngle(sht[i], ObjMove_GetAngle(sht[i]) - 2 );
+				}
+			}
+			
+			i++;
+		}
+		i = 0;
+		yield;
+	}
+	
+	//　抜けたら削除　念の為に削除済みで無かったら削除
+	loop( length(sht) ){
+		if( !Obj_IsDeleted(sht[i]) ){
+			Obj_Delete(sht[i]);
+		}
+		i++;
+	}
+}
+
+task SpellCard01(CallID,rgb_h){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let gpos	= [ObjMove_GetX(CallID),ObjMove_GetY(CallID)];
+	let move1	= 0;
+	let moveA	= 0;
+	let r_h		= [rgb_h[0],32,rgb_h[0]];
+	let g_h		= [rgb_h[1],255,rgb_h[1]];
+	let b_h		= [rgb_h[2],255,rgb_h[2]];
+	let rang	= [rand(0,360),rand(0,360),rand(0,360)];
+	let cc		= 0;
+	let hc		= 0.02;
+	let i		= 0;
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../img/eff/pl01_bomb.png" );
+		Obj_SetRenderPriorityI(ID[i], 31 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, rang[i] + cc );
+		ObjRender_SetScaleXYZ(ID[i], move1, move1, 0 );
+		ObjRender_SetAlpha(ID[i], move1*255 );
+		ObjRender_SetColor(ID[i], r_h[i], g_h[i], b_h[i] );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 256, 256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	while( IsPermitPlayerSpell() && !Obj_IsDeleted(CallID) ){
+		gpos	= [ObjMove_GetX(CallID),ObjMove_GetY(CallID)];
+		
+		DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, gpos[0], gpos[1], 64 );
+		
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], gpos[0] + rand(-6,6), gpos[1] + rand(-6,6), 0 );
+			ObjRender_SetScaleXYZ(ID[i], move1*0.4 + hc * sin(cc), move1*0.4 + hc * sin(cc), 0 );
+			ObjRender_SetAngleXYZ(ID[i], 0, 0, rang[i] + cc * (i+1) );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetScaleXYZ(ID[0], move1*0.5 + hc * sin(cc), move1*0.5 + hc * sin(cc), 0 );
+		
+		cc += 16;
+		if( move1 < 1 ){ moveA += 2; }
+		move1 = 1 * sin( moveA );
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	if( gpos[0] > MinX && gpos[0] < MaxX && gpos[1] > MinY && gpos[1] < MaxY ){
+		SpellEffect(gpos ,rgb_h );
+		ObjSound_Play( Player_SE[5] );
+	}
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		Set2DCameraFocusX( CenX + rand(-4,4) );
+		Set2DCameraFocusY( CenY + rand(-4,4) );
+		
+		loop( length(ID) ){
+			ObjRender_SetScaleXYZ(ID[i], 0.5 + move1*0.5, 0.5 + move1*0.5, 0 );
+			ObjRender_SetAngleXYZ(ID[i], 0, 0, rang[i] + cc * (i+1) );
+			ObjRender_SetAlpha(ID[i], 255 - move1*255 );
+			i++;
+		}
+		i = 0;
+		
+		ObjRender_SetScaleXYZ(ID[0], 0.6 + move1*0.6, 0.6 + move1*0.6, 0 );
+		
+		cc += 16;
+		moveA += 5;
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+}
+
+task SpellEffect(gpos,rgb_h){
+	let ID		= [ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let move1	= 0;
+	let moveA	= 0;
+	let r_h		= [rgb_h[0],32,rgb_h[0]];
+	let g_h		= [rgb_h[1],255,rgb_h[1]];
+	let b_h		= [rgb_h[2],255,rgb_h[2]];
+	let rang	= [rand(0,360),rand(0,360),rand(0,360)];
+	let cc		= 0;
+	let i		= 0;
+	
+	loop( length(ID) ){
+		ObjRender_SetPosition(ID[i], gpos[0] + move1*(rang[i]/2) * cos(rang[i]), gpos[1] + move1*(rang[i]/2) * sin(rang[i]), 0 );
+		ObjPrim_SetTexture(ID[i], GetCurrentScriptDirectory() ~ "./../img/eff/pl01_bomb.png" );
+		Obj_SetRenderPriorityI(ID[i], 31 );
+		ObjRender_SetBlendType(ID[i], BLEND_ADD_ARGB );
+		ObjRender_SetAngleXYZ(ID[i], 0, 0, rang[i] + cc * (i+1) );
+		ObjRender_SetScaleXYZ(ID[i], 0.6 - move1*0.6, 0.6 - move1*0.6, 0 );
+		ObjRender_SetAlpha(ID[i], 255 );
+		ObjRender_SetColor(ID[i], r_h[i], g_h[i], b_h[i] );
+		ObjSprite2D_SetSourceRect(ID[i], 0, 0, 256, 256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+		i++;
+	}
+	i = 0;
+	
+	while( move1 < 1 ){
+		loop( length(ID) ){
+			ObjRender_SetPosition(ID[i], gpos[0] + move1*(rang[i]/2) * cos(rang[i]), gpos[1] + move1*(rang[i]/2) * sin(rang[i]), 0 );
+			ObjRender_SetAngleXYZ(ID[i], 0, 0, rang[i] + cc * (i+1) );
+			ObjRender_SetScaleXYZ(ID[i], 0.6 - move1*0.6, 0.6 - move1*0.6, 0 );
+			i++;
+		}
+		i = 0;
+		
+		cc += 32;
+		moveA += 2;
+		move1 = 1 * sin( moveA );
+		
+		yield;
+	}
+	loop( length(ID) ){
+		Obj_Delete(ID[i]);
+		i++;
+	}
+}
+
+//　円を作るよ
+task CreatePolygonCircle(SET_POSITION, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, SET_LONG, SET_RGB, xy_change ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let dis1		= 0;//　内円
+	let disA		= 0;
+	let dis2		= 0;//　外円
+	let disB		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let count		= 0;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 256/SET_POLYGON;
+	//　回転の早さ
+	let ang_plus	= SET_ANGLE_Z[1];
+	//　円の太さ
+	let w = 24;
+	
+	ObjRender_SetPosition(id, SET_POSITION[0], SET_POSITION[1], 0 );
+	ObjPrim_SetTexture(id, csd ~ "./../img/eff/pl01_bomb_b.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetBlendType(id, BLEND_ADD_ARGB );
+	ObjRender_SetScaleXYZ(id, 1, 1, 0 );
+	if( xy_change ){
+		ObjRender_SetAngleXYZ(id, rand(-64,64), rand(-64,64), SET_ANGLE_Z[0] );
+	}
+	else{
+		ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	}
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLESTRIP );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	ObjRender_SetAlpha(id, 192 );
+	
+	while( dis1 < 1 || dis2 < 1 ){
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, dis1*(SET_DISTANCE+w) * cos(pc+ang), dis1*(SET_DISTANCE+w) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, dis2*SET_DISTANCE * cos(pc+ang), dis2*SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect - count*32, 32 );
+			ObjPrim_SetVertexColor(id, i, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			ObjPrim_SetVertexColor(id, i2, SET_RGB[0], SET_RGB[1], SET_RGB[2] );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 512;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += ang_plus;
+		
+		if( dis1 < 1 ){ disA += 5; }
+		if( dis2 < 1 ){ disB += 5; }
+		dis1 = 1 * sin( disA );
+		dis2 = 1 * sin( disB );
+		
+		yield;
+	}
+	loop( SET_LONG ){
+		loop( ten/2 ){
+			ObjPrim_SetVertexPosition(id, i, dis1*(SET_DISTANCE+w) * cos(pc+ang), dis1*(SET_DISTANCE+w) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, dis2*SET_DISTANCE * cos(pc+ang), dis2*SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect - count*32, 32 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 256;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += ang_plus;
+		
+		yield;
+	}
+	dis1 = 0;
+	disA = 0;
+	while( dis1 < 1 ){
+		dis1 = 1 * sin( disA );
+		
+		ObjRender_SetAlpha(id, 128 - dis1*128 );
+		
+		loop( ten/2 ){
+			let disD = [ (SET_DISTANCE+w), (SET_DISTANCE) ];
+			
+			ObjPrim_SetVertexPosition(id, i, (disD[0] + dis1*(SET_DISTANCE+w)) * cos(pc+ang), (disD[0] + dis1*(SET_DISTANCE+w)) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexPosition(id, i2, (disD[1] + dis1*SET_DISTANCE) * cos(pc+ang), (disD[1] + dis1*SET_DISTANCE) * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, i, 0 + _rect - count*32, 0 );
+			ObjPrim_SetVertexUVT(id, i2, 0 + _rect - count*32, 32 );
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		= _rect + 512;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 0;
+		
+		count++;
+		ang += ang_plus;
+		
+		disA += 1;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}

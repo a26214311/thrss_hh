@@ -1,0 +1,290 @@
+
+
+//　ボススクリプト用
+//　敵関係のやつ　移動とか、テクスチャとか
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+#include "./lib_enm01.dnh"
+#include "./lib_enm_Anim01.dnh"
+#include "./lib_enm_Anim02.dnh"
+#include "./lib_enm_Anim03.dnh"
+#include "./lib_enm_Anim04.dnh"
+#include "./lib_enm_Anim05.dnh"
+#include "./lib_enm_Anim06.dnh"
+#include "./lib_enm_Anim07.dnh"
+#include "./lib_enm_Anim08.dnh"
+#include "./lib_GetSpellRank.dnh"
+
+//　体力0まで待機
+task EndEnemy(ID){
+	//　特殊アイテムのイベント呼び出し
+	NotifyEventAll( EV_USER + 31, ID );
+
+	//　ランク査定開始
+	DisplayRank_Main( ID );
+	
+	while( ObjEnemy_GetInfo(ID,INFO_LIFE) > 0 ){
+		yield;
+	}
+	
+	let pos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	
+	//　敵全弾アイテム化
+	DeleteShotAll( TYPE_ALL, TYPE_ITEM );
+	
+	//----------------------------------------------------
+	//--------------------------------------------
+	//----イベント呼び出し----------------
+	
+	//　ボスシーン取得
+	let scene = GetEnemyBossSceneObjectID();
+	
+	//　スペル取得失敗時
+	if( ObjEnemyBossScene_GetInfo( scene, INFO_IS_SPELL ) ){
+		if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) > 0 ||
+			ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) > 0 ){
+				NotifyEventAll( EV_USER + 0, 0 );
+		}
+	}
+	
+	//　ユーザ定義イベント　点アイテム放出
+	//NotifyEventAll( EV_USER + 32, 0 );
+	
+	//　ユーザ定義イベント　残機のかけら放出
+	if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) == 0 ){
+		//　このステップ中でプレイヤーが被弾していなければ、イベント呼び出し
+		NotifyEventAll( EV_USER + 33, 0 );
+	}
+	
+	//　ユーザ定義イベント　ボムのかけら放出
+	if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) == 0 ){
+		//　このステップ中にプレイヤーがボムを使用していなければ、イベント呼び出し
+		NotifyEventAll( EV_USER + 34, 0 );
+	}
+	
+	//--------------------------------------------
+	//----------------------------------------------------
+	
+
+	
+	Obj_Delete(ID);
+	
+	loop( 240 ){ yield; }
+	
+	AllSoundObjectDelete();
+	CloseScript( GetOwnScriptID() );
+}
+
+//　敵の当たり判定を登録
+task SetIntersection(ID,IsShot,IsPlayer){
+	//　当たり判定(自弾)登録
+	if( IsShot ){
+		ObjEnemy_SetIntersectionCircleToShot(enm, ObjMove_GetX(ID), ObjMove_GetY(ID), 32);
+	}
+	//　当たり判定(体当たり)登録
+	if( IsPlayer ){
+		ObjEnemy_SetIntersectionCircleToPlayer(enm, ObjMove_GetX(ID), ObjMove_GetY(ID), 24);
+	}
+}
+
+//　敵ダメージレート
+task SetDamageRate(ID,life_rate,bomb_barrier){
+	let Damage		= 0;
+	
+	let BombWait	= 0;
+
+	let bomb_rate = 175;
+	if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+		bomb_rate = 50;
+	}
+	
+	//　当たり判定付加 4秒 後から
+	loop( 240 ){
+		if( !bomb_barrier ){
+			ObjEnemy_SetDamageRate(ID, 10, BombWait );
+		}
+		else{
+			ObjEnemy_SetDamageRate(ID, 0, 0 );
+		}
+		BombWait += 10 / 240;
+		yield;
+	}
+	
+	while( !Obj_IsDeleted(ID) ){
+		if( IsPlayerSpellActive() ){
+			if( !bomb_barrier ){
+				ObjEnemy_SetDamageRate(ID, life_rate/2, bomb_rate );
+			}
+			else{
+				ObjEnemy_SetDamageRate(ID, 0, 0 );
+			}
+			Damage = 0;
+		}
+		if( Damage >= 40 ){
+			if( !bomb_barrier ){
+				ObjEnemy_SetDamageRate(ID, life_rate, bomb_rate*1.2 );
+			}
+			else{
+				ObjEnemy_SetDamageRate(ID, life_rate, 0 );
+			}
+		}
+		if( !IsPlayerSpellActive ){ Damage++; }
+		yield;
+	}
+}
+
+//　敵移動
+task EnemyMove(ID,Speed,Weight){
+	let enx		= ObjMove_GetX(ID);
+	let eny		= ObjMove_GetY(ID);
+	let rmove	= [0,0];
+	let frag	= [true,true,false];
+	
+	//　精度　無限にするとフリーズする
+	let lp		= 1;
+	
+	//　敵が移動で立ち入れないエリア　画面両端
+	let efx		= 32;
+	
+	loop( lp ){
+		
+		if( Obj_IsDeleted(ID) ){ break; }
+		
+		if( enx <= GetPlayerX() ){
+			//　パターン足りないと落ちるよ
+			if( GetPlayerX() >= GetStgFrameWidth() - efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( enx >= GetStgFrameWidth() - efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( GetPlayerX() <= efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( enx <= efx ){
+				frag[2] = true;
+				break;
+			}
+			else{
+				rmove[0] = rand(32,64);
+			}
+		}
+		else{
+			if( GetPlayerX() >= GetStgFrameWidth() - efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( enx >= GetStgFrameWidth() - efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( GetPlayerX() <= efx ){
+				frag[2] = true;
+				break;
+			}
+			else if( enx <= efx ){
+				frag[2] = true;
+				break;
+			}
+			else{
+				rmove[0] = rand(-32,-64);
+			}
+		}
+		//　必ず１回ループに入らせる
+		frag[0] = false;
+	}
+	//　Y座標抽選
+	loop( lp ){
+		
+		if( Obj_IsDeleted(ID) ){ break; }
+		
+		if( eny <= CenY-96 ){
+			rmove[1] = rand(0,32);
+		}
+		else{
+			rmove[1] = rand(0,-32);
+		}
+		frag[1] = false;
+	}
+	if( !frag[2] ){
+		ObjMove_SetDestAtWeight(ID, enx + rmove[0], eny + rmove[1], Weight, Speed );
+	}
+	else{
+		ObjMove_SetDestAtWeight(ID, GetStgFrameWidth()/2 + rand(-64,64), eny + rmove[1], Weight, Speed );
+	}
+}
+
+//　体力0まで待機　会話用
+task EndEnemy_Event(ID){
+	
+	while( ObjEnemy_GetInfo(ID,INFO_LIFE) > 0 ){
+		yield;
+	}
+	
+	let pos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+	
+	//　敵全弾アイテム化
+	DeleteShotAll( TYPE_ALL, TYPE_ITEM );
+	
+	Obj_Delete(ID);
+	
+	loop( 240 ){ yield; }
+	
+	CloseScript( GetOwnScriptID() );
+}
+
+//　自機ショットHITでスコア加算
+//　体力に応じて攻撃HIT音が鳴る
+task ShotScore(ID){
+	let count	= 0;
+	let frame	= 0;
+	
+	let ShotHitCount	= 0;
+	let ShotHitFrag		= false;
+	
+	while( !Obj_IsDeleted(ID) ){
+		
+		//　ショットヒット音再生フラグ
+		if( ShotHitCount > 0 ){
+			ShotHitFrag = true;
+		}
+		else{
+			ShotHitFrag = false;
+		}
+		
+		//　自機弾がヒットしていれば
+		if( ObjEnemy_GetInfo( ID, INFO_SHOT_HIT_COUNT ) > 0 ){
+			frame = 0;
+			ShotHitCount++;
+		}
+		else{
+			if( frame > 16 ){
+				ShotHitCount = 0;
+			}
+			frame++;
+		}
+		
+		//　ヒット音再生
+		if( ShotHitFrag ){
+			AddScore( 100 );
+			if( count > 0 && count% 3 == 0  ){
+				if( ObjEnemy_GetInfo(ID, INFO_LIFE ) <= 200 ){
+					//　消耗
+					ObjSound_Play( UtilitySE[2] );
+				}
+				else{
+					//　元気
+					ObjSound_Play( UtilitySE[1] );
+				}
+			}
+		}
+		
+		count++;
+		
+		yield;
+	}
+}

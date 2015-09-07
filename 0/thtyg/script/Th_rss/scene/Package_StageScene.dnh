@@ -1,0 +1,1089 @@
+
+
+#include "./../system/Load_AllTexture.dnh"		//　ロード済みの画像パス
+#include "./Package_TitleScene.dnh"				//　タイトルシーンを呼ぶ用
+#include "./ControlMusic.dnh"					//　BGM制御
+#include "./../lib/lib_switch.dnh"				//　本家画面推移のアレ
+#include "./../lib/lib_LoadingEffect.dnh"		//　少女祈祷中
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	TStageScene();
+	SetAreaCommonData("Trance", "BGM_Delete", true );
+}
+
+@MainLoop{ yield; }
+
+
+task TStageScene(){
+	let dirCurrent		= GetCurrentScriptDirectory();
+	let dirModule		= GetModuleDirectory();
+	let pathMainScript	= dirCurrent ~ "./../Stage.dnh";
+	let gpt				= GetAreaCommonData("System", "player_type", 0 );
+	let GetMode			= GetAreaCommonData("System", "PlayMode", "NULL" );
+	let GetDifficulty	= GetAreaCommonData("System", "Difficulty", "NULL" );
+	let ReplayPath		= GetAreaCommonData("System", "ReplayPath", "" );
+	let flg				= 0;
+	let pathPlayer		= dirModule ~ "script/player/player_rss/SRR_Pl01A.dnh";
+	let PlayerPath		= [
+		dirCurrent ~ "./../player_rss/SRR_Pl01A.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl01B.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl01C.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl02A.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl02B.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl02C.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl03A.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl03B.dnh",
+		dirCurrent ~ "./../player_rss/SRR_Pl03C.dnh",
+	];
+	
+	//　タイトル終了
+	SetAreaCommonData("System", "title_end", true );
+	//　STGシーン開始
+	SetAreaCommonData("System", "StgWorldBreak", false );
+	
+	//　BGMフラグ初期化
+	SetAreaCommonData("Trance", "BGM_Delete", false );
+	SetAreaCommonData("Trance", "BGM_Stop", false );
+	
+	//　自機確定
+	pathPlayer	= PlayerPath[ gpt ];
+	
+	//　画面遷移効果音
+	let switch_se = [
+		PlaySEsP( dirCurrent ~ "./../se/boon_pitchUP.ogg" ),
+		PlaySEsP( dirCurrent ~ "./../se/boon_pitchDOWN.ogg" ),
+	];
+	ascent( let i in 0..( length(switch_se) ) ){
+		ObjSound_Play( switch_se[i] );
+	}
+	
+	//　画面遷移
+	RenderSceneToTransitionTexture();
+	TTransition();
+	CallSwitch( 120, [32,32,64], 81 );
+	LoadingDefault_timer( 520, 430, 180 );
+	loop( 120 ){ yield; }
+	
+	ascent( i in 0..( length(switch_se) ) ){
+		Obj_Delete( switch_se[i] );
+	}
+	
+	//　ステージ初期化
+	InitializeStageScene();
+	
+	//　リプレイの時はリプレイモードにする
+	if( length(ReplayPath) > 0 ){
+		SetStageReplayFile(ReplayPath);
+	}
+	
+	//　初期ステージ設定
+	let indexStage = 1; //　ステージインデックス
+	SetStageIndex(indexStage);				//　ステージインデックス設定
+	SetStageMainScript(pathMainScript);		//　Stage呼び出し
+	SetStagePlayerScript(pathPlayer);		//　自機作成
+	StartStageScene();						//　ステージシーン開始
+	
+	//　BGM再帰奴
+	PlayMusic_Main();
+	
+	//　ステージインデックスを一時的に保存する
+	let idx = GetAreaCommonData( "System", "Stage_Index", 0 );
+	SetCommonData( "StageIndex_OLD", idx );
+	
+	loop{
+		GetMode = GetAreaCommonData("System", "PlayMode", "NULL" );
+		GetDifficulty = GetAreaCommonData("System", "Difficulty", "NULL" );
+		
+		//--------------------------------------------------------------------
+		//--------------------------------------------------------------------
+		//　一時停止した時
+		if( GetVirtualKeyState(VK_PAUSE) == KEY_PUSH ){
+			let resPause = RunPauseScene( GetMode );
+			alternative( resPause )
+			case( RESULT_RETRY ){
+				//　リトライ選択時
+				//　リプレイじゃない時、リトライ決行
+				TerminateStageScene();
+				//　ハイスコアをセーブして再帰
+				SaveHighScore();
+				TStageScene();
+				return;
+			}
+			case( RESULT_END ){
+				//　一時停止中の終了
+				TerminateStageScene();
+			}
+		}
+		//--------------------------------------------------------------------
+		//--------------------------------------------------------------------
+		
+		
+		//--------------------------------------------------------------------
+		//--------------------------------------------------------------------
+		//　ステージ終了待機
+		let stgSceneState = GetStageSceneState();
+		if(stgSceneState == STAGE_STATE_FINISHED){
+			//　ステージ終了結果
+			let stageResult = GetStageSceneResult();
+			
+			//　結果で処理分岐
+			alternative( stageResult )
+			case( STAGE_RESULT_CLEARED ){
+				//　ステージクリア時
+				if( GetMode == "Stage" ){
+					//　ステージプラクティスなら
+					if( indexStage == 1 ){
+						//　スクリプト終了のお知らせ
+						flg++;
+						SetAreaCommonData("Trance", "BGM_Stop", true );
+						SetAreaCommonData("System", "ClearSpellPractice", true );
+						TEndScene( GetMode );
+						break;
+					}
+				}
+				else if( GetMode == "Spell" ){
+					//　スペルプラクティスなら
+					if( indexStage == 1 ){
+						//　スクリプト終了のお知らせ
+						flg++;
+						TEndScene( GetMode );
+						break;
+					}
+				}
+				else{
+					//　それ以外　ってかStoryなら
+					//　StageSceneもおわり
+					//　本編の時
+					if( !IsReplay && GetMode == "Story" ){
+						//　タイトルへ戻る
+						SaveHighScore();
+						TEndScene_Clear( GetMode );
+					}
+					//　ステージプラクティスの時
+					if(!IsReplay && GetMode == "Stage" ){
+						//　ステージプラクティスの選択画面へ戻る
+						Default();
+						SetAreaCommonData("System", "title_sector", 2 );
+						TTitleScene();
+						TSelectScene( 2 );
+					}
+					//　スペルプラクティスの時
+					if(!IsReplay && GetMode == "Spell" ){
+						//　スペルプラクティスの選択画面へ戻る
+						Default();
+						SetAreaCommonData("System", "title_sector", 3 );
+						TTitleScene();
+						TSelectScene( 3 );
+					}
+					//　デバッグの時
+					if( !IsReplay && GetMode == "Debug" ){
+						//　タイトルへ戻る
+						SaveHighScore();
+						TEndScene_Clear( GetMode );
+					}
+					//　リプレイ鑑賞の時
+					if( IsReplay ){
+						//　リプレイへ戻る
+						Default();
+						SetAreaCommonData("System", "title_sector", 7 );
+						TTitleScene();
+						TSelectScene( 7 );
+					}
+					flg++;
+					break;
+				}
+			}
+			case( STAGE_RESULT_PLAYER_DOWN ){
+				//　自機残機0
+				
+				//　スペプラ以外はBGM消してもOK
+				if( GetMode != "Spell" ){
+					SetAreaCommonData("Trance", "BGM_Delete", true );
+				}
+				
+				//　本編の時はハイスコア保存
+				if( GetMode == "Story" ){
+					SaveHighScore();
+				}
+				TEndScene( GetMode );
+				flg++;
+				break;
+			}
+			case( STAGE_RESULT_BREAK_OFF ){
+				//　途中でメニュー開いて終了
+				
+				//　本編の時はハイスコア保存
+				if( GetMode == "Story" ){
+					SaveHighScore();
+				}
+				Default();
+				break;
+			}
+		}
+		//--------------------------------------------------------------------
+		//--------------------------------------------------------------------
+		
+		yield;
+	}
+	
+	TTransition();
+	
+	if( flg == 0 ){
+		//　途中でメニュー開いて終了を行った場合
+		//　本編の時
+		if( !IsReplay && GetMode == "Story" ){
+			//　タイトルへ
+			SetAreaCommonData("System", "title_sector", -1 );
+			TTitleScene();
+		}
+		//　ステプラの時
+		if( !IsReplay && GetMode == "Stage" ){
+			//　ｽﾃﾌﾟﾗへ
+			SetAreaCommonData("System", "title_sector", 2 );
+			TTitleScene();
+			TSelectScene( 2 );
+		}
+		//　スペプラの時
+		if( !IsReplay && GetMode == "Spell" ){
+			//　ｽﾍﾟﾌﾟﾗへ
+			SetAreaCommonData("System", "title_sector", 3 );
+			TTitleScene();
+			TSelectScene( 3 );
+		}
+		//　デバッグの時
+		if(!IsReplay && GetMode == "Debug" ){
+			//　タイトルへ
+			SetAreaCommonData("System", "title_sector", -1 );
+			TTitleScene();
+		}
+		//　リプレイ鑑賞の時
+		if( IsReplay ){
+			//　リプレイへ
+			Default();
+			SetAreaCommonData("System", "title_sector", 7 );
+			TTitleScene();
+			TSelectScene( 7 );
+		}
+	}
+	SaveCommonDataAreaA1("System");
+}
+
+
+
+
+
+
+
+
+//----------------------------------------------------
+// 終了シーン
+//----------------------------------------------------
+//　スペプラ、ステプラクリア時やゲームオーバー時の終了シーン
+task TEndScene( GetMode ){
+	//　ステージ終了処理
+	FinalizeStageScene();
+	
+	//　終了シーンスクリプト起動
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "../system/Default_EndScene.dnh";
+	let idScript	= LoadScript(pathScript);
+	
+	StartScript(idScript);
+	
+	while( !IsCloseScript(idScript) ){
+		yield;
+	}
+	
+	//　終了シーン結果処理
+	let result = GetScriptResult(idScript);
+	alternative( result )
+	case( RESULT_SAVE_REPLAY ){
+		//　リプレイ保存
+		TReplaySaveScene( GetMode );
+	}
+	case( RESULT_END ){
+		//　再生終了
+		Default();
+		if( !IsReplay && GetMode == "Story" ){
+			//　タイトルへ戻る
+			SetAreaCommonData("Trance", "BGM_Delete", true );
+			SetAreaCommonData("System", "title_sector", -1 );
+			TTitleScene();
+		}
+		if( !IsReplay && GetMode == "Stage" ){
+			//　ｽﾃﾌﾟﾗへ戻る
+			SetAreaCommonData("Trance", "BGM_Delete", true );
+			SetAreaCommonData("System", "title_sector", 2 );
+			TTitleScene();
+			TSelectScene( 2 );
+		}
+		if( !IsReplay && GetMode == "Spell" ){
+			//　ｽﾍﾟﾌﾟﾗへ戻る
+			SetAreaCommonData("Trance", "BGM_Delete", true );
+			SetAreaCommonData("System", "title_sector", 3 );
+			TTitleScene();
+			TSelectScene( 3 );
+		}
+		if( IsReplay ){
+			//　リプレイへ戻る
+			SetAreaCommonData("Trance", "BGM_Delete", true );
+			SetAreaCommonData("System", "title_sector", 7 );
+			TTitleScene();
+			TSelectScene( 7 );
+		}
+	}
+	case( RESULT_RETRY ){
+		//　リトライ　リプレイ中なら同じのもっかい再生
+		SetAreaCommonData("Trance", "player_fragment", 0 );
+		SetAreaCommonData("Trance", "bomb_fragment", 0 );
+		TStageScene();
+	}
+}
+
+//----------------------------------------------------
+//　本編クリア時の終了シーン
+//----------------------------------------------------
+task TEndScene_Clear( GetMode ){
+	//　ステージ終了処理
+	FinalizeStageScene();
+	
+	//　終了シーンスクリプト起動
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "../system/Default_EndScene_Clear.dnh";
+	let idScript	= LoadScript(pathScript);
+	
+	StartScript(idScript);
+	
+	while( !IsCloseScript(idScript) ){
+		yield;
+	}
+	
+	//　終了シーン結果処理
+	let result = GetScriptResult(idScript);
+	alternative( result )
+	case( RESULT_SAVE_REPLAY ){
+		//　リプ保存シーンを開く
+		TReplaySaveScene_Clear( GetMode );
+	}
+	case( RESULT_END ){
+		//　いろいろ初期化
+		Default();
+		//　タイトルへ戻る
+		SetAreaCommonData("System","title_sector",-1);
+		TTitleScene();
+	}
+}
+
+//----------------------------------------------------
+// 一時停止シーン
+//----------------------------------------------------
+function RunPauseScene( GetMode ){
+	//　BGM停止
+	if( GetMode != "Spell" ){
+		SetAreaCommonData("Trance", "BGM_Stop", true );
+	}
+	//　画面推移
+	RenderSceneToTransitionTexture();
+	//　ステージシーン停止
+	PauseStageScene( true );
+	
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "../system/Default_Pause.dnh";
+	
+	//--------------------------------
+	//一時停止シーンンスクリプト起動
+	let idScript = LoadScript( pathScript );
+	StartScript( idScript );
+	
+	//　ポーズシーンが終了するまで待機
+	while( !IsCloseScript(idScript) ){
+		yield;
+	}
+	
+	PauseStageScene( false );
+	
+	let res = GetScriptResult( idScript );
+	return res;
+}
+
+//----------------------------------------------------
+// リプレイ保存シーン
+//----------------------------------------------------
+function TReplaySaveScene( GetMode ){
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "../system/Default_ReplaySaveScene.dnh";
+	
+	//リプレイ保存シーンスクリプト起動
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+	
+	while(!IsCloseScript(idScript)){
+		yield;
+	}
+	
+	//　初期化後、タイトルへ分岐
+	SetAreaCommonData("Trance", "BGM_Delete", true );
+	Default();
+	alternative( GetMode )
+	case( "Story" ){
+		//　タイトルへ
+		SetAreaCommonData("System","title_sector",-1);
+		TTitleScene();
+	}
+	case( "Stage" ){
+		//　ｽﾃﾌﾟﾗへ
+		SetAreaCommonData("System","title_sector",2);
+		TTitleScene();
+		TSelectScene(2);
+	}
+	case( "Spell" ){
+		//　ｽﾍﾟﾌﾟﾗへ
+		SetAreaCommonData("System","title_sector",3);
+		TTitleScene();
+		TSelectScene(3);
+	}
+	others{
+		//　よくわからん時はタイトルへ
+		SetAreaCommonData("System","title_sector",-1);
+		TTitleScene();
+	}
+}
+
+//　ゲームクリア時のリプレイセーブシーン
+function TReplaySaveScene_Clear( GetMode ){
+	let csd			= GetCurrentScriptDirectory();
+	let pathScript	= csd ~ "../system/Default_ReplaySaveScene.dnh";
+	
+	SetAreaCommonData("System","PlayMode","Story");
+	
+	//リプレイ保存シーンスクリプト起動
+	let idScript = LoadScript(pathScript);
+	StartScript(idScript);
+	
+	while( !IsCloseScript(idScript) ){
+		yield;
+	}
+	//　初期化後、タイトルへ分岐
+	Default();
+	SetAreaCommonData("System","title_sector",-1);
+	TTitleScene();
+}
+
+//----------------------------------------------------
+// 画面遷移エフェクト
+//----------------------------------------------------
+function RenderSceneToTransitionTexture(){
+	//現在のシーン内容を画面遷移用テクスチャに描画
+	let textureName = GetTransitionRenderTargetName();
+	RenderToTextureA1(textureName, 0, 100, true);
+}
+
+task TTransition{
+	let textureName = GetTransitionRenderTargetName();
+	
+	let objImage = ObjPrim_Create(OBJ_SPRITE_2D); //2Dスプライトオブジェクト生成
+	Obj_SetRenderPriorityI(objImage, 100); //描画優先度を設定
+	ObjPrim_SetTexture(objImage, textureName); //テクスチャを設定
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480);
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480);
+	
+	let alpha = 255;
+	while(alpha > 0){
+		ObjRender_SetAlpha(objImage, alpha);
+		alpha -= 16;
+		yield;
+	}
+	Obj_Delete(objImage);
+}
+
+//　Packageに同じ関数があるが、このSceneはStageからしか呼ばないので多分大丈夫
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　雪の結晶
+task CreateSnowflake(CallID,pos,angle,speed,acc,mx,rgb_h,alpha,kill){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= rand(0.4,1);
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, csd ~ "./../img/effect/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 82 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && frame < kill ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetScaleXYZ(ID, sca + frame/256, sca + frame/256, 0 );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		frame++;
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+
+//　共通データ初期化
+task Default(){
+	SetAreaCommonData("System", "title_place", 0 );		//　選択位置
+	SetAreaCommonData("System", "title_act", 0 );		//　0:ﾀｲﾄﾙ
+	SetAreaCommonData("System", "title_sector", -1 );	//　メインメニュー制御
+	SetAreaCommonData("System", "title_end", false );	//　ﾀｲﾄﾙ終了フラグ
+	SetAreaCommonData("System", "stflg", false );		//　スクリプト起動許可
+	SetAreaCommonData("System", "stflg", false );		//　スクリプト起動許可
+	SetAreaCommonData("System", "R_sector", 0 );		//　難易度選択等用
+	SetAreaCommonData("System", "P_sector", 0 );		//　自機選択等用
+	SetAreaCommonData("System", "S_sector", 0 );		//　スペカ選択等用
+	SetAreaCommonData("System", "selectP", 0 );			//　自機専用選択操作
+	SetAreaCommonData("System", "select", 0 );			//　共通選択操作
+	SetAreaCommonData("System", "select2", 0 );			//　共通選択操作2
+	SetAreaCommonData("System", "Difficulty", "NULL" );	//　難易度
+	SetAreaCommonData("System", "player_type", 0 );		//　どの自機か
+	SetAreaCommonData("System", "stg_ST", 0 );			//　どのステージか
+	SetAreaCommonData("System", "StgWorldBreak", true );//　trueでstgシーン関係が消える
+	SetAreaCommonData("System", "ReplayPath", "" );		//　リプレイのパスを保存する
+	SetAreaCommonData("System", "PlayMode", "NULL" );	//　何をプレイ中か
+	SetAreaCommonData("System", "Stage_Index", 1 );		//　ステージインデックス
+	SetAreaCommonData("Trance", "player_fragment", 0 );	//　残機　かけら
+	SetAreaCommonData("Trance", "bomb_fragment", 0 );	//　ボム　かけら
+	SetAreaCommonData("Trance", "max_score", 0 );		//　最高得点
+	SetAreaCommonData("Trance", "High_Score", 0 );		//　ハイスコア
+}
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　ハイスコアとかのセーブ
+//　割とキモいコードだけど頑張って
+
+task SaveHighScore(){
+	let mode	= GetAreaCommonData("System", "PlayMode", "NULL" );
+	let rank	= GetAreaCommonData("System", "Difficulty", "NULL" );
+	let score	= GetScore();
+	let i		= 0;
+	let j		= 1;
+	let ranking;
+	let ranking2;
+	let count_d;
+	let count;
+	let stgnumd;
+	let stgnum;
+	let hidden;
+	let type;
+	
+	//　ストーリーモードのみ記録
+	if( mode == "Story" ){
+		alternative( GetPlayerID )
+		case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){	//　自機タイプ
+			alternative( rank )
+			case("Easy"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_easy2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_easy",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Normal"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_normal2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_normal",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Hard"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_hard2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_hard",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Lunatic"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_lunatic",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Extra"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_extra2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_extra",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Phantasm"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_phantasm",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("OverDrive"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl01_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl01_overdrive",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl01_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+		}
+		case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+			alternative( rank )
+			case("Easy"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_easy2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_easy",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Normal"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_normal2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_normal",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Hard"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_hard2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_hard",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Lunatic"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_lunatic",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Extra"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_extra2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_extra",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Phantasm"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_phantasm",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("OverDrive"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl02_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl02_overdrive",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl02_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+		}
+		case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+			alternative( rank )
+			case("Easy"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_easy2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_easy",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Normal"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_normal2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_normal",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Hard"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_hard2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_hard",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Lunatic"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_lunatic",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Extra"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_extra2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_extra",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("Phantasm"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_phantasm",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+			case("OverDrive"){
+				ranking		= GetAreaCommonData("Score","high_score_data_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				ranking2	= GetAreaCommonData("Score","high_score_data_pl03_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+				count_d		= GetAreaCommonData("Score","GamePlayCountD_pl03_overdrive",0);
+				count		= GetAreaCommonData("Score","GamePlayCount_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				stgnumd		= GetAreaCommonData("Score","StageNumD",0);
+				stgnum		= GetAreaCommonData("Score","StageNum_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				hidden		= GetAreaCommonData("Score","StageHidden_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+				type		= GetAreaCommonData("Score","TypeData_pl03_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+			}
+		}
+		loop( length(ranking) ){
+			if( score > ranking[i] ){
+				let scoreDh		= [
+					truncate(score%10),
+					truncate((score%100)/10),
+					truncate((score%1000)/100),
+					truncate((score%10000)/1000),
+					truncate((score%100000)/10000),
+					truncate((score%1000000)/100000),
+					truncate((score%10000000)/1000000),
+					truncate((score%100000000)/10000000),
+					truncate((score%1000000000)/100000000),
+					truncate((score%10000000000)/1000000000),
+				];
+				
+				let score11		= truncate((score%100000000000)/10000000000);
+				let score12		= truncate((score%1000000000000)/100000000000);
+				let score13		= truncate((score%10000000000000)/1000000000000);
+				if( score < 9999999999999 ){
+					let scoreD		= "";
+					let j			= 0;
+					let Dfrag		= false;
+					
+					loop( length(scoreDh) ){
+						if( scoreDh[9-j] > 0 ){
+							scoreD	= IntToString( scoreDh[9-j] );
+							Dfrag	= true;
+						}
+						j++;
+						if( Dfrag ){ break; }
+					}
+					loop( length(scoreDh) - j ){
+						scoreD = scoreD ~ IntToString( scoreDh[9-j] );
+						j++;
+					}
+					j = 0;
+					
+					ranking[i]		= ator( score );
+					ranking2[i]		= score13 * 100 + score12 * 10 + score11;
+				}
+				else{
+					ranking[i]	= 9999999999;
+					ranking2[i]	= 999;
+				}
+				count[i]	= count_d;
+				stgnum[i]	= stgnumd;
+				//　使用装備記録
+				alternative( GetPlayerID )
+				case( "SRR_PL01A" , "SRR_PL02A" , "SRR_PL03A" ){
+					type[i] = 0;
+				}
+				case( "SRR_PL01B" , "SRR_PL02B" , "SRR_PL03B" ){
+					type[i] = 1;
+				}
+				case( "SRR_PL01C" , "SRR_PL02C" , "SRR_PL03C" ){
+					type[i] = 2;
+				}
+				//　裏フラグ記録
+				if( GetAreaCommonData("Trance","Hidden_Root",false) ){
+					hidden[i]	= 1;
+				}
+				else{
+					hidden[i]	= 0;
+				}
+				break;
+			}
+			i++;
+		}
+		alternative( GetPlayerID )
+		case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){//　自機タイプ
+			alternative( rank )
+			case("Easy"){
+				SetAreaCommonData("Score","high_score_data_pl01_easy",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_easy2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_easy",count);
+				SetAreaCommonData("Score","StageNum_pl01_easy",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_easy",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_easy",type);
+			}
+			case("Normal"){
+				SetAreaCommonData("Score","high_score_data_pl01_normal",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_normal2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_normal",count);
+				SetAreaCommonData("Score","StageNum_pl01_normal",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_normal",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_normal",type);
+			}
+			case("Hard"){
+				SetAreaCommonData("Score","high_score_data_pl01_hard",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_hard2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_hard",count);
+				SetAreaCommonData("Score","StageNum_pl01_hard",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_hard",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_hard",type);
+			}
+			case("Lunatic"){
+				SetAreaCommonData("Score","high_score_data_pl01_lunatic",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_lunatic2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_lunatic",count);
+				SetAreaCommonData("Score","StageNum_pl01_lunatic",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_lunatic",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_lunatic",type);
+			}
+			case("Extra"){
+				SetAreaCommonData("Score","high_score_data_pl01_extra",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_extra2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_extra",count);
+				SetAreaCommonData("Score","StageNum_pl01_extra",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_extra",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_extra",type);
+			}
+			case("Phantasm"){
+				SetAreaCommonData("Score","high_score_data_pl01_phantasm",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_phantasm2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_phantasm",count);
+				SetAreaCommonData("Score","StageNum_pl01_phantasm",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_phantasm",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_phantasm",type);
+			}
+			case("OverDrive"){
+				SetAreaCommonData("Score","high_score_data_pl01_overdrive",ranking);
+				SetAreaCommonData("Score","high_score_data_pl01_overdrive2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl01_overdrive",count);
+				SetAreaCommonData("Score","StageNum_pl01_overdrive",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl01_overdrive",hidden);
+				SetAreaCommonData("Score","TypeData_pl01_overdrive",type);
+			}
+		}
+		case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+			alternative( rank )
+			case("Easy"){
+				SetAreaCommonData("Score","high_score_data_pl02_easy",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_easy2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_easy",count);
+				SetAreaCommonData("Score","StageNum_pl02_easy",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_easy",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_easy",type);
+			}
+			case("Normal"){
+				SetAreaCommonData("Score","high_score_data_pl02_normal",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_normal2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_normal",count);
+				SetAreaCommonData("Score","StageNum_pl02_normal",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_normal",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_normal",type);
+			}
+			case("Hard"){
+				SetAreaCommonData("Score","high_score_data_pl02_hard",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_hard2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_hard",count);
+				SetAreaCommonData("Score","StageNum_pl02_hard",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_hard",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_hard",type);
+			}
+			case("Lunatic"){
+				SetAreaCommonData("Score","high_score_data_pl02_lunatic",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_lunatic2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_lunatic",count);
+				SetAreaCommonData("Score","StageNum_pl02_lunatic",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_lunatic",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_lunatic",type);
+			}
+			case("Extra"){
+				SetAreaCommonData("Score","high_score_data_pl02_extra",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_extra2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_extra",count);
+				SetAreaCommonData("Score","StageNum_pl02_extra",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_extra",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_extra",type);
+			}
+			case("Phantasm"){
+				SetAreaCommonData("Score","high_score_data_pl02_phantasm",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_phantasm2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_phantasm",count);
+				SetAreaCommonData("Score","StageNum_pl02_phantasm",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_phantasm",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_phantasm",type);
+			}
+			case("OverDrive"){
+				SetAreaCommonData("Score","high_score_data_pl02_overdrive",ranking);
+				SetAreaCommonData("Score","high_score_data_pl02_overdrive2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl02_overdrive",count);
+				SetAreaCommonData("Score","StageNum_pl02_overdrive",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl02_overdrive",hidden);
+				SetAreaCommonData("Score","TypeData_pl02_overdrive",type);
+			}
+		}
+		case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+			alternative( rank )
+			case("Easy"){
+				SetAreaCommonData("Score","high_score_data_pl03_easy",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_easy2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_easy",count);
+				SetAreaCommonData("Score","StageNum_pl03_easy",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_easy",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_easy",type);
+			}
+			case("Normal"){
+				SetAreaCommonData("Score","high_score_data_pl03_normal",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_normal2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_normal",count);
+				SetAreaCommonData("Score","StageNum_pl03_normal",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_normal",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_normal",type);
+			}
+			case("Hard"){
+				SetAreaCommonData("Score","high_score_data_pl03_hard",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_hard2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_hard",count);
+				SetAreaCommonData("Score","StageNum_pl03_hard",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_hard",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_hard",type);
+			}
+			case("Lunatic"){
+				SetAreaCommonData("Score","high_score_data_pl03_lunatic",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_lunatic2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_lunatic",count);
+				SetAreaCommonData("Score","StageNum_pl03_lunatic",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_lunatic",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_lunatic",type);
+			}
+			case("Extra"){
+				SetAreaCommonData("Score","high_score_data_pl03_extra",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_extra2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_extra",count);
+				SetAreaCommonData("Score","StageNum_pl03_extra",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_extra",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_extra",type);
+			}
+			case("Phantasm"){
+				SetAreaCommonData("Score","high_score_data_pl03_phantasm",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_phantasm2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_phantasm",count);
+				SetAreaCommonData("Score","StageNum_pl03_phantasm",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_phantasm",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_phantasm",type);
+			}
+			case("OverDrive"){
+				SetAreaCommonData("Score","high_score_data_pl03_overdrive",ranking);
+				SetAreaCommonData("Score","high_score_data_pl03_overdrive2",ranking2);
+				SetAreaCommonData("Score","GamePlayCount_pl03_overdrive",count);
+				SetAreaCommonData("Score","StageNum_pl03_overdrive",stgnum);
+				SetAreaCommonData("Score","StageHidden_pl03_overdrive",hidden);
+				SetAreaCommonData("Score","TypeData_pl03_overdrive",type);
+			}
+		}
+	}
+	SaveCommonDataAreaA1( "Score" );
+}

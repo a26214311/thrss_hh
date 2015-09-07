@@ -1,0 +1,500 @@
+
+/*このファイルにある関数
+
+	//　スコア表示
+	Score(lay);
+	
+	//　ハイスコア表示
+	HighScore(lay);
+	
+	いずれもレイヤー指定
+*/
+
+task Score(BOOL_SCENE_CENTER,lay){
+	let seff	= [ObjPrim_Create(OBJ_SPRITE_2D),//一
+					ObjPrim_Create(OBJ_SPRITE_2D),//十
+					ObjPrim_Create(OBJ_SPRITE_2D),//百
+					ObjPrim_Create(OBJ_SPRITE_2D),//千
+					ObjPrim_Create(OBJ_SPRITE_2D),//万
+					ObjPrim_Create(OBJ_SPRITE_2D),//十万
+					ObjPrim_Create(OBJ_SPRITE_2D),//百万
+					ObjPrim_Create(OBJ_SPRITE_2D),//千万
+					ObjPrim_Create(OBJ_SPRITE_2D),//一億
+					ObjPrim_Create(OBJ_SPRITE_2D),//十億
+					ObjPrim_Create(OBJ_SPRITE_2D),//百億
+					ObjPrim_Create(OBJ_SPRITE_2D)];//千億
+	let seft	= [ObjPrim_Create(OBJ_SPRITE_2D),//間の点
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i		= 0;
+	let rgb		= [255,255,255];
+	let rgb_fl	= [rgb[0]/2,rgb[1]/2,rgb[2]/2];
+	let countC	= 0;
+	let count	= 0;
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	
+	let sca		= [0.7,0.6];
+	
+	if( BOOL_SCENE_CENTER ){
+		sca = [0.6,0.5];
+	}
+	
+	loop( length(seff) ){
+		ObjPrim_SetTexture(seff[i], path_front01 );
+		Obj_SetRenderPriorityI(seff[i], lay );
+		ObjRender_SetBlendType(seff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seff[i], sca[0], sca[0], 0 );
+		ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(seff[i]);
+		ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seff[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	loop( length(seft) ){
+		ObjPrim_SetTexture(seft[i], path_front01 );
+		Obj_SetRenderPriorityI(seft[i], lay );
+		ObjRender_SetBlendType(seft[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seft[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seft[i], sca[1], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(seft[i], 0 + 24*uv[14], 488, 24 + 24*uv[14], 512 );
+		ObjSprite2D_SetDestCenter(seft[i]);
+		ObjRender_SetColor(seft[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seft[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	while( !swb ){
+		let gpos		= [ObjRender_GetX(seff[0]),ObjRender_GetY(seff[0])];
+		let score		= [truncate(GetScore()%10),
+							truncate((GetScore()%100)/10),
+							truncate((GetScore()%1000)/100),
+							truncate((GetScore()%10000)/1000),
+							truncate((GetScore()%100000)/10000),
+							truncate((GetScore()%1000000)/100000),
+							truncate((GetScore()%10000000)/1000000),
+							truncate((GetScore()%100000000)/10000000),
+							truncate((GetScore()%1000000000)/100000000),
+							truncate((GetScore()%10000000000)/1000000000),
+							truncate((GetScore()%100000000000)/10000000000),
+							truncate((GetScore()%1000000000000)/100000000000)];
+		let swb			= GetAreaCommonData("System", "StgWorldBreak", true );
+		
+		if( countC%2 == 0 && count < 21 ){ count++; }
+		if( count%2 == 0 ){
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb_fl[0], rgb_fl[1], rgb_fl[2] );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( !BOOL_SCENE_CENTER ){
+			ObjRender_SetPosition(seff[0], MaxX+238, MinY+77, 0 );
+		}
+		else{
+			ObjRender_SetPosition(seff[0], MinX+260, MinY+38, 0 );
+		}
+		let bx = gpos[0]-12;
+		ascent( idx in 1..length( seff ) ){
+			ObjRender_SetPosition(seff[idx], bx, gpos[1], 0 );
+			bx -= 12;
+			if( idx % 3 == 2 ){ bx -= 6; }
+		}
+		/*
+		ObjRender_SetPosition(seff[2], gpos[0] - 24, gpos[1], 0 );
+		ObjRender_SetPosition(seff[3], gpos[0] - 42, gpos[1], 0 );
+		ObjRender_SetPosition(seff[4], gpos[0] - 54, gpos[1], 0 );
+		ObjRender_SetPosition(seff[5], gpos[0] - 66, gpos[1], 0 );
+		ObjRender_SetPosition(seff[6], gpos[0] - 84, gpos[1], 0 );
+		ObjRender_SetPosition(seff[7], gpos[0] - 96, gpos[1], 0 );
+		ObjRender_SetPosition(seff[8], gpos[0] - 108, gpos[1], 0 );
+		ObjRender_SetPosition(seff[9], gpos[0] - 126, gpos[1], 0 );
+		//*/
+		ObjRender_SetPosition(seft[0], gpos[0] - 34, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[1], gpos[0] - 76, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[2], gpos[0] - 118, gpos[1] + 6, 0 );
+		
+		if( GetScore() < 1000000000000 ){
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[ score[i] ], 488, 24 + 24*uv[ score[i] ], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[9], 488, 24 + 24*uv[9], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( GetScore() >= 0 ){
+			ObjRender_SetAlpha(seff[0], 255 );
+		}
+		if( GetScore() >= 10 ){
+			ObjRender_SetAlpha(seff[1], 255 );
+		}
+		if( GetScore() >= 100 ){
+			ObjRender_SetAlpha(seff[2], 255);
+		}
+		if( GetScore() >= 1000 ){
+			ObjRender_SetAlpha(seff[3], 255 );
+			ObjRender_SetAlpha(seft[0], 255 );
+		}
+		if( GetScore() >= 10000 ){
+			ObjRender_SetAlpha(seff[4], 255 );
+		}
+		if( GetScore() >= 100000){
+			ObjRender_SetAlpha(seff[5], 255 );
+		}
+		if( GetScore() >= 1000000 ){
+			ObjRender_SetAlpha(seff[6], 255 );
+			ObjRender_SetAlpha(seft[1], 255 );
+		}
+		if( GetScore() >= 10000000 ){
+			ObjRender_SetAlpha(seff[7], 255);
+		}
+		if( GetScore() >= 100000000 ){
+			ObjRender_SetAlpha(seff[8], 255);
+		}
+		if( GetScore() >= 1000000000 ){
+			ObjRender_SetAlpha(seff[9], 255 );
+			ObjRender_SetAlpha(seft[2], 255 );
+		}
+		if( GetScore() >= 10000000000 ){
+			ObjRender_SetAlpha(seff[10], 255 );
+		}
+		if( GetScore() >= 100000000000 ){
+			ObjRender_SetAlpha(seff[11], 255 );
+		}
+		
+		countC++;
+		
+		yield;
+	}
+	loop( length(seff) ){
+		Obj_Delete(seff[i]);
+		i++;
+	}
+	i = 0;
+	loop( length(seft) ){
+		Obj_Delete(seft[i]);
+		i++;
+	}
+	i= 0;
+}
+
+task HighScore(BOOL_SCENE_CENTER,lay){
+	let seff	= [ObjPrim_Create(OBJ_SPRITE_2D),//一
+					ObjPrim_Create(OBJ_SPRITE_2D),//十
+					ObjPrim_Create(OBJ_SPRITE_2D),//百
+					ObjPrim_Create(OBJ_SPRITE_2D),//千
+					ObjPrim_Create(OBJ_SPRITE_2D),//万
+					ObjPrim_Create(OBJ_SPRITE_2D),//十万
+					ObjPrim_Create(OBJ_SPRITE_2D),//百万
+					ObjPrim_Create(OBJ_SPRITE_2D),//千万
+					ObjPrim_Create(OBJ_SPRITE_2D),//一億
+					ObjPrim_Create(OBJ_SPRITE_2D),//十億
+					ObjPrim_Create(OBJ_SPRITE_2D),//百億
+					ObjPrim_Create(OBJ_SPRITE_2D)];//千億
+	let seft	= [ObjPrim_Create(OBJ_SPRITE_2D),//間の点
+					ObjPrim_Create(OBJ_SPRITE_2D),
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let uv		= [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+	let i		= 0;
+	let rgb		= [255,255,255];
+	let rgb_fl	= [rgb[0]/2,rgb[1]/2,rgb[2]/2];
+	let countC	= 0;
+	let count	= 0;
+	let frame	= 0;
+	let swb		= GetAreaCommonData("System", "StgWorldBreak", false );
+	let high	= GetAreaCommonData("Trance", "High_Score", 0 );
+	
+	let sca		= [0.7,0.6];
+	
+	if( BOOL_SCENE_CENTER ){
+		sca = [0.6,0.5];
+	}
+	
+	loop( length(seff) ){
+		ObjPrim_SetTexture(seff[i], path_front01 );
+		Obj_SetRenderPriorityI(seff[i], lay );
+		ObjRender_SetBlendType(seff[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seff[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seff[i], sca[0], sca[0], 0 );
+		ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[0], 488, 24 + 24*uv[0], 512 );
+		ObjSprite2D_SetDestCenter(seff[i]);
+		ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seff[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	loop( length(seft) ){
+		ObjPrim_SetTexture(seft[i], path_front01 );
+		Obj_SetRenderPriorityI(seft[i], lay );
+		ObjRender_SetBlendType(seft[i], BLEND_ALPHA );
+		ObjRender_SetAngleXYZ(seft[i], 0, 0, 0 );
+		ObjRender_SetScaleXYZ(seft[i], sca[1], sca[1], 0 );
+		ObjSprite2D_SetSourceRect(seft[i], 0 + 24*uv[14], 488, 24 + 24*uv[14], 512 );
+		ObjSprite2D_SetDestCenter(seft[i]);
+		ObjRender_SetColor(seft[i], rgb[0], rgb[1], rgb[2] );
+		ObjRender_SetAlpha(seft[i], 0 );
+		i++;
+	}
+	i = 0;
+	
+	//　ハイスコアセット
+	SetHighScoreData();
+	
+	while( !swb ){
+		swb		= GetAreaCommonData("System", "StgWorldBreak", true );
+		high	= GetAreaCommonData("Trance", "High_Score", 0 );
+		
+		//　ハイスコア更新時
+		if( high < GetScore() ){
+			high = GetScore();
+			frame++;
+		}
+		
+		if( frame == 1 ){ HighScore_NewRecord( lay ); }
+		
+		let gpos	= [ ObjRender_GetX(seff[0]), ObjRender_GetY(seff[0]) ];
+		let score	= [
+			truncate(high%10),
+			truncate((high%100)/10),
+			truncate((high%1000)/100),
+			truncate((high%10000)/1000),
+			truncate((high%100000)/10000),
+			truncate((high%1000000)/100000),
+			truncate((high%10000000)/1000000),
+			truncate((high%100000000)/10000000),
+			truncate((high%1000000000)/100000000),
+			truncate((high%10000000000)/1000000000),
+			truncate((high%100000000000)/10000000000),
+			truncate((high%1000000000000)/100000000000)
+		];
+		
+		//　最初の点滅
+		if( countC%2 == 0 && count < 21 ){ count++; }
+		if( count%2 == 0 ){
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb_fl[0], rgb_fl[1], rgb_fl[2] );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length( seff ) ){
+				ObjRender_SetColor(seff[i], rgb[0], rgb[1], rgb[2] );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( !BOOL_SCENE_CENTER ){
+			ObjRender_SetPosition(seff[0], MaxX+238, MinY+52, 0 );
+		}
+		else{
+			ObjRender_SetPosition(seff[0], MinX+260, MinY+23, 0 );
+		}
+		
+		let bx = gpos[0]-12;
+		ascent( idx in 1..length( seff ) ){
+			ObjRender_SetPosition(seff[idx], bx, gpos[1], 0 );
+			bx -= 12;
+			if( idx % 3 == 2 ){ bx -= 6; }
+		}
+		/*
+		ObjRender_SetPosition(seff[1], gpos[0] - 12, gpos[1], 0 );
+		ObjRender_SetPosition(seff[2], gpos[0] - 24, gpos[1], 0 );
+		ObjRender_SetPosition(seff[3], gpos[0] - 42, gpos[1], 0 );
+		ObjRender_SetPosition(seff[4], gpos[0] - 54, gpos[1], 0 );
+		ObjRender_SetPosition(seff[5], gpos[0] - 66, gpos[1], 0 );
+		ObjRender_SetPosition(seff[6], gpos[0] - 84, gpos[1], 0 );
+		ObjRender_SetPosition(seff[7], gpos[0] - 96, gpos[1], 0 );
+		ObjRender_SetPosition(seff[8], gpos[0] - 108, gpos[1], 0 );
+		ObjRender_SetPosition(seff[9], gpos[0] - 126, gpos[1], 0 );
+		//*/
+		ObjRender_SetPosition(seft[0], gpos[0] - 34, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[1], gpos[0] - 76, gpos[1] + 6, 0 );
+		ObjRender_SetPosition(seft[2], gpos[0] - 118, gpos[1] + 6, 0 );
+		
+		if( high < 1000000000000 ){
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[ score[i] ], 488, 24 + 24*uv[ score[i] ], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		else{
+			loop( length(seff) ){
+				ObjSprite2D_SetSourceRect(seff[i], 0 + 24*uv[9], 488, 24 + 24*uv[9], 512 );
+				i++;
+			}
+			i = 0;
+		}
+		
+		if( high >= 0 ){
+			ObjRender_SetAlpha(seff[0], 255 );
+		}
+		if( high >= 10 ){
+			ObjRender_SetAlpha(seff[1], 255 );
+		}
+		if( high >= 100 ){
+			ObjRender_SetAlpha(seff[2], 255);
+		}
+		if( high >= 1000 ){
+			ObjRender_SetAlpha(seff[3], 255 );
+			ObjRender_SetAlpha(seft[0], 255 );
+		}
+		if( high >= 10000 ){
+			ObjRender_SetAlpha(seff[4], 255 );
+		}
+		if( high >= 100000){
+			ObjRender_SetAlpha(seff[5], 255 );
+		}
+		if( high >= 1000000 ){
+			ObjRender_SetAlpha(seff[6], 255 );
+			ObjRender_SetAlpha(seft[1], 255 );
+		}
+		if( high >= 10000000 ){
+			ObjRender_SetAlpha(seff[7], 255);
+		}
+		if( high >= 100000000 ){
+			ObjRender_SetAlpha(seff[8], 255);
+		}
+		if( high >= 1000000000 ){
+			ObjRender_SetAlpha(seff[9], 255 );
+			ObjRender_SetAlpha(seft[2], 255 );
+		}
+		if( high >= 10000000000 ){
+			ObjRender_SetAlpha(seff[10], 255 );
+		}
+		if( high >= 100000000000 ){
+			ObjRender_SetAlpha(seff[11], 255 );
+		}
+		
+		countC++;
+		
+		yield;
+	}
+	loop( length(seff) ){
+		Obj_Delete(seff[i]);
+		i++;
+	}
+	i = 0;
+	loop( length(seft) ){
+		Obj_Delete(seft[i]);
+		i++;
+	}
+	i= 0;
+}
+
+//　ハイスコア更新
+task SetHighScoreData(){
+	if( GetAreaCommonData("System", "PlayMode", "NULL" ) != "Story" ){ return; }
+	
+	let high_score;
+	let rank = GetAreaCommonData("System", "Difficulty", "NULL" );
+	
+	alternative( GetPlayerID() )
+	case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){
+		alternative( rank )
+		case( "Easy" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_easy", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Normal" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_normal", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Hard" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_hard", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Lunatic" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Extra" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_extra", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Phantasm" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "OverDrive" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl01_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		}
+	}
+	case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+		alternative( rank )
+		case( "Easy" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_easy", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Normal" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_normal", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Hard" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_hard", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Lunatic" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Extra" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_extra", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Phantasm" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "OverDrive" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl02_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		}
+	}
+	case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+		alternative( rank )
+		case( "Easy" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_easy", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Normal" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_normal", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Hard" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_hard", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Lunatic" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_lunatic", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Extra" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_extra", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "Phantasm" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_phantasm", [0,0,0,0,0,0,0,0,0,0] );
+		}
+		case( "OverDrive" ){
+			high_score = GetAreaCommonData("Score", "high_score_data_pl03_overdrive", [0,0,0,0,0,0,0,0,0,0] );
+		}
+	}
+	SetAreaCommonData("Trance", "High_Score", high_score[0] );
+}
+
+//　ハイスコア記録更新
+task HighScore_NewRecord( lay ){
+	let text_scale = 0.7;
+	let distance = 16*text_scale;
+	let text = [ "N", "E", "W", " ", "R", "E", "C", "O", "R", "D" ];
+	let rgb = [ 255, 255, 128 ];
+	
+	ascent( i in 0..( length(text) ) ){
+		CreateText_AsciiFront( [ MaxX - 72 + i*distance, MinY+8 ], lay, text_scale, text[i], rgb, i*2 );
+	}
+}

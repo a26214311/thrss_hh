@@ -1,0 +1,101 @@
+
+
+//　背景レイヤーとか設定できます。
+//　下の方に説明あります。
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　レイヤー
+let world_layer		= 21;	//　ステージ背景
+let effect_layer	= 29;	//　エフェクト
+
+//　テクスチャ
+let dummy_path	= front_tex[10];	//　フォグ用
+let effect_path	= effect_tex[3];	//　エフェクト用テクスチャ
+
+//　雲とかのテクスチャ
+let world_effect_texture_path = [
+	world_tex[0],
+	world_tex[18],
+];
+
+//　ステージ1の背景テクスチャ
+let world01_texture_path =
+[
+	world_tex[1],
+	world_tex[2],
+	world_tex[3],
+];
+let world02_texture_path =
+[
+	world_tex[4],
+	world_tex[5],
+];
+let world03_texture_path =
+[
+	world_tex[6],
+	world_tex[7],
+	world_tex[8],
+];
+let world04_texture_path =
+[
+	world_tex[9],
+	world_tex[10],
+];
+let world05_texture_path =
+[
+	world_tex[11],
+	world_tex[12],
+	world_tex[13],
+	world_tex[14],
+];
+let world07_texture_path =
+[
+	world_tex[15],
+	world_tex[16],
+	world_tex[17],
+];
+
+//　背景用メッシュパス
+let world_mesh_path = [
+	GetCurrentScriptDirectory() ~ "../img/world/world02/tree01a.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world03/ice_mesh_01a.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world04/world04_obj_mesh.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world05/world05_obj_mesh.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world06/world06_obj01_mesh.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world06/world06_obj02_mesh.mqo",
+	GetCurrentScriptDirectory() ~ "../img/world/world06/world06_obj03_mesh.mqo",
+];
+
+//　共通データの作成　セーブはされない
+CreateCommonDataArea("StageTrance");
+//　ステージのアクティブフラグ　falseになるとステージ削除
+SetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+//　各フラグを道中側から設定して、ステージ背景を変化させる
+//　道中終了毎に全て false で初期化する
+SetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+
+#include "./lib_world01.dnh"
+#include "./lib_world02.dnh"
+#include "./lib_world03.dnh"
+#include "./lib_world04.dnh"
+#include "./lib_world05.dnh"
+#include "./lib_world06.dnh"
+#include "./lib_world07.dnh"
+#include "./lib_world08.dnh"
+#include "./lib_world_effect.dnh"
+#include "./lib_world_effectPh.dnh"
+
+//　指定位置の添え字を変更
+task ChangeStageTrance(array_num,frag){
+	let array = GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	array[ array_num ] = frag;
+	
+	SetAreaCommonData("StageTrance", "trance", array );
+}
+
+//　初期化
+task DefaultStageTrance(){
+	SetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+}

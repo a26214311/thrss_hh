@@ -1,0 +1,407 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage4　超次元「ウラシマストリーム」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm04_setting.dnh"
+	#include "./lib_enm04_effect.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　安徳ゾーン
+	let AntokuZone	= 192;
+	
+	//　制限時間
+	let SET_TIMER	= 30;
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機
+		EndEnemy(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		ShotScore(enm);
+		
+		//　スペルカード宣言
+		CallSpellCard(enm,0);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 32, 32, 32, 32 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		if( timer < 280 ){
+			SetIntersection(enm, true, true );
+		}
+		
+		//　パワー集中エフェクト
+		if( timer == 180 ){
+			Concentration03_Main(enm, power_rgb, 60 );
+		}
+		
+		//　弾幕
+		if( timer == 280 ){
+			ShotMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		else{
+			//　0でなんか発動すると困るので変な数値にする
+			count	= -52149;
+			frame	= -52149;
+			timer	= -52149;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			//　ライフ一律1000
+			SetScriptResult( 1000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			//　耐久はボーナス減少しない代わりにボーナス素点を半分に
+			SetScriptResult( SET_SCORE / 2 );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 4, 4 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　60角形　距離64　優先71　遅延120.f　色[紫]　スペル用　[外枠出現処理ON,本体出現処理ON]
+		//　"Default" or "Normal" or "SpellCard"
+		CreateLifeBar(ID, 60, 64, 71, 0, [255,255,255], "Default" , [false,false] );
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer(enm, 0, true, "BeginSpellCard", false );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm04a( enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight( enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		let spell_text = "";
+		
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "超次元「ウラシマストリーム」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "神次元「タイムカプセルトキヒメ」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "神次元「タイムカプセルトキヒメ」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "神次元「タイムカプセルトキヒメ」";
+		}
+		
+		SpellCounter( GetDifficult, 4, 4 );
+		let sct = GetSpellCounter( GetDifficult, 4, 4 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 256, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_04(ID);
+		SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		let count	= 0;
+		let frame	= 0;
+		let i		= 0;
+		let j		= 0;
+		
+		//　way数
+		let lp		= [ 0, 0 ];
+		//　角度
+		let angle	= 0;
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp			= [ 5, 6 ];
+		}
+		case( "Normal" ){
+			lp			= [ 8, 8 ];
+		}
+		case( "Hard" ){
+			lp			= [ 6, 6 ];
+			AntokuZone	= 128;
+		}
+		case( "Lunatic" ){
+			lp			= [ 10, 8 ];
+			AntokuZone	= 128;
+		}
+		case( "OverDrive" ){
+			lp			= [ 10, 10 ];
+			AntokuZone	= 128;
+		}
+		
+		//　敵透明化
+		SetAreaCommonData("anime", "alpha", 128 );
+		//　中央に移動
+		ObjMove_SetDestAtWeight(enm, CenX, CenY, 8, 1 );
+		//　削除範囲拡大
+		SetShotAutoDeleteClip( 256, 256, 256, 256 );
+		//　使い魔作成
+		CallEnemy( [ CenX,CenY ] );
+		//　時間封印エフェクト
+		TimeSealed( ID, [ CenX, MinY+40 ], [255,255,255], 0.8, BLEND_ALPHA );
+		
+		let GetTimer = ObjEnemyBossScene_GetInfo( spl, INFO_TIMERF );
+		let second = 0;
+		let shot_fr = 0;
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　渦
+			if( second >= 1 && frame%4 == 0 ){
+				ascent( i in 0..( lp[0] ) ){
+					let spos = [
+						gpos[0] + 384 * cos( angle + i*(360/lp[0]) ),
+						gpos[1] + 384 * sin( angle + i*(360/lp[0]) ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 2, angle + i*(360/lp[0]) + 180, 0, 20, ADD_BGW_BLUE_01, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[1] );
+				angle += 2;
+			}
+			
+			//　発狂1
+			if( second >= 10 && frame%64 == 0 ){
+				let ag = rand(0,360);
+				ascent( i in 0..( lp[1] ) ){
+					let spos = [
+						gpos[0] + 384 * cos( ag + i*(360/lp[1]) ),
+						gpos[1] + 384 * sin( ag + i*(360/lp[1]) ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 2, ag + i*(360/lp[1]) + 180, 0, 20, ADD_BGW_BLUE_02, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[0] );
+				SetAreaCommonData( "anime", "spa", true );
+			}
+			
+			//　発狂2
+			if( GetDifficult != "Easy" && second >= 20 && frame%32 == 0 ){
+				let ag = rand(0,360);
+				ascent( i in 0..( lp[1] ) ){
+					let spos = [
+						gpos[0] + 384 * cos( ag + i*(360/lp[1]) ),
+						gpos[1] + 384 * sin( ag + i*(360/lp[1]) ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 2, ag + i*(360/lp[1]) + 180, 0, 20, ADD_BGW_AQUA_28, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[2] );
+			}
+			
+			//　Hard以上　追加弾
+			if( GetDifficult != "Easy" && GetDifficult != "Normal" && second >= 1 && frame%128 == 0 ){
+				
+				let loop_c	= truncate( 30 - 18 * sin( shot_fr*54 ) );
+				let ag		= 0;
+				
+				ascent( i in 0..( loop_c ) ){
+					let spos = [
+						gpos[0] + 384 * cos( ag + i*(360/loop_c) ),
+						gpos[1] + 384 * sin( ag + i*(360/loop_c) ),
+					];
+					let sht = CreateShotA2( spos[0], spos[1], 1, ag + i*(360/loop_c) + 180, 0, 20, ADD_BGW_PURPLE_20, 16 );
+					NotifyEventAll( EV_USER + 40, [ sht, 16 ] );
+				}
+				ObjSound_Play( CreateShotSE[12] );
+				shot_fr++;
+			}
+			
+			//　安徳ゾーン
+			if( GetDistance( [ CenX, CenY ], [ GetPlayerX(), GetPlayerY() ] ) < AntokuZone && !IsPlayerSpellActive() ){
+				ObjEnemyBossScene_SetSpellTimer( spl, GetTimer );
+			}
+			else{
+				GetTimer = ObjEnemyBossScene_GetInfo( spl, INFO_TIMERF );
+			}
+			
+			//　弾消し
+			let CirShot = GetShotIdInCircleA2( gpos[0], gpos[1], AntokuZone, TARGET_ENEMY );
+			if( length(CirShot) > 0 ){
+				ascent( i in 0..( length(CirShot) ) ){
+					//　削除エフェクトだけ出るようにする
+					Obj_SetValue( CirShot[i], "Item_Off", true );
+					//　アイテムとして削除
+					ObjShot_ToItem( CirShot[i] );
+				}
+			}
+			
+			count++;
+			frame++;
+			if( GetDifficult == "Easy" || GetDifficult == "Normal" ){
+				if( AntokuZone > 8 ){ AntokuZone -= 0.1; }
+			}
+			else{
+				if( AntokuZone > 8 ){ AntokuZone -= 0.01; }
+			}
+			if( frame > 0 && frame%60 == 0 ){ second++; }
+			
+			yield;
+		}
+	}
+	
+	task CallEnemy( pos ){
+		let obj = [
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+			CreateEnemy_Chokurei( [32,128,255], 1.4, false ),
+		];
+		ascent( let i in 0..( length(obj) ) ){
+			let spos = [
+				pos[0] + AntokuZone * cos( i*(360/length(obj)) ),
+				pos[1] + AntokuZone * sin( i*(360/length(obj)) ),
+			];
+			ObjMove_SetPosition(obj[i], spos[0], spos[1] );
+			ChokureiEffect( obj[i], [255,255,255], 8 );
+		}
+		ObjSound_Play( CreateShotSE[5] );
+		
+		while( !Obj_IsDeleted(enm) ){
+			
+			ascent( i in 0..( length(obj) ) ){
+				let spos = [
+					pos[0] + AntokuZone * cos( i*(360/length(obj)) ),
+					pos[1] + AntokuZone * sin( i*(360/length(obj)) ),
+				];
+				ObjMove_SetPosition(obj[i], spos[0], spos[1] );
+			}
+			
+			yield;
+		}
+	}
+	
+	//　時間封印
+	task TimeSealed( CallID, gpos, rgb_array, scale, blend ){
+		let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+		let alpha	= 255;
+		let count	= 0;
+		let animC	= 0;
+		let anim1	= 0;
+		let move1	= 0;
+		let moveA	= 0;
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg4img/chokurei.png" );
+		Obj_SetRenderPriorityI(ID, 79 );
+		ObjRender_SetBlendType(ID, blend );
+		ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjSprite2D_SetSourceRect(ID, 64, 96, 192, 128 );
+		ObjSprite2D_SetDestCenter(ID);
+		
+		while( !Obj_IsDeleted(CallID) ){
+			move1 = 1 * sin( moveA );
+			
+			if( GetDistance( [ CenX, CenY ], [ GetPlayerX(), GetPlayerY() ] ) < AntokuZone && !IsPlayerSpellActive() ){
+				if( alpha < 255 ){ alpha += 15; }
+			}
+			else{
+				if( alpha > 0 ){ alpha -= 15; }
+			}
+			
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(ID, scale*2 - move1*scale, scale*2 - move1*scale, 0 );
+			ObjRender_SetAlpha(ID, move1*alpha );
+			
+			count++;
+			if( move1 < 1 ){ moveA += 5; }
+			animC++;
+			if( animC > 0 && animC%2 == 0 ){ anim1++; }
+			
+			yield;
+		}
+		while( move1 > 0 ){
+			move1 = 1 * sin( moveA );
+			
+			ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(ID, move1*scale, scale*2 - move1*scale, 0 );
+			ObjRender_SetAlpha(ID, move1*alpha );
+			
+			count++;
+			moveA += 10;
+			animC++;
+			if( animC > 0 && animC%2 == 0 ){ anim1++; }
+			
+			yield;
+		}
+		Obj_Delete( ID );
+	}

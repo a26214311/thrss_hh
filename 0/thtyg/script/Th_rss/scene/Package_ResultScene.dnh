@@ -1,0 +1,833 @@
+
+/*
+#東方弾幕風[Package]
+#Title["ポーズ"]
+#Image[""]
+#Text["ver 0.01a"]
+*/
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　リザルトシーン
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+
+
+	let State		= 0;
+	let csd			= GetCurrentScriptDirectory();
+	let EndFrag		= false;
+	let ScoreData1;
+	let ScoreData2;
+	let PlayData;
+	let StageData;
+	let HiddenData;
+	let TypeData;
+
+@Initialize{
+	SetAutoDeleteObject(true);
+	
+	TBackground();
+	ResultMain();
+	
+	SetAreaCommonData("System","select",0);
+	SetAreaCommonData("System","select2",0);
+	
+	SetScriptResult("");
+}
+
+@MainLoop{
+	yield;
+}
+
+@Finalize{
+	PlaySEsP(csd~"../se/menucancel.ogg");
+	//ClosePackage();
+}
+
+task PlaySEsP(se){
+	let sid		= ObjSound_Create;
+	let se_vol	= GetAreaCommonData("Option","SE_Volume",100);
+
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(sid,se);
+	ObjSound_SetVolumeRate(sid,se_vol);
+	ObjSound_SetLoopEnable(sid,false);
+	ObjSound_Play(sid);
+	loop(180){yield;}
+	Obj_Delete(sid);
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　背景表示
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+task TBackground{
+	let objImage	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let objText		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd 		= GetCurrentScriptDirectory();
+	let efrag		= GetAreaCommonData("System", "title_end", false );
+	let alpha1		= 0;
+	let alphaA		= 0;
+	let flg			= 0;
+	let ctr			= 0;
+	let i			= 0;
+	
+	//　背景
+	ObjPrim_SetTexture(objImage, csd ~ "../img/title/Title00_d.png" );
+	Obj_SetRenderPriorityI(objImage, 33 );
+	ObjSprite2D_SetSourceRect(objImage, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestRect(objImage, 0, 0, 640, 480 );
+	ObjRender_SetColor(objImage, 64, 64, 64 );
+	ObjRender_SetAlpha(objImage, alpha1*255 );
+	
+	//　項目名
+	ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+	ObjPrim_SetTexture(objText, csd ~ "../img/title/sl01.png" );
+	Obj_SetRenderPriorityI(objText, 35 );
+	ObjRender_SetScaleXYZ(objText, 0.6, 0.6, 0 );
+	ObjSprite2D_SetSourceRect(objText, 512, 768, 1024, 1024 );
+	ObjSprite2D_SetDestCenter(objText);
+	ObjRender_SetAlpha(objText, alpha1*255 );
+	
+	while( alpha1 < 1 && !efrag ){
+		efrag	= GetAreaCommonData("System", "title_end", false );
+		
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetPosition(objText, 320, 48 - 64 + alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, alpha1*255 );
+		ObjRender_SetAlpha(objText, alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( !efrag ){
+		efrag	= GetAreaCommonData("System", "title_end", false );
+		
+		//　キャンセルキー
+		if( ctr > 1 && GetVirtualKeyState(VK_CANCEL) == KEY_PUSH ){
+			EndFrag = true;
+			ctr = 0;
+			break;
+		}
+		
+		if( ctr%4 == 0 ){
+			let rgb_array	= [
+				[255,255,255],	//　白
+				[64,255,255],	//　水
+				[64,255,128],	//　青緑
+				[64,128,255],	//　青
+			];
+			CreateIceCrystal( [rand(0,640),rand(0,480)], rand(0.1,0.4), 270+rand(-16,16), rand(0.3,0.7), rand(120,180), rand(64,96), rgb_array, 33 );
+		}
+		
+		ctr++;
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( alpha1 < 1 && !efrag ){
+		efrag	= GetAreaCommonData("System","title_end",false);
+		
+		alpha1 = 1 * sin(alphaA);
+		
+		ObjRender_SetPosition(objText, 320, 48 - alpha1*64, 0 );
+		
+		ObjRender_SetAlpha(objImage, 255 - alpha1*255 );
+		ObjRender_SetAlpha(objText, 255 - alpha1*255 );
+		
+		alphaA += 5;
+		
+		yield;
+	}
+	Obj_Delete( objImage );
+	Obj_Delete( objText );
+	CloseScript(GetOwnScriptID());
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　メイン
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+task ResultMain{
+	let type	= 0;	//　0:霊夢 1:金かわ 2:布都
+	let stc		= 0;	//　0:Easy 1:Normal 2:Hard 3:Lunatic 4:Extra 5:Phantasm系 ~移行空き
+	let ctr		= 0;	//　一応wait用
+	let i		= 0;
+	let j		= 0;
+	let y		= 224;
+	
+	let rank_rgb_array = [
+		[ 128, 255, 128 ],
+		[ 128, 128, 255 ],
+		[ 255, 128, 128 ],
+		[ 255, 128, 255 ],
+		[ 255, 255, 128 ],	// ex
+		[ 128, 255, 255 ],	// ph
+		[ 255, 255, 255 ],	// od
+	];
+	let rank_text = [
+		"Easy",
+		"Normal",
+		"Hard",
+		"Lunatic",
+		"Extra",
+		"Phantasm",
+		"OverDrive",
+	];
+	
+	let team_rgb_array = [
+		[ 255, 192, 192 ],
+		[ 255, 255, 192 ],
+		[ 192, 255, 255 ],
+	];
+	let team_text = "";
+	
+	let rph		= GetAreaCommonData( "SaveData", "Standby_PhantasmStage", false );
+	let rph_mx	= 4;
+	
+	//　PH表示
+	if( rph ){ rph_mx = 5; }
+	//　OD表示
+	if( IsClearPhantasm() ){ rph_mx = 6; }
+	
+	loop{
+		let slt			= GetAreaCommonData("System","select",0);
+		let slt2		= GetAreaCommonData("System","select2",0);
+		
+		if( ctr == 1 ){
+			team_text = DataLoad( type, stc );
+			
+			DrawText2( [-104,102], team_rgb_array[type], type, team_text, 18, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			DrawText2( [94,128], rank_rgb_array[stc], type, rank_text[stc], 18, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			
+			DrawText( [-64,y-22], [255,255,255], type, "最高得点", 16, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			DrawText( [64,y-22], [255,255,255], type, "挑戦回数", 16, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			DrawText( [200,y-22], [255,255,255], type, "到達ステージ", 16, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			DrawText( [320,y-22], [255,255,255], type, "装備", 16, "AR P丸ゴシック体M", ALIGNMENT_CENTER );
+			
+			DrawPage( [32,110], 0.2, [255,255,255], 16, "LEFT" );
+			DrawPage( [256-48,110], 0.2, [255,255,255], 16, "RIGHT" );
+			DrawPage( [320,140-24], 0.2, [255,255,255], 16, "UP" );
+			DrawPage( [320,140+24], 0.2, [255,255,255], 16, "DOWN" );
+			
+			loop( 5 ){
+				//　ランク表示
+				DrawText( [-384-16,y+(i+1)*32], [255-i*32,255-i*32,255], type, IntToString(i+1), 16, "Highlight LET Plain:1.0", ALIGNMENT_RIGHT );
+				
+				//　00,000,000,000
+				let score		= [
+					truncate(ScoreData1[i]%10),
+					truncate((ScoreData1[i]%100)/10),
+					truncate((ScoreData1[i]%1000)/100),
+					truncate((ScoreData1[i]%10000)/1000),
+					truncate((ScoreData1[i]%100000)/10000),
+					truncate((ScoreData1[i]%1000000)/100000),
+					truncate((ScoreData1[i]%10000000)/1000000),
+					truncate((ScoreData1[i]%100000000)/10000000),
+					truncate((ScoreData1[i]%1000000000)/100000000),
+					truncate((ScoreData1[i]%10000000000)/1000000000),
+					truncate(ScoreData2[i]%10),
+					truncate((ScoreData2[i]%100)/10),
+					truncate((ScoreData2[i]%1000)/100)
+				];
+				let get_score	= "";
+				let Dfrag		= false;
+				
+				loop( length(score) ){
+					if( score[12-j] > 0 ){
+						get_score = IntToString( score[12-j] );
+						Dfrag = true;
+					}
+					j++;
+					if( Dfrag ){ break; }
+				}
+				loop( length(score) - j ){
+					alternative( 12-j )
+					case( 11 , 8 , 5 , 2 ){
+						get_score = get_score ~ "," ;
+					}
+					get_score = get_score ~ IntToString( score[12-j] );
+					j++;
+				}
+				j = 0;
+				
+				if( ScoreData1[i] >= 1000000000000 ){
+					get_score = "999,999,999,999";
+				}
+				
+				//　自機別のスコア表示
+				DrawText( [-256,y+(i+1)*32], [255-i*32,255-i*32,255], type, get_score, 16, "Highlight LET Plain:1.0", ALIGNMENT_RIGHT );
+				
+				//　自機別の総プレイ回数表示
+				DrawText( [64,y+(i+1)*32], [255-i*32,255-i*32,255], type, IntToString(PlayData[i]), 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				
+				//　更新時の到達ステージ
+				if( stc <= 3 ){
+					DrawText( [200,y+(i+1)*32], [255-i*32,255-i*32,255], type, IntToString(StageData[i]), 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				}
+				else if( stc == 4 ){
+					DrawText( [200,y+(i+1)*32], [255-i*32,255-i*32,255], type, "EX", 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				}
+				else if( stc == 5 ){
+					DrawText( [200,y+(i+1)*32], [255-i*32,255-i*32,255], type, "PH", 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				}
+				else if( stc == 6 ){
+					DrawText( [200,y+(i+1)*32], [255-i*32,255-i*32,255], type, IntToString(StageData[i]), 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				}
+				
+				//　更新時の装備表示
+				let wepon_text;
+				alternative( TypeData[i] )
+				case( 0 ){ wepon_text = "壱"; }
+				case( 1 ){ wepon_text = "弐"; }
+				case( 2 ){ wepon_text = "参"; }
+				others{ wepon_text = ""; }
+				DrawText( [320,y+(i+1)*32], [255-i*32,255-i*32,255], type, wepon_text, 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
+				
+				i++;
+			}
+			i = 0;
+		}
+		
+		//　操作系
+		if( ctr > 2 && GetVirtualKeyState(VK_RIGHT) == KEY_PUSH ){
+			type++;
+			if( type >= 3 ){ type = 0; }
+			SetAreaCommonData("System","select",type);
+			ctr = 0;
+			PlaySEsP(csd~"../se/menuselect.ogg");
+		}
+		if( ctr > 2 && GetVirtualKeyState(VK_LEFT) == KEY_PUSH ){
+			type--;
+			if( type <= -1 ){ type = 2; }
+			SetAreaCommonData("System","select",type);
+			ctr = 0;
+			PlaySEsP(csd~"../se/menuselect.ogg");
+		}
+		if( ctr > 2 && GetVirtualKeyState(VK_UP) == KEY_PUSH ){
+			stc--;
+			if( stc <= -1 ){ stc = rph_mx; }
+			SetAreaCommonData("System","select2",stc);
+			ctr = 0;
+			PlaySEsP(csd~"../se/menuselect.ogg");
+		}
+		if( ctr > 2 && GetVirtualKeyState(VK_DOWN) == KEY_PUSH ){
+			stc++;
+			if( stc > rph_mx ){ stc = 0; }
+			SetAreaCommonData("System","select2",stc);
+			ctr = 0;
+			PlaySEsP(csd~"../se/menuselect.ogg");
+		}
+		
+		ctr++;
+		
+		yield;
+	}
+}
+
+//　テキスト表示
+task DrawText( pos, rgb_array, num, char_text, size, font, alignment ){
+	let ID				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	let sca1			= 0;
+	let scaA			= 0;
+	let i				= 0;
+	
+	ObjText_SetText(ID, char_text );
+	ObjText_SetFontType(ID, font );
+	ObjText_SetFontSize(ID, size );
+	ObjText_SetFontBold(ID, false );
+	ObjText_SetHorizontalAlignment(ID, alignment );
+	ObjText_SetMaxWidth(ID, 450 );
+	ObjText_SetFontBorderWidth(ID, 1 );
+	ObjText_SetFontBorderType(ID, BORDER_FULL );
+	ObjText_SetFontBorderColor(ID, 10, 10, 10 );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	Obj_SetRenderPriorityI(ID, 34 );
+	
+	if( num == slt ){
+		ObjText_SetFontColorTop(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjText_SetFontColorBottom(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	}
+	else{
+		ObjText_SetFontColorTop(ID, 128, 128, 128 );
+		ObjText_SetFontColorBottom(ID, 64, 64, 64 );
+	}
+	
+	while( sca1 < 1 && char_text != "0" ){
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetScaleXYZ(ID, 2-sca1, sca1, 0 );
+		ObjRender_SetAlpha(ID, sca1*255 );
+		
+		scaA += 10;
+		
+		yield;
+	}
+	while( char_text != "0" && !EndFrag ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		
+		if( stc != slt || stc2 != slt2 || State != 0 ){ break; }
+		
+		yield;
+	}
+	while( sca1 > 0 && char_text != "0" ){
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetScaleXYZ(ID, 2-sca1, 0+sca1, 0 );
+		ObjRender_SetAlpha(ID, sca1*255 );
+		
+		scaA += 10;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　太字、明滅なし
+task DrawText2( pos, rgb_array, num, char_text, size, font, alignment ){
+	let ID				= ObjText_Create();
+	let INDEX_ACTIVE	= 0;
+	let INDEX_WAIT		= 1;
+	let alpha1			= 0;
+	let alphaA			= 0;
+	let stc				= GetAreaCommonData("System","select",0);
+	let stc2			= GetAreaCommonData("System","select2",0);
+	let slt				= GetAreaCommonData("System","select",0);
+	let slt2			= GetAreaCommonData("System","select2",0);
+	let sca1			= 0;
+	let scaA			= 0;
+	let i				= 0;
+	
+	ObjText_SetText(ID, char_text );
+	ObjText_SetFontType(ID, font );
+	ObjText_SetFontSize(ID, size );
+	ObjText_SetFontBold(ID, true );
+	ObjText_SetHorizontalAlignment(ID, alignment );
+	ObjText_SetMaxWidth(ID, 450 );
+	ObjText_SetFontBorderWidth(ID, 1 );
+	ObjText_SetFontBorderType(ID, BORDER_FULL );
+	ObjText_SetFontBorderColor(ID, 10, 10, 10 );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	Obj_SetRenderPriorityI(ID, 34 );
+	
+	if( num == slt ){
+		ObjText_SetFontColorTop(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+		ObjText_SetFontColorBottom(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	}
+	else{
+		ObjText_SetFontColorTop(ID, 128, 128, 128 );
+		ObjText_SetFontColorBottom(ID, 64, 64, 64 );
+	}
+	
+	while( sca1 < 1 ){
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetScaleXYZ(ID, 2-sca1, sca1, 0 );
+		ObjRender_SetAlpha(ID, sca1*255 );
+		
+		scaA += 10;
+		
+		yield;
+	}
+	while( !EndFrag ){
+		slt		= GetAreaCommonData("System","select",0);
+		slt2	= GetAreaCommonData("System","select2",0);
+		
+		if( stc != slt || stc2 != slt2 || State != 0) { break; }
+		
+		yield;
+	}
+	while( sca1 > 0 ){
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetScaleXYZ(ID, 2-sca1, sca1, 0 );
+		ObjRender_SetAlpha(ID, sca1*255 );
+		
+		scaA += 10;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　矢印みたいなやつ
+task DrawPage( pos, sca, rgb_array, num, char_v ){
+	let csd 	= GetCurrentScriptDirectory();
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let eflg	= GetAreaCommonData("System","title_end",false);
+	let Ssector	= GetAreaCommonData("System","S_sector",0);
+	let stc		= GetAreaCommonData("System","select",0);
+	let stc2	= GetAreaCommonData("System","select2",0);
+	let slt		= GetAreaCommonData("System","select",0);
+	let slt2	= GetAreaCommonData("System","select2",0);
+	let cc		= 0;
+	let alpha1	= 0;
+	let alphaA	= 0;
+	
+	ObjPrim_SetTexture(ID, csd~"../img/title/page.png" );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, 34 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 1, 128, 128 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !EndFrag ){
+		slt		= GetAreaCommonData( "System", "select", 0 );
+		slt2	= GetAreaCommonData( "System", "select2", 0 );
+		Ssector	= GetAreaCommonData( "System", "S_sector", 0 );
+		
+		if( stc != slt || stc2 != slt2 || State != 0 ){ break; }
+		
+		if( char_v== "LEFT" ){
+			ObjRender_SetPosition(ID, pos[0]-2*sin(cc), pos[1], 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, -90 );
+		}
+		else if( char_v== "RIGHT" ){
+			ObjRender_SetPosition(ID, pos[0]+2*sin(cc), pos[1], 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, 90 );
+		}
+		else if( char_v== "UP" ){
+			ObjRender_SetPosition(ID, pos[0], pos[1]-2*sin(cc), 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, 0);
+		}
+		else if( char_v== "DOWN" ){
+			ObjRender_SetPosition(ID, pos[0], pos[1]+2*sin(cc), 0 );
+			ObjRender_SetAngleXYZ(ID, 0, 0, 180 );
+		}
+		
+		cc += 8;
+		
+		yield;
+	}
+	while( alpha1 < 1 && !EndFrag ){
+		alpha1 = 1 * sin( alphaA );
+		
+		ObjRender_SetAlpha(ID, 255 - alpha1*255 );
+		
+		alphaA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//　ユーティリティ
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+
+
+//　氷クリスタルっぽいもの
+task CreateIceCrystal( pos, speed, angle, scale, kill, alpha, rgb_array, layer ){
+	let obj		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let r_type	= 2;
+	let count	= 0;
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(obj, csd ~ "../img/effect/ice01b.png" );
+	ObjRender_SetBlendType(obj, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(obj, layer );
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetScaleXYZ(obj, scale, scale, 0 );
+	ObjPrim_SetVertexCount(obj, 4 );
+	ObjPrim_SetVertexPosition(obj, 0, -32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 1, -32, 32, 0 );
+	ObjPrim_SetVertexPosition(obj, 2, 32, -32, 0 );
+	ObjPrim_SetVertexPosition(obj, 3, 32, 32, 0 );
+	ObjPrim_SetVertexUVT(obj, 0, 0, 64 );
+	ObjPrim_SetVertexUVT(obj, 1, 0, 128 );
+	ObjPrim_SetVertexUVT(obj, 2, 64, 64 );
+	ObjPrim_SetVertexUVT(obj, 3, 64, 128 );
+	
+	while( count < kill ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0], rgb_array[w][1], rgb_array[w][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(1,2)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(obj, pos[0] + dis * cos(angle), pos[1] + dis * sin(angle), 0 );
+		if( count%r_type == 0 ){
+			ascent( let i in 0..4 ){
+				ObjPrim_SetVertexColor(obj, i, rgb_array[i][0], rgb_array[i][1], rgb_array[i][2] );
+				ObjPrim_SetVertexAlpha(obj, i, move1*alpha );
+			}
+		}
+		else{
+			ascent( let i in 0..4 ){
+				let w = truncate( (i+count)%4 );
+				ObjPrim_SetVertexColor(obj, i, rgb_array[w][0]/1.4, rgb_array[w][1]/1.4, rgb_array[w][2]/1.4 );
+				ObjPrim_SetVertexAlpha(obj, i, move1*(alpha/rand(2,4)) );
+			}
+		}
+		
+		count++;
+		dis += speed;
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+
+//　スコアデータ読み込み　チーム名が返る
+function DataLoad( type, stc ){
+	let text;
+	
+	alternative( type )
+	case( 0 ){
+		//　霊夢
+		alternative( stc )
+		case( 0 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_easy2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_easy",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 1 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_normal2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_normal",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 2 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_hard2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_hard",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 3 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 4 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_extra2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_extra",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 5 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl01_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 6 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl01_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl01_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+			TypeData	= GetAreaCommonData("Score","TypeData_pl01_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		text = "博麗 霊夢";
+	}
+	case( 1 ){
+		//　金かわ
+		alternative( stc )
+		case( 0 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_easy2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_easy",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 1 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_normal2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_normal",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 2 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_hard2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_hard",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 3 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 4 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_extra2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_extra",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 5 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl02_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 6 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl02_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl02_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+			TypeData	= GetAreaCommonData("Score","TypeData_pl02_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		text = "霧雨 魔理沙";
+	}
+	case( 2 ){
+		//　布都
+		alternative( stc )
+		case( 0 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_easy2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_easy",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_easy",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 1 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_normal2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_normal",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_normal",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 2 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_hard2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_hard",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_hard",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 3 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_lunatic2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_lunatic",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_lunatic",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 4 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_extra2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_extra",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_extra",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 5 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_phantasm2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= GetAreaCommonData("Score","StageHidden_pl03_phantasm",[0,0,0,0,0,0,0,0,0,0]);
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_phantasm",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		case( 6 ){
+			ScoreData1	= GetAreaCommonData("Score","high_score_data_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			ScoreData2	= GetAreaCommonData("Score","high_score_data_pl03_overdrive2",[0,0,0,0,0,0,0,0,0,0]);
+			PlayData	= GetAreaCommonData("Score","GamePlayCount_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			StageData	= GetAreaCommonData("Score","StageNum_pl03_overdrive",[0,0,0,0,0,0,0,0,0,0]);
+			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+			TypeData	= GetAreaCommonData("Score","TypeData_pl03_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
+		}
+		text = "物部 布都";
+	}
+	return text;
+}
+
+
+//　何れかの自機がPHをクリア済み
+function IsClearPhantasm(){
+	let IsClear = [
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL01C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　霊夢
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL02C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　魔理沙
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03A", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03B", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+		GetAreaCommonData("SaveData", "Clear_PhantasmStage_PL03C", false ),		//　ﾌｧﾝﾀｽﾞﾑｸﾘｱ　布都
+	];
+	
+	ascent( let i in 0..length(IsClear) ){
+		if( IsClear[i] ){ return true; }
+	}
+	
+	return false;
+}

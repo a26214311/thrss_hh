@@ -1,0 +1,342 @@
+//#東方弾幕風
+#ScriptVersion[3]
+#Title["桃源宮　stage6　「魂を掬う救済者」系"]
+#Text[""]
+#System["script/Th_rss/system/System_Main.dnh"]
+#Image[""]
+#Background[""]
+	
+	//　ライブラリ管理ファイル
+	#include "./../lib_Control.dnh"
+	#include "./lib_enm06_setting.dnh"
+	#include "./lib_enm06_effect.dnh"
+	#include "./06_SoulSaver_Enemy.dnh"
+	
+	#include "./../../lib/lib_balloon.dnh"
+	#include "./06_SoulSaver_Event.dnh"
+	
+	let enm;
+	let spl;
+	
+	//　カウンタ
+	let frame		= 0;
+	let count		= 0;
+	let timer		= 0;
+	
+	//　制限時間
+	let SET_TIMER	= 180;
+	
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	//　このスペカ中でしか使ってない系
+	
+	//　段階
+	let act			= 0;
+	
+	//　グローバルなカウンタ
+	let gl_count	= 0;
+	
+	//　皇女 垂神
+	let enm04;
+	let enm05;
+	
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	
+	@Initialize{
+		//　ボス生成
+		enm	= ObjEnemy_Create(OBJ_ENEMY_BOSS);
+		ObjEnemy_SetDamageRate(enm, 0, 0 );
+		ObjEnemy_Regist(enm);
+		
+		//　初期化
+		EnemyInitialize(enm);
+		
+		//　体力0まで待機、このスペルのみ特殊処理
+		EndEnemy_(enm);
+		
+		//　敵ダメージレート 第2引数:ボムバリア
+		ShotScore(enm);
+		
+		//　削除上限
+		SetShotAutoDeleteClip( 64, 64, 64, 64 );
+	}
+	
+	@Loading{
+		//　弾データ読み込み　ALPHAとADD
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data.dnh" );
+		LoadEnemyShotData( csd ~ "./../../lib/lib_bullet_data_ADD.dnh" );
+	}
+	
+	@MainLoop{
+		//　敵の当たり判定
+		SetIntersection( enm, true, true );
+		
+		if( timer == 90 ){
+			//　皇女 垂神 出現
+			InitializeFamily();
+		}
+		
+		//　ｲﾍﾞﾝﾄ開始
+		if( timer == 180 ){
+			EventMain( enm );
+		}
+		
+		//　カウンタ
+		if( !Obj_IsDeleted(enm) ){
+			count++;
+			frame++;
+			timer++;
+		}
+		
+		yield;
+	}
+	
+	@Event{
+		alternative( GetEventType() )
+		case( EV_REQUEST_LIFE ){
+			SetScriptResult( 3000 );
+		}
+		case( EV_REQUEST_TIMER ){
+			//　制限時間
+			SetScriptResult( SET_TIMER );
+		}
+		case( EV_REQUEST_SPELL_SCORE ){
+			//　スペルカードボーナス
+			SetScriptResult( SET_SCORE );
+		}
+		case( EV_GAIN_SPELL ){
+			//　スペル取得
+			SpellCounterGet( GetDifficult, 6, 6 );
+		}
+		case( EV_REQUEST_IS_DURABLE_SPELL ){
+			SetScriptResult( true );
+		}
+	}
+	
+	@Finalize{ }
+	
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+	//　task色々
+	
+	task EnemyInitialize(ID){
+		//　アニメーション用共通データ作成
+		CreateCommonDataArea("anime");
+		SetAreaCommonData("anime","spa",false);
+		
+		//　制限時間 3 分位に設定
+		ObjEnemyBossScene_SetSpellTimer( GetEnemyBossSceneObjectID(), SET_TIMER * 60 );
+		
+		//　type　delay
+		//　0:戦闘開始　1:戦闘継続
+		RedMagicCircle( 1, 0 );
+		Aura(ID, 8, aura_rgb[0], aura_rgb[1] );
+		//　画像パスだけ変えればいいんじゃないかな
+		EnemyDisplay_Enm06a(enm, true, enemy_tex_path );
+		ObjMove_SetDestAtWeight(enm, CenX, CenY-96, 8, 8 );
+	}
+	
+	task CallSpellCard(ID,long){
+		wait(long);
+		spl	= GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell( spl );
+		
+		//　親ID　表示遅延　bool 移動効果　char 移動効果種別　bool フェードイン
+		//　"BeginSpellCard" or "EndSpellCard"
+		SetDrawTimer( ID, 280, true, "BeginSpellCard", true );
+		
+		let spell_text = "";
+		alternative( GetDifficult )
+		case( "Easy", "Normal" ){
+/* to be translated */			spell_text = "「魂を掬う救済者」";
+		}
+		case( "Hard" ){
+/* to be translated */			spell_text = "「桃源郷創世」";
+		}
+		case( "Lunatic" ){
+/* to be translated */			spell_text = "「桃源郷創世」";
+		}
+		case( "OverDrive" ){
+/* to be translated */			spell_text = "_(:3 」∠ )_";
+		}
+		
+		SpellCounter( GetDifficult, 6, 6 );
+		let sct = GetSpellCounter( GetDifficult, 6, 6 );
+		
+		CutinSP2(ID, spell_text, 0, 0, true );
+		SpellCardCutin(ID, "TIREIDEN", 220, 192, [1,1], enemy_cutin_path, 512, 512, true );
+		SpellCardBonusDisplay(spl,ID );
+		SpellCardHistoryDisplay(ID, sct[1], sct[0] );
+		SetBackGroundEffect_06(ID);
+		//SpellCardMagicTimer(ID);
+	}
+	
+	function wait( long ){
+		loop( long ){ yield; }
+	}
+	
+	//　ショットメイン
+	task ShotMain( ID ){
+		
+		//　way数とか
+		let lp = [
+			0, 0, 0, 0 //　桃姫 0丸弾 1細弾 2光弾 3発狂炎弾
+		];
+		
+		alternative( GetDifficult )
+		case( "Easy" ){
+			lp = [ 4, 8, 12, 16 ];
+		}
+		case( "Normal" ){
+			lp = [ 8, 8, 16, 30 ];
+		}
+		case( "Hard" ){
+			lp = [ 16, 15, 20, 40 ];
+		}
+		case( "Lunatic" ){
+			lp = [ 16, 18, 28, 54 ];
+		}
+		case( "OverDrive" ){
+			lp  = [ 16, 18, 20, 40 ];
+		}
+		
+		while( !Obj_IsDeleted( ID ) ){
+			let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+			
+			//　移動
+			if( gl_count == 60 ){
+				SetEnemyPosition( act, lp );
+			}
+			
+			//　戦闘準備と攻撃開始
+			if( gl_count == 160 ){
+				alternative( act )
+				case( 0 ){
+					Enm04_AttackMain;
+				}
+				case( 1 ){
+					Enm05_AttackMain;
+				}
+				case( 2 ){
+					Enm06_AttackMain( lp );
+				}
+			}
+			
+			gl_count++;
+			
+			yield;
+		}
+	}
+	
+	task SetEnemyPosition( act, lp ){
+		alternative( act )
+		case( 0 ){	//　段階 皇女
+			ObjMove_SetDestAtWeight( enm, MinX-256, CenY-128, 8, 8 );
+			ObjMove_SetDestAtWeight( enm04, CenX, CenY-96, 8, 8 );
+			ObjMove_SetDestAtWeight( enm05, MaxX+256, CenY-128, 8, 8 );
+			SetEffect01( enm04 );
+			Concentration03_Main( enm04, boss4_power_rgb, 60 );
+		}
+		case( 1 ){	//　段階 垂神
+			ObjMove_SetPosition( enm05, MaxX+128, MinY-128 );
+			ObjMove_SetDestAtWeight( enm05, CenX, CenY-96, 8, 8 );
+			SetEffect01( enm05 );
+			Concentration03_Main( enm05, boss5_power_rgb, 60 );
+		}
+		case( 2 ){	//　段階 桃姫
+			EnemyEnable( enm, lp );
+		}
+	}
+	
+	//　桃姫出現
+	task EnemyEnable( ID, lp ){
+		ObjSound_Play( CreateShotSE[5] );
+		loop( 120 ){
+			WorldShake_Single( 8, 4 );
+			yield;
+		}
+		WorldShake_Single( 30, 16 );
+		ObjMove_SetPosition( enm, CenX, CenY-96 );
+		
+		ascent( let i in 0..6 ){
+			let way = lp[1]*2;
+			ascent( let j in 0..way ){
+				let spos = [
+					[ ObjMove_GetX(enm), ObjMove_GetY(enm) ],
+					[
+						ObjMove_GetX(enm) + 32 * cos(270 + j*(360/way) + (360/way)/2),
+						ObjMove_GetY(enm) + 32 * sin(270 + j*(360/way) + (360/way)/2),
+					],
+				];
+				CreateShot01( spos[0], 3+i*0.6, 270 + j*(360/way), -0.04, 1, ADD_BGW_RED_27, 32 );
+				CreateShot01( spos[1], 3+i*0.6, 270 + j*(360/way) + (360/way)/2, -0.01, 1, ADD_BGW_RED_22, 32 );
+			}
+		}
+		
+		SetEffect01( enm );
+		ObjSound_Play( CreateShotSE[8] );
+	}
+	
+	//　波紋エフェクト
+	task SetEffect01( ID ){
+		FamilyEffect( ID, [255,255,255], 32 );
+		ObjSound_Play( CreateShotSE[7] );
+	}
+
+	//　ラスペのみの特殊処理（最終形態撃ち込み結晶無し）
+	task EndEnemy_(ID){
+		
+		//　ランク査定開始
+		DisplayRank_Main( ID );
+		
+		while( ObjEnemy_GetInfo(ID,INFO_LIFE) > 0 ){
+			yield;
+		}
+		
+		let pos = [ObjMove_GetX(ID),ObjMove_GetY(ID)];
+		
+		//　敵全弾アイテム化
+		DeleteShotAll( TYPE_ALL, TYPE_ITEM );
+		
+		//----------------------------------------------------
+		//--------------------------------------------
+		//----イベント呼び出し----------------
+		
+		//　ボスシーン取得
+		let scene = GetEnemyBossSceneObjectID();
+		
+		//　スペル取得失敗時
+		if( ObjEnemyBossScene_GetInfo( scene, INFO_IS_SPELL ) ){
+			if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) > 0 ||
+				ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) > 0 ){
+					NotifyEventAll( EV_USER + 0, 0 );
+			}
+		}
+		
+		//　ユーザ定義イベント　点アイテム放出
+		//NotifyEventAll( EV_USER + 32, 0 );
+		
+		//　ユーザ定義イベント　残機のかけら放出
+		if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SHOOTDOWN_COUNT ) == 0 ){
+			//　このステップ中でプレイヤーが被弾していなければ、イベント呼び出し
+			NotifyEventAll( EV_USER + 33, 0 );
+		}
+		
+		//　ユーザ定義イベント　ボムのかけら放出
+		if( ObjEnemyBossScene_GetInfo( scene, INFO_PLAYER_SPELL_COUNT ) == 0 ){
+			//　このステップ中にプレイヤーがボムを使用していなければ、イベント呼び出し
+			NotifyEventAll( EV_USER + 34, 0 );
+		}
+		
+		//--------------------------------------------
+		//----------------------------------------------------
+		
+		Obj_Delete(ID);
+		
+		loop( 240 ){ yield; }
+		
+		AllSoundObjectDelete();
+		CloseScript( GetOwnScriptID() );
+	}
+	

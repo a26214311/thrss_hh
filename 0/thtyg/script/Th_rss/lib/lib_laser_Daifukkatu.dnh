@@ -1,0 +1,214 @@
+
+
+//　大復活レーザー
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+//　大復活レーザー　ID返るので状況に応じて動きセット
+function CreateDaifukkatuLaser01(CallID,gpos,angle,length_,width,color,bool_regist,delay,kill){
+	let obj		= ObjShot_Create(OBJ_STRAIGHT_LASER);
+	
+	ObjMove_SetPosition(obj, gpos[0], gpos[1] );
+	ObjStLaser_SetSource(obj, false );
+	ObjStLaser_SetAngle(obj, angle );
+	ObjLaser_SetRenderWidth(obj, width );
+	ObjLaser_SetLength(obj, length_ );
+	ObjShot_SetSpellResist(obj, bool_regist );
+	ObjShot_SetDelay(obj, delay );
+	ObjShot_SetAutoDelete(obj, false );
+	ObjShot_SetGraphic(obj, ADD_BGW_WHITE_29 );
+	ObjRender_SetColor(obj, 0, 0, 0 );
+	ObjShot_Regist(obj);
+	
+	CreateDaifukkatuLaser_Main(CallID,length_,width,color,bool_regist,delay,kill,obj);
+	
+	return obj;
+}
+
+task CreateDaifukkatuLaser_Main(CallID,DefaultLength,width,color,bool_regist,delay,kill,obj){
+	let source	= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー光源
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let laser	= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー身
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let tip		= [ObjPrim_Create(OBJ_SPRITE_2D),		//　レーザー先端
+					ObjPrim_Create(OBJ_SPRITE_2D)];
+	let gpos	= [ObjMove_GetX(obj),ObjMove_GetY(obj)];
+	let angle	= ObjStLaser_GetAngle(obj);
+	let length_	= ObjLaser_GetLength(obj);
+	let sca		= [width/2/10 - 0.2, width/2/10 - 0.4];	//　レーザーの太さと大雑把に合わせる
+	let scaXD	= [0.2,0.1];							//　default width
+	let move1	= 0;
+	let moveA	= 0;
+	let move2	= 0;
+	let moveB	= 0;
+	let timer	= 0;
+	let i		= 0;
+	
+	loop( length(source) ){
+		//　光源
+		ObjPrim_SetTexture(source[i], GetCurrentScriptDirectory ~ "../img/effect/enm_effect01.png" );
+		Obj_SetRenderPriorityI(source[i], 49 );
+		ObjSprite2D_SetSourceRect(source[i], 0, 320, 64, 384 );
+		ObjSprite2D_SetDestCenter(source[i]);
+		//　身
+		ObjPrim_SetTexture(laser[i], GetCurrentScriptDirectory ~ "../img/effect/laser_x32.png" );
+		Obj_SetRenderPriorityI(laser[i], 49 );
+		//　先端
+		ObjPrim_SetTexture(tip[i], GetCurrentScriptDirectory ~ "../img/effect/enm_effect01.png" );
+		Obj_SetRenderPriorityI(tip[i], 49 );
+		ObjSprite2D_SetSourceRect(tip[i], 0, 320, 64, 384 );
+		ObjSprite2D_SetDestCenter(tip[i]);
+		i++;
+	}
+	i = 0;
+	
+	//　光源
+	ObjRender_SetBlendType(source[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(source[0], color[0], color[1], color[2] );
+	ObjRender_SetBlendType(source[1], BLEND_ALPHA );
+	
+	//　身
+	ObjRender_SetBlendType(laser[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(laser[0], color[0], color[1], color[2] );
+	ObjRender_SetBlendType(laser[1], BLEND_ALPHA );
+	
+	//　先端
+	ObjRender_SetBlendType(tip[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(tip[0], color[0], color[1], color[2] );
+	ObjRender_SetBlendType(tip[1], BLEND_ALPHA );
+	
+	while( timer < kill && !Obj_IsDeleted(CallID) ){
+		gpos	= [ObjMove_GetX(obj),ObjMove_GetY(obj)];
+		angle	= ObjStLaser_GetAngle(obj);
+		length_	= ObjLaser_GetLength(obj);
+		
+		let _r = 96;
+		if( checkCrclCls( GetPlayerObjectID(), obj, _r ) ){
+			if( ObjLaser_GetLength(obj) > 0 ){
+				ObjLaser_SetLength(obj, distance( gpos, [GetPlayerX(),GetPlayerY()] ) - _r );
+			}
+		}
+		else{
+			if( ObjLaser_GetLength(obj) < DefaultLength ){
+				ObjLaser_SetLength(obj, ObjLaser_GetLength(obj) + 4 );
+			}
+		}
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveB );
+		
+		loop( length(source) ){
+			//　光源
+			ObjRender_SetPosition(source[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(source[i], sca[i]*2 - move1*sca[i], sca[i]*2 - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(source[i], 0, 0, -timer*128 );
+			//　身
+			ObjRender_SetPosition(laser[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(laser[i], 0, 0, angle-90 );
+			ObjRender_SetScaleXYZ(laser[i], scaXD[i] + move2*sca[i] + (0.06*(1-i)*move2)*sin(timer*64), 1, 0 );
+			ObjSprite2D_SetSourceRect(laser[i], 0, 0, 32, move1*length_ );
+			ObjSprite2D_SetDestRect(laser[i], -16, 0, 16, move1*length_ );
+			//　先端
+			ObjRender_SetPosition(tip[i], gpos[0] + (move1*length_)*cos(angle), gpos[1] + (move1*length_)*sin(angle), 0 );
+			ObjRender_SetScaleXYZ(tip[i], move1*sca[i], move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(tip[i], 0, 0, -timer*128 );
+			i++;
+		}
+		i = 0;
+		
+		timer++;
+		if( move1 < 1 ){ moveA += 2; }
+		if( move2 < 1 && timer > delay ){ moveB += 5; }
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	Obj_Delete(obj);	//　ﾚｰｻﾞｰ自体は早めに消去
+	while( move1 < 1 && !Obj_IsDeleted(CallID) ){
+		move1 = 1 * sin( moveA );
+		
+		loop( length(source) ){
+			//　光源
+			ObjRender_SetPosition(source[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ(source[i], sca[i] - move1*sca[i], sca[i] - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(source[i], 0, 0, -timer*128 );
+			//　身
+			ObjRender_SetPosition(laser[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(laser[i], 0, 0, angle-90 );
+			ObjRender_SetScaleXYZ(laser[i], sca[i] - move1*sca[i], 1, 0 );
+			//　先端
+			ObjRender_SetPosition(tip[i], gpos[0] + (length_)*cos(angle), gpos[1] + (length_)*sin(angle), 0 );
+			ObjRender_SetScaleXYZ(tip[i], sca[i] - move1*sca[i], sca[i] - move1*sca[i], 0 );
+			ObjRender_SetAngleXYZ(tip[i], 0, 0, -timer*128 );
+			i++;
+		}
+		i = 0;
+		
+		timer++;
+		if( move1 < 1 ){ moveA += 2; }
+		yield;
+	}
+	loop( length(source) ){
+		Obj_Delete(source[i]);
+		Obj_Delete(laser[i]);
+		Obj_Delete(tip[i]);
+		i++;
+	}
+	i = 0;
+}
+
+function checkCrclCls( obj_circleID, obj_laserID, _r ){
+	//　レーザー始点座標
+	let LaserLine01		= [ ObjMove_GetX(obj_laserID), ObjMove_GetY(obj_laserID) ];
+	//　レーザー終点座標
+	let LaserLine02		= [
+		LaserLine01[0] + ObjLaser_GetLength(obj_laserID) * cos( ObjStLaser_GetAngle(obj_laserID) ),
+		LaserLine01[1] + ObjLaser_GetLength(obj_laserID) * sin( ObjStLaser_GetAngle(obj_laserID) ),
+	];
+	
+	//　円情報
+	let crcl = [ ObjMove_GetX(obj_circleID), ObjMove_GetY(obj_circleID) ];
+	//　線情報
+	let line = [ LaserLine01, LaserLine02 ];
+	
+	//　V : 線分始点から終点へのベクトル
+	//　C : 線分始点から円中心へのベクトル
+	let V = [ line[1][0] - line[0][0], line[1][1] - line[0][1] ];
+	let C = [ crcl[0] - line[0][0], crcl[1] - line[0][1] ];
+	
+	//　二つのベクトルの内積を求める
+	let n1 = dotProduct( V, C );
+	
+	if( n1 < 0 ){
+		//　Cの長さが円の半径より小さい場合 : 交差している
+		if( distance(line[0],crcl) < _r ){ return true; }
+		else{ return false; }
+	}
+	
+	let n2 = dotProduct( V, V );
+	
+	if( n1 > n2 ){
+		//　線分の終点と円の中心の距離の二乗を求める
+		let len = distance(line[1],crcl) ^ 2;
+		//　円の半径の二乗よりも小さい場合 : 交差している
+		if( len < _r^2 ){ return true; }
+		else{ return false; }
+	}
+	else{
+		let n3 = dotProduct( C, C );
+		if( n3-(n1/n2)*n1 < _r^2 ){ return true; }
+		else{ return false; }
+	}
+	
+	return false;
+}
+
+//　ベクトルとベクトルの内積を求める
+function dotProduct( vec1, vec2 ){
+	return ( vec1[0] * vec2[0] ) + ( vec1[1] * vec2[1] );
+}
+
+//　2点間の距離を求める
+function distance( pt1, pt2 ){
+	return ( (pt2[1]-pt1[1])^2 + (pt2[0]-pt1[0])^2 ) ^ 0.5;
+}

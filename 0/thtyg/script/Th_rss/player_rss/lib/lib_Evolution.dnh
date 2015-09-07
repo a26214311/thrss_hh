@@ -1,0 +1,595 @@
+
+
+//　進化（仮称）のエフェクトとか
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+
+
+	//　共通データ
+	CreateCommonDataArea("MegaEvolution");
+	SetAreaCommonData("MegaEvolution", "Frag", false );
+	SetAreaCommonData("MegaEvolution", "Gauge", 100 );
+	
+let flg_evolution = true;
+
+function IsEvolution{
+	let ans = false;
+	if( GetAreaCommonData("System", "Difficulty", "NULL" ) == "OverDrive" ){
+		ans = flg_evolution;
+	}else{
+		ans = GetAreaCommonData( "MegaEvolution", "Frag", false );
+	}
+	return ans;
+}
+
+task StrongStyle_EvolutionSwitch{
+	yield;
+	if( GetAreaCommonData("System", "Difficulty", "NULL" ) != "OverDrive" ){
+		return;
+	}
+	
+	alternative( GetPlayerID() )
+	case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C", "SRR_PL02A", "SRR_PL02B" ){
+		return;
+	}
+	
+	while( !Obj_IsDeleted( GetPlayerObjectID ) ){
+		if( GetVirtualKeyState( VK_USER1 ) == KEY_PUSH ){
+			if( flg_evolution ){
+				flg_evolution = false;
+			}else{
+				flg_evolution = true;
+			}
+		}
+		yield;
+	}
+}
+
+task GaugeContorol( hypergauge_texture_type ){
+	let now_gauge	= GetAreaCommonData("MegaEvolution", "Gauge", 0 );
+	
+	SetAreaCommonData("MegaEvolution", "Frag", true );
+	
+	HyperGaugeDisplay( 33, [192,192,192], hypergauge_texture_type );
+	HyperPlayerBack();
+	
+	while( now_gauge > 0 && GetPlayerState() != STATE_DOWN && GetPlayerState() != STATE_END ){
+		now_gauge	= GetAreaCommonData("MegaEvolution", "Gauge", 0 ) - 100 / (60*30);
+		
+		//　メガシンカ中である
+		SetAreaCommonData("MegaEvolution", "Frag", true );
+		
+		//　全敵の数取得
+		let AllEnemy = GetAllEnemyID();
+		
+		//　ゲージ減らす
+		if( IsPermitPlayerShot() && length(AllEnemy) > 0 ){
+			SetAreaCommonData("MegaEvolution", "Gauge", now_gauge );
+		}
+		
+		yield;
+	}
+	while( GetPlayerState() != STATE_NORMAL ){ yield; }
+	ObjSound_Play( PlayerEnviron_SE[6] );
+	SnowflakePower( GetPlayerObjectID() );
+	SetAreaCommonData("MegaEvolution", "Frag", false );
+	SetAreaCommonData("MegaEvolution", "Gauge", 100 );
+	if( !IsPlayerSpellActive() ){
+		SetPlayerInvincibilityFrame( 120 );
+	}
+	DeleteShotInCircle(TYPE_SHOT, TYPE_ITEM, GetPlayerX(), GetPlayerY(), 512 );
+}
+
+task HyperAura(rgb_array){
+	//　エフェクトカット 0 だとエフェクト出現
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 0 ){ return; }
+	
+	let distance	= rand(16,64);
+	let ap			= rand(-8,8);
+	let movev		= rand(1,32);
+	
+	PlayerAura_Effect( distance, 0 + ap, [0.4,1], [0,180,0 + distance/2], rgb_array, movev );
+	PlayerAura_Effect( distance, 180 - ap, [0.4,1], [0,0,0 + distance/2], rgb_array, movev );
+}
+
+task PlayerAura_Effect(dis,angle,sca_array,ang_array,rgb_array,movev){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ GetPlayerX(), GetPlayerY() ];
+	let animc	= 0;
+	let anim1	= 0;
+	
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/eff/player_aura.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjRender_SetScaleXYZ(ID, sca_array[0], sca_array[1], 0 );
+	ObjRender_SetAngleXYZ(ID, ang_array[0], ang_array[1], ang_array[2] );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0 + 64*anim1, 0, 64 + 64*anim1, 128 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	ObjRender_SetAlpha(ID, 128 );
+	
+	while( anim1 < 4 ){
+		gpos	= [ GetPlayerX(), GetPlayerY() - 8 ];
+		ObjRender_SetPosition(ID, gpos[0] + dis * cos( angle ), gpos[1] + dis * sin( angle ) + anim1*movev, 0 );
+		
+		ObjSprite2D_SetSourceRect(ID, 0 + 64*anim1, 0, 64 + 64*anim1, 128 );
+		
+		animc++;
+		if( animc > 0 && animc %3 == 0 ){
+			anim1++;
+		}
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+task PlayerBraid_Effect(dis,angle,sca_array,ang_array,rgb_array){
+	//　エフェクトカット 1 以下 だとエフェクト出現
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ GetPlayerX(), GetPlayerY() ];
+	let animc	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/eff/braid.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjRender_SetScaleXYZ(ID, sca_array[0], sca_array[1], 0 );
+	ObjRender_SetAngleXYZ(ID, ang_array[0], ang_array[1], ang_array[2] );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + anim2*256, 128 + 128*anim1, 256 + anim2*256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( anim2 < 2 ){
+		ObjRender_SetPosition(ID, gpos[0] + dis * cos( angle ), gpos[1] + dis * sin( angle ), 0 );
+		
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + anim2*256, 128 + 128*anim1, 256 + anim2*256 );
+		
+		animc++;
+		if( animc > 0 && animc %2 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+			}
+		}
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+task SnowflakePower(ID){
+	//　エフェクトカット 2 以下 だとエフェクト出現
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 2 ){ return; }
+	
+	let frame	= 0;
+	
+	while( frame < 60 ){
+		if( frame%4 == 0 && frame < 30 ){
+			ascent( let i in 0..5 ){
+				CreateSnowflake(ID, 270 + i*72 + frame*4, 192, 0, 1, 10, [128,128,255], 255 );
+				CreateSnowflake(ID, 270 + i*72 - frame*4, 192, 0, 1, 10, [128,128,255], 255 );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+}
+
+task CreateSnowflake(CallID,angle,disD,speed,acc,mx,rgb_h,alpha){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let gp		= [GetPlayerX(),GetPlayerY()];
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= 2;
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/eff/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	//　自機からの距離
+	let pl_dis	= GetObjectDistance( GetPlayerObjectID(), ID );
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) ){
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gp[0] + move1*disD * cos(angle), gp[1] + move1*disD * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		spin += spinp;
+		if( move1 < 1 ){ moveA += 2; }
+		else{ break; }
+		
+		yield;
+	}
+	moveA = 0;
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && pl_dis > 32 ){
+		pl_dis	= GetObjectDistance( GetPlayerObjectID(), ID );
+		angle	= atan2( GetPlayerY() - ObjRender_GetY(ID), GetPlayerX() - ObjRender_GetX(ID) );
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, ObjRender_GetX(ID) + dis * cos(angle), ObjRender_GetY(ID) + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		
+		dis = 0;
+		
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 10; }
+		
+		yield;
+	}
+	gp = [GetPlayerX(),GetPlayerY()];
+	moveA = 0;
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) ){
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gp[0] + move1*(disD*1.4) * cos(angle), gp[1] + move1*(disD*1.4) * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		spin += spinp;
+		if( move1 < 1 ){ moveA += 1; }
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　頂点数を奇数するときもくなるよ
+task CreatePolygon_PlayerUT(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, BLEND_TYPE, rgb_h ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let scr			= 0;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten				=  SET_POLYGON + 1 + 1 ;
+	//　回転の早さ
+	let ang_plus		= SET_ANGLE_Z[1];
+	//　画像サイズ
+	let _rect			= [0,256];
+	//　中央a値
+	let alpha_center	= 255;
+	//　外周a値
+	let alpha			= 0;
+	
+	ObjRender_SetBlendType(id, BLEND_TYPE );
+	ObjPrim_SetTexture(id, GetCurrentScriptDirectory() ~ "../img/eff/wave.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		ObjRender_SetPosition(id, GetPlayerX(), GetPlayerY(), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjPrim_SetVertexAlpha(id, 0, move1 * alpha_center );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, rgb_h[0], rgb_h[1], rgb_h[2] );
+			ObjPrim_SetVertexAlpha(id, 1+i, move1*alpha );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		ObjRender_SetPosition(id, GetPlayerX(), GetPlayerY(), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjPrim_SetVertexAlpha(id, 0, alpha_center - move1 * alpha_center );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, rgb_h[0], rgb_h[1], rgb_h[2] );
+			ObjPrim_SetVertexAlpha(id, 1+i, alpha - move1*alpha );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		SET_DISTANCE = SET_DISTANCE + move1 * 256;
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　こちらはサブタレクトのみ
+task CreatePolygon_PlayerSUBT(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, rgb_h ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let scr			= 0;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten				=  SET_POLYGON + 1 + 1 ;
+	//　回転の早さ
+	let ang_plus		= SET_ANGLE_Z[1];
+	//　画像サイズ
+	let _rect			= [0,256];
+	
+	ObjRender_SetBlendType(id, BLEND_SUBTRACT );
+	ObjPrim_SetTexture(id, GetCurrentScriptDirectory ~ "../img/eff/wave.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		ObjRender_SetPosition(id, GetPlayerX(), GetPlayerY(), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, move1*rgb_h[0], move1*rgb_h[1], move1*rgb_h[2] );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, 0, 0, 0 );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		ObjRender_SetPosition(id, GetPlayerX(), GetPlayerY(), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0] - move1*rgb_h[0], rgb_h[1] - move1*rgb_h[1], rgb_h[2] - move1*rgb_h[2] );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, 0, 0, 0 );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		SET_DISTANCE = SET_DISTANCE + move1 * 256;
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+task HyperGaugeDisplay(SET_PRIORITY,rgb_array,texture_type){
+	let ID			= [ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						ObjPrim_Create(OBJ_SPRITE_2D),
+						];
+	let csd			= GetCurrentScriptDirectory();
+	let pc			= 0;
+	let i			= 0;
+	let i2			= 1;
+	let animc		= 0;
+	let anim1		= 0;
+	let rgb_ct		= 0;
+	let path		= [
+		GetCurrentScriptDirectory() ~ "./../img/eff/hyper_gauge01a.png",
+		GetCurrentScriptDirectory() ~ "./../img/eff/hyper_gauge02a.png",
+		GetCurrentScriptDirectory() ~ "./../img/eff/hyper_gauge03a.png",
+		GetCurrentScriptDirectory() ~ "./../img/eff/hyper_gauge01b.png",
+	];
+	
+	//　角数
+	let SET_POLYGON	= 32;
+	
+	//　Ｎ角形＋１＊２が頂点の数になる
+	let ten			= ( SET_POLYGON + 1 ) * 2;
+	//　サイズ / 頂点数
+	let _rect		= 256 / SET_POLYGON;
+	//　線の太さ
+	let width		= 8;
+	//　開始角度　270から開始　恐らく変更は不要
+	let ang			= 270;
+	
+	//　ゲージ取得する値の設定
+	let now_gauge		= GetAreaCommonData("MegaEvolution", "Gauge", 0 );
+	let rect_maxgauge	= 360 / now_gauge;
+	let gauge_max		= min(rect_maxgauge * now_gauge, 360 );		//　値の小さい方が返る
+	
+	ascent( i in  0..( length(ID) ) ){
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[i], path[ texture_type ] );
+		Obj_SetRenderPriorityI(ID[i], SET_PRIORITY );
+		ObjPrim_SetPrimitiveType(ID[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(ID[i], ten );
+	}
+	i = 0;
+	
+	loop( ten ){
+		ObjPrim_SetVertexPosition(ID[0], i, (32-2) * cos(pc+ang), (32-2) * sin(pc+ang), 0 );
+		ObjPrim_SetVertexPosition(ID[0], i2, (32+width+2) * cos(pc+ang), (32+width+2) * sin(pc+ang), 0 );
+		ObjPrim_SetVertexUVT(ID[0], i, 0, 0 );
+		ObjPrim_SetVertexUVT(ID[0], i2, 0, 16 );
+		ObjPrim_SetVertexColor(ID[0], i, 16, 0, 32 );
+		ObjPrim_SetVertexColor(ID[0], i2, 16, 0, 32 );
+		ObjPrim_SetVertexAlpha(ID[0], i, 192 );
+		ObjPrim_SetVertexAlpha(ID[0], i2, 192 );
+		
+		pc			+= 360/SET_POLYGON;
+		i			+= 2;
+		i2			+= 2;
+	}
+	pc			= 0;
+	i			= 0;
+	i2			= 1;
+	
+	ObjPrim_SetTexture(ID[2], path[ 3 ] );
+	
+	let j = 0;
+	
+	while( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		now_gauge		= GetAreaCommonData("MegaEvolution", "Gauge", 0 );
+		gauge_max		= min(rect_maxgauge * now_gauge, 360 );		//　値の小さい方が返る
+		
+		ObjRender_SetPosition(ID[0], GetPlayerX(), GetPlayerY(), 0 );
+		ObjRender_SetPosition(ID[1], GetPlayerX(), GetPlayerY(), 0 );
+		ObjRender_SetPosition(ID[2], GetPlayerX(), GetPlayerY(), 0 );
+		
+		loop( ten/2 ){
+			ascent( j in 0..( length(ID) - 1 ) ){
+				ObjPrim_SetVertexPosition(ID[1+j], i, 32 * cos(pc+ang - 8), 32 * sin(pc+ang - 8), 0 );
+				ObjPrim_SetVertexPosition(ID[1+j], i2, (32+width) * cos(pc+ang + 8), (32+width) * sin(pc+ang + 8), 0 );
+				
+				if( (360-gauge_max) > pc ){
+					ObjPrim_SetVertexAlpha(ID[1+j], i, 0 );
+					ObjPrim_SetVertexAlpha(ID[1+j], i2, 0 );
+				}
+			}
+			
+			//　ALPHA
+			ObjPrim_SetVertexUVT(ID[1], i, 0 + _rect, 0 + anim1*16 );
+			ObjPrim_SetVertexUVT(ID[1], i2, 0 + _rect, 16 + anim1*16 );
+			ObjPrim_SetVertexColor(ID[1], i, rgb_array[0], rgb_array[1], rgb_array[2] );
+			ObjPrim_SetVertexColor(ID[1], i2, rgb_array[0], rgb_array[1], rgb_array[2] );
+			
+			//　ARGB
+			let argb_color = [
+				[0,255,255],
+				[0,255,32],
+				[255,255,0],
+				[255,128,0],
+				[255,0,0],
+				[255,0,255],
+				[0,0,255],
+			];
+			ObjPrim_SetVertexUVT(ID[2], i, 0 + _rect + animc*8, 0 );
+			ObjPrim_SetVertexUVT(ID[2], i2, 0 + _rect + animc*8, 16 );
+			ObjPrim_SetVertexColor(ID[2], i, argb_color[ rgb_ct ][0], argb_color[ rgb_ct ][1], argb_color[ rgb_ct ][2] );
+			ObjPrim_SetVertexColor(ID[2], i2, argb_color[ rgb_ct ][0], argb_color[ rgb_ct ][1], argb_color[ rgb_ct ][2] );
+			
+			let angv	= 360/length(argb_color);
+			if( pc >= angv + rgb_ct*angv && rgb_ct < length(argb_color) - 1 ){ rgb_ct++; }
+			
+			pc			+= 360/SET_POLYGON;
+			i			+= 2;
+			i2			+= 2;
+			_rect		+= 256 / SET_POLYGON;
+		}
+		pc			= 0;
+		i			= 0;
+		i2			= 1;
+		_rect		= 256 / SET_POLYGON;
+		rgb_ct		= 0;
+		
+		animc++;
+		if( animc > 0 && animc%4 == 0 ){ anim1++; }
+		
+		yield;
+	}
+	ascent( i in  0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+task HyperPlayerBack(){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ GetPlayerX(), GetPlayerY() ];
+	
+	Obj_SetRenderPriorityI(ID, 31 );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../img/eff/Effect02.png" );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetScaleXYZ(ID, 0.6, 0.6, 0 );
+	ObjRender_SetColor(ID, 0, 0, 0 );
+	ObjRender_SetAlpha(ID, 192 );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 128, 128 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( GetAreaCommonData("MegaEvolution", "Frag", false ) ){
+		gpos	= [ GetPlayerX(), GetPlayerY() ];
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}

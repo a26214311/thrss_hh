@@ -1,0 +1,399 @@
+
+
+
+
+/*--------スペカ背景区--------*/
+//　幽々子
+let spell01a	= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/enmbg01a.png";		//　0
+let spell02a	= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/enmbg01b.png";		//　1
+let spell03a	= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/enmbg01c.png";		//　2
+//　木霊
+let spell04a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/00_enmbg02a.png";	//　3
+let spell05a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/00_enmbg02b.png";	//　4
+let spell06a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/00_enmbg02c.png";	//　5
+//　初名
+let spell07a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/enmbg02a.png";		//　6
+let spell08a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/enmbg02b.png";		//　7
+let spell09a	= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/enmbg02c.png";		//　8
+//　瑠璃
+let spell10a	= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/enmbg03a.png";		//　9
+let spell11a	= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/enmbg03b.png";		//　10
+//　皇女
+let spell12a	= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/enmbg04a.png";		//　11
+let spell13a	= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/enmbg04b.png";		//　12
+let spell14a	= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/enmbg04c.png";		//　13
+//　埴得
+let spell15a	= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/00_enmbg05a.png";	//　14
+//　垂神
+let spell16a	= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/enmbg05a.png";		//　15
+let spell17a	= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/enmbg05b.png";		//　16
+let spell18a	= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/enmbg05c.png";		//　17
+//　桃姫
+let spell19a	= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/enmbg06a.png";		//　18
+let spell20a	= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/enmbg06b.png";		//　19
+let spell21a	= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/enmbg06c.png";		//　20
+//　無々夢
+let spell22a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/00_enmbg07a.png";	//　21
+let spell23a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/00_enmbg07b.png";	//　22
+let spell24a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/00_enmbg07c.png";	//　23
+//　やと
+let spell25a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/enmbg07a.png";		//　24
+let spell26a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/enmbg07b.png";		//　25
+let spell27a	= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/enmbg07c.png";		//　26
+//　きよひ
+let spell28a	= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/enmbg08a.png";		//　27
+let spell29a	= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/enmbg08b.png";		//　28
+let spell30a	= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/enmbg08c.png";		//　29
+let spell31a	= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/enmbg08d.png";		//　30
+
+let spell_tex	= [
+	spell01a, spell02a, spell03a,
+	spell04a, spell05a, spell06a,
+	spell07a, spell08a, spell09a,
+	spell10a, spell11a,
+	spell12a, spell13a, spell14a,
+	spell15a,
+	spell16a, spell17a, spell18a,
+	spell19a, spell20a, spell21a,
+	spell22a, spell23a, spell24a,
+	spell25a, spell26a, spell27a,
+	spell28a, spell29a, spell30a, spell31a,
+];
+
+
+
+
+/*--------エフェクト区--------*/
+//　頻繁に出したり、重そうなのを選抜
+let eff01a		= GetCurrentScriptDirectory() ~ "../img/effect/enm_effect01.png";	//　0
+let eff02a		= GetCurrentScriptDirectory() ~ "../img/effect/bulletbreak.png";	//　1
+let eff03a		= GetCurrentScriptDirectory() ~ "../img/effect/enm_effect02.png";	//　2
+let eff04a		= GetCurrentScriptDirectory() ~ "../img/effect/stg_eff01a.png";		//　3
+let eff05a		= GetCurrentScriptDirectory() ~ "../img/effect/enm_effect03.png";	//　4
+let eff06a		= GetCurrentScriptDirectory() ~ "../img/effect/eff_default.png";	//　5
+let eff07a		= GetCurrentScriptDirectory() ~ "../img/effect/ring00.png";			//　6
+
+let eff08a		= GetCurrentScriptDirectory() ~ "../img/effect/war_effect/war01a.png";		//　7
+let eff09a		= GetCurrentScriptDirectory() ~ "../img/effect/war_effect/war01b.png";		//　8
+let eff10a		= GetCurrentScriptDirectory() ~ "../img/effect/war_effect/war02a.png";		//　9
+let eff11a		= GetCurrentScriptDirectory() ~ "../img/effect/war_effect/ice_line01.png";	//　10
+
+let effect_tex	= [
+	eff01a, eff02a, eff03a, eff04a, eff05a,
+	eff06a, eff07a,
+	eff08a, eff09a, eff10a, eff11a,
+];
+
+
+
+
+/*--------フロント区--------*/
+let fro01a		= GetCurrentScriptDirectory() ~ "../img/front/front01.png";			//　0
+let fro02a		= GetCurrentScriptDirectory() ~ "../img/front/front02.png";			//　1
+let fro03a		= GetCurrentScriptDirectory() ~ "../img/front/front03.png";			//　2
+let fro04a		= GetCurrentScriptDirectory() ~ "../img/front/eff_switch.png";		//　3
+let fro05a		= GetCurrentScriptDirectory() ~ "../img/front/balloon_pl.png";		//　4
+let fro06a		= GetCurrentScriptDirectory() ~ "../img/front/evolution01a.png";	//　5
+let fro07a		= GetCurrentScriptDirectory() ~ "../img/front/evolution01b.png";	//　6
+let fro08a		= GetCurrentScriptDirectory() ~ "../img/front/evolution01c.png";	//　7
+let fro09a		= GetCurrentScriptDirectory() ~ "../img/front/evolution02a.png";	//　8
+let fro10a		= GetCurrentScriptDirectory() ~ "../img/front/stg_frame.png";		//　9
+let fro11a		= GetCurrentScriptDirectory() ~ "../img/front/Effect_White.png";	//　10
+let fro12a		= GetCurrentScriptDirectory() ~ "../img/front/balloon_enm.png";		//　11
+let fro13a		= GetCurrentScriptDirectory() ~ "../img/front/ascii.png";			//　12
+
+let front_tex	= [
+	fro01a, fro02a, fro03a, fro04a, fro05a,
+	fro06a, fro07a, fro08a, fro09a, fro10a,
+	fro11a, fro12a, fro13a,
+];
+
+
+
+
+/*--------立ち絵区(敵)--------*/
+let chara01a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_01.png";		//　0 幽々子
+let chara02a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_02.png";		//　1
+let chara03a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_03.png";		//　2
+let chara04a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_04.png";		//　3
+let chara05a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_05.png";		//　4
+let chara06a		= GetCurrentScriptDirectory() ~ "../img/stg/stg1img/yuyu512_06.png";		//　5
+let chara07a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/kodama_01.png";			//　6 木霊
+let chara08a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/kodama_02.png";			//　7
+let chara09a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/kodama_03.png";			//　8
+let chara10a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/hatuna512_01.png";		//　9 初名
+let chara11a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/hatuna512_02.png";		//　10
+let chara12a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/hatuna512_03.png";		//　11
+let chara13a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/hatuna512_04.png";		//　12
+let chara14a		= GetCurrentScriptDirectory() ~ "../img/stg/stg2img/hatuna512_05.png";		//　13
+let chara15a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_01.png";		//　14 瑠璃
+let chara16a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_02.png";		//　15
+let chara17a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_03.png";		//　16
+let chara18a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_04.png";		//　17
+let chara19a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_05.png";		//　18
+let chara20a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_06.png";		//　19
+let chara21a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_07.png";		//　20
+let chara22a		= GetCurrentScriptDirectory() ~ "../img/stg/stg3img/ruri512_08.png";		//　21
+let chara23a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_01.png";		//　22 垂神
+let chara24a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_02.png";		//　23
+let chara25a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_03.png";		//　24
+let chara26a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_04.png";		//　25
+let chara27a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_05.png";		//　26
+let chara28a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_06.png";		//　27
+let chara29a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_07.png";		//　28
+let chara30a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_08.png";		//　29
+let chara31a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_09.png";		//　30
+let chara32a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/tarumi512_10.png";		//　31
+let chara33a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_01.png";		//　32 皇女
+let chara34a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_02.png";		//　33
+let chara35a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_03.png";		//　34
+let chara36a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_04.png";		//　35
+let chara37a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_05.png";		//　36
+let chara38a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_06.png";		//　37
+let chara39a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_07.png";		//　38
+let chara40a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_08.png";		//　39
+let chara41a		= GetCurrentScriptDirectory() ~ "../img/stg/stg4img/hime512_09.png";		//　40
+let chara42a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_01.png";			//　41 桃姫
+let chara43a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_02.png";			//　42
+let chara44a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_03.png";			//　43
+let chara45a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_04.png";			//　44
+let chara46a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_05.png";			//　45
+let chara47a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_06.png";			//　46
+let chara48a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_07.png";			//　47
+let chara49a		= GetCurrentScriptDirectory() ~ "../img/stg/stg6img/mo512_08.png";			//　48
+let chara50a		= GetCurrentScriptDirectory() ~ "../img/stg/stg5img/hani512_01.png";		//　49 埴得
+let chara51a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/momumu512_01.png";		//　50 無々夢
+let chara52a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/momumu512_02.png";		//　51
+let chara53a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/momumu512_03.png";		//　52
+let chara54a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/momumu512_04.png";		//　53
+let chara55a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_01.png";		//　54 やと
+let chara56a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_02.png";		//　55
+let chara57a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_03.png";		//　56
+let chara58a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_04.png";		//　57
+let chara59a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_05.png";		//　58
+let chara60a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_06.png";		//　59
+let chara61a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_07.png";		//　60
+let chara62a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_08.png";		//　61
+let chara63a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_09.png";		//　62
+let chara64a		= GetCurrentScriptDirectory() ~ "../img/stg/stg7img/yato512_10.png";		//　63
+let chara65a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/Phruri512_01.png";		//　64 PH瑠璃
+let chara66a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/Phruri512_02.png";		//　65
+let chara67a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_01.png";		//　66 清妃
+let chara68a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_02.png";		//　67
+let chara69a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_03.png";		//　68
+let chara70a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_04.png";		//　69
+let chara71a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_05.png";		//　70
+let chara72a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_06.png";		//　71
+let chara73a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_07.png";		//　72
+let chara74a		= GetCurrentScriptDirectory() ~ "../img/stg/stg8img/kiyo512_08.png";		//　73
+
+let chara_tex	= [
+	chara01a, chara02a, chara03a, chara04a, chara05a, chara06a,
+	chara07a, chara08a, chara09a,
+	chara10a, chara11a, chara12a, chara13a, chara14a,
+	chara15a, chara16a, chara17a, chara18a, chara19a, chara20a, chara21a, chara22a,
+	chara23a, chara24a, chara25a, chara26a, chara27a, chara28a, chara29a, chara30a, chara31a, chara32a,
+	chara33a, chara34a, chara35a, chara36a, chara37a, chara38a, chara39a, chara40a, chara41a,
+	chara42a, chara43a, chara44a, chara45a, chara46a, chara47a, chara48a, chara49a,
+	chara50a,
+	chara51a, chara52a, chara53a, chara54a,
+	chara55a, chara56a, chara57a, chara58a, chara59a, chara60a, chara61a, chara62a, chara63a, chara64a,
+	chara65a, chara66a,
+	chara67a, chara68a, chara69a, chara70a, chara71a, chara72a, chara73a, chara74a,
+];
+
+
+
+
+/*--------立ち絵区(プレイヤー)--------*/
+//　霊夢
+let chara01b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_01.png";		//　0
+let chara02b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_02.png";		//　1
+let chara03b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_03.png";		//　2
+let chara04b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_04.png";		//　3
+let chara05b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_05.png";		//　4
+let chara06b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_06.png";		//　5
+let chara07b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_07.png";		//　6
+let chara08b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_08.png";		//　7
+let chara09b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_09.png";		//　8
+let chara10b		= GetCurrentScriptDirectory() ~ "../img/pl/reimu/reimu512_10.png";		//　9
+//　紫
+let chara11b		= GetCurrentScriptDirectory() ~ "../img/pl/yukari/yukari512_01.png";	//　10
+let chara12b		= GetCurrentScriptDirectory() ~ "../img/pl/yukari/yukari512_02.png";	//　11
+let chara13b		= GetCurrentScriptDirectory() ~ "../img/pl/yukari/yukari512_03.png";	//　12
+let chara14b		= GetCurrentScriptDirectory() ~ "../img/pl/yukari/yukari512_04.png";	//　13
+//　魔理沙
+let chara15b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_01.png";	//　14
+let chara16b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_02.png";	//　15
+let chara17b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_03.png";	//　16
+let chara18b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_04.png";	//　17
+let chara19b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_05.png";	//　18
+let chara20b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_06.png";	//　19
+let chara21b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_07.png";	//　20
+let chara22b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_08.png";	//　21
+let chara23b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_09.png";	//　22
+let chara24b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_10.png";	//　23
+let chara25b		= GetCurrentScriptDirectory() ~ "../img/pl/marisa/marisa512_11.png";	//　24
+//　追加の紫
+let chara26b		= GetCurrentScriptDirectory() ~ "../img/pl/yukari/yukari512_05.png";	//　25
+//　パチュリー
+let chara27b		= GetCurrentScriptDirectory() ~ "../img/pl/patchouli/patch512_01.png";	//　26
+let chara28b		= GetCurrentScriptDirectory() ~ "../img/pl/patchouli/patch512_02.png";	//　27
+let chara29b		= GetCurrentScriptDirectory() ~ "../img/pl/patchouli/patch512_03.png";	//　28
+let chara30b		= GetCurrentScriptDirectory() ~ "../img/pl/patchouli/patch512_04.png";	//　29
+let chara31b		= GetCurrentScriptDirectory() ~ "../img/pl/patchouli/patch512_05.png";	//　30
+//　神子
+let chara32b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_01.png";		//　31
+let chara33b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_02.png";		//　32
+let chara34b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_03.png";		//　33
+let chara35b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_04.png";		//　34
+let chara36b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_05.png";		//　35
+let chara37b		= GetCurrentScriptDirectory() ~ "../img/pl/miko/miko512_06.png";		//　36
+//　布都
+let chara38b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_01.png";		//　37
+let chara39b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_02.png";		//　38
+let chara40b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_03.png";		//　39
+let chara41b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_04.png";		//　40
+let chara42b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_05.png";		//　41
+let chara43b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_06.png";		//　42
+let chara44b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_07.png";		//　43
+let chara45b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_08.png";		//　44
+let chara46b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_09.png";		//　45
+let chara47b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_10.png";		//　46
+let chara48b		= GetCurrentScriptDirectory() ~ "../img/pl/futo/huto512_11.png";		//　47
+
+let player_tex	= [
+	chara01b, chara02b, chara03b, chara04b, chara05b, chara06b, chara07b, chara08b, chara09b, chara10b,
+	chara11b, chara12b, chara13b, chara14b,
+	chara15b, chara16b, chara17b, chara18b, chara19b, chara20b, chara21b, chara22b, chara23b, chara24b, chara25b,
+	chara26b,
+	chara27b, chara28b, chara29b, chara30b, chara31b,
+	chara32b, chara33b, chara34b, chara35b, chara36b, chara37b,
+	chara38b, chara39b, chara40b, chara41b, chara42b, chara43b, chara44b, chara45b, chara46b, chara47b, chara48b,
+];
+
+
+
+
+/*--------背景画像区--------*/
+//　雲とか
+let stg00_01a	= GetCurrentScriptDirectory() ~ "../img/world/cloud01a.png";			//　0
+//　1面
+let stg01_01a	= GetCurrentScriptDirectory() ~ "../img/world/world01/world01a.png";	//　1
+let stg01_02a	= GetCurrentScriptDirectory() ~ "../img/world/world01/world01b.png";	//　2
+let stg01_03a	= GetCurrentScriptDirectory() ~ "../img/world/world01/world01c.png";	//　3
+//　2面
+let stg02_01a	= GetCurrentScriptDirectory() ~ "../img/world/world02/world02a.png";	//　4
+let stg02_02a	= GetCurrentScriptDirectory() ~ "../img/world/world02/world02b.png";	//　5
+//　3面
+let stg03_01a	= GetCurrentScriptDirectory() ~ "../img/world/world03/world03a.png";	//　6
+let stg03_02a	= GetCurrentScriptDirectory() ~ "../img/world/world03/world03b.png";	//　7
+let stg03_03a	= GetCurrentScriptDirectory() ~ "../img/world/world03/world03c.png";	//　8
+//　4面
+let stg04_01a	= GetCurrentScriptDirectory() ~ "../img/world/world04/world04a.png";	//　9
+let stg04_02a	= GetCurrentScriptDirectory() ~ "../img/world/world04/world04b.png";	//　10
+//　5面
+let stg05_01a	= GetCurrentScriptDirectory() ~ "../img/world/world05/world05a.png";	//　11
+let stg05_02a	= GetCurrentScriptDirectory() ~ "../img/world/world05/world05b.png";	//　12
+let stg05_03a	= GetCurrentScriptDirectory() ~ "../img/world/world05/world05c.png";	//　13
+let stg05_04a	= GetCurrentScriptDirectory() ~ "../img/world/world05/world05d.png";	//　14
+//　EX
+let stg07_01a	= GetCurrentScriptDirectory() ~ "../img/world/world07/world07a.png";	//　15
+let stg07_02a	= GetCurrentScriptDirectory() ~ "../img/world/world07/world07b.png";	//　16
+let stg07_03a	= GetCurrentScriptDirectory() ~ "../img/world/world07/world07c.png";	//　17
+let stg07_04a	= GetCurrentScriptDirectory() ~ "../img/world/cloud01b.png";			//　18
+
+let world_tex	= [
+	stg00_01a,
+	stg01_01a, stg01_02a, stg01_03a,
+	stg02_01a, stg02_02a,
+	stg03_01a, stg03_02a, stg03_03a,
+	stg04_01a, stg04_02a,
+	stg05_01a, stg05_02a, stg05_03a, stg05_04a,
+	stg07_01a, stg07_02a, stg07_03a, stg07_04a,
+];
+
+
+
+
+/*--------BGM区--------*/
+let BGM01a		= GetCurrentScriptDirectory() ~ "../bgm/rss_title.ogg";		//　0
+let BGM02a		= GetCurrentScriptDirectory() ~ "../bgm/rss_1road.ogg";		//　1
+let BGM03a		= GetCurrentScriptDirectory() ~ "../bgm/rss_1boss.ogg";		//　2
+let BGM04a		= GetCurrentScriptDirectory() ~ "../bgm/rss_2road.ogg";		//　3
+let BGM05a		= GetCurrentScriptDirectory() ~ "../bgm/rss_2boss.ogg";		//　4
+let BGM06a		= GetCurrentScriptDirectory() ~ "../bgm/rss_3road.ogg";		//　5
+let BGM07a		= GetCurrentScriptDirectory() ~ "../bgm/rss_3boss.ogg";		//　6
+let BGM08a		= GetCurrentScriptDirectory() ~ "../bgm/rss_4road.ogg";		//　7
+let BGM09a		= GetCurrentScriptDirectory() ~ "../bgm/rss_4boss.ogg";		//　8
+let BGM10a		= GetCurrentScriptDirectory() ~ "../bgm/rss_5road.ogg";		//　9
+let BGM11a		= GetCurrentScriptDirectory() ~ "../bgm/rss_5boss.ogg";		//　10
+let BGM12a		= GetCurrentScriptDirectory() ~ "../bgm/rss_6road.ogg";		//　11
+let BGM13a		= GetCurrentScriptDirectory() ~ "../bgm/rss_6boss.ogg";		//　12
+let BGM14a		= GetCurrentScriptDirectory() ~ "../bgm/rss_7road.ogg";		//　13
+let BGM15a		= GetCurrentScriptDirectory() ~ "../bgm/rss_7boss.ogg";		//　14
+let BGM16a		= GetCurrentScriptDirectory() ~ "../bgm/rss_8road.ogg";		//　15
+let BGM17a		= GetCurrentScriptDirectory() ~ "../bgm/rss_8boss.ogg";		//　16
+let BGM18a		= GetCurrentScriptDirectory() ~ "../bgm/rss_ending.ogg";	//　17
+let BGM19a		= GetCurrentScriptDirectory() ~ "../bgm/rss_staffroll.ogg";	//　18
+let BGM20a		= GetCurrentScriptDirectory() ~ "../bgm/rss_score.ogg";		//　19
+
+let Music_all	= [
+	BGM01a,
+	BGM02a,BGM03a,
+	BGM04a,BGM05a,
+	BGM06a,BGM07a,	//　3面
+	BGM08a,BGM09a,
+	BGM10a,BGM11a,
+	BGM12a,BGM13a,	//　6面
+	BGM18a,BGM19a,	//　ED スタッフロール
+	BGM14a,BGM15a,	//　Extra
+	BGM16a,BGM17a,	//　Phantasm
+	BGM20a			//　プレイヤーズスコア
+];
+
+
+
+
+/*--------エンディング系--------*/
+let ed00_01a	= GetCurrentScriptDirectory() ~ "../img/ed/reimu_bad01.png";		//　0
+let ed00_02a	= GetCurrentScriptDirectory() ~ "../img/ed/reimu_bad02.png";		//　1
+let ed00_03a	= GetCurrentScriptDirectory() ~ "../img/ed/reimu_good01.png";		//　2
+let ed00_04a	= GetCurrentScriptDirectory() ~ "../img/ed/reimu_good02.png";		//　3
+let ed00_05a	= GetCurrentScriptDirectory() ~ "../img/ed/reimu_good03.png";		//　4
+let ed00_06a	= GetCurrentScriptDirectory() ~ "../img/ed/marisa_bad01.png";		//　5
+let ed00_07a	= GetCurrentScriptDirectory() ~ "../img/ed/marisa_bad02.png";		//　6
+let ed00_08a	= GetCurrentScriptDirectory() ~ "../img/ed/marisa_good01.png";		//　7
+let ed00_09a	= GetCurrentScriptDirectory() ~ "../img/ed/marisa_good02.png";		//　8
+let ed00_10a	= GetCurrentScriptDirectory() ~ "../img/ed/marisa_good03.png";		//　9
+let ed00_11a	= GetCurrentScriptDirectory() ~ "../img/ed/huto_bad01.png";			//　10
+let ed00_12a	= GetCurrentScriptDirectory() ~ "../img/ed/huto_bad02.png";			//　11
+let ed00_13a	= GetCurrentScriptDirectory() ~ "../img/ed/huto_good01.png";		//　12
+let ed00_14a	= GetCurrentScriptDirectory() ~ "../img/ed/huto_good02.png";		//　13
+let ed00_15a	= GetCurrentScriptDirectory() ~ "../img/ed/huto_good03.png";		//　14
+
+let ed_tex	= [
+	ed00_01a, ed00_02a,
+	ed00_03a, ed00_04a, ed00_05a,
+	ed00_06a, ed00_07a,
+	ed00_08a, ed00_09a, ed00_10a,
+	ed00_11a, ed00_12a,
+	ed00_13a, ed00_14a, ed00_15a,
+];
+
+
+
+
+/*--------スタッフロール系--------*/
+let sr00_01a	= GetCurrentScriptDirectory() ~ "../img/sr/sr01a.png";		//　0
+let sr00_02a	= GetCurrentScriptDirectory() ~ "../img/sr/sr01b.png";		//　1
+let sr00_03a	= GetCurrentScriptDirectory() ~ "../img/sr/sr02a.png";		//　2
+let sr00_04a	= GetCurrentScriptDirectory() ~ "../img/sr/sr02b.png";		//　3
+let sr00_05a	= GetCurrentScriptDirectory() ~ "../img/sr/sr03a.png";		//　4
+let sr00_06a	= GetCurrentScriptDirectory() ~ "../img/sr/sr03b.png";		//　5
+
+let sr_tex	= [
+	sr00_01a, sr00_02a,
+	sr00_03a, sr00_04a,
+	sr00_05a, sr00_06a,
+];

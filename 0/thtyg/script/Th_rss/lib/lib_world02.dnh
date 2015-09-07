@@ -1,0 +1,179 @@
+
+
+
+
+//　Stage2　異空間の導命樹
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　導命樹 active 1
+task SetWorld02(){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 3 ){ return; }
+	
+	//　ダミー
+	let def			= ObjPrim_Create(OBJ_SPRITE_3D);
+	
+	//　下
+	let obj2		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	//　上
+	let obj3		= [
+		ObjPrim_Create(OBJ_SPRITE_3D),
+		ObjPrim_Create(OBJ_SPRITE_3D),
+	];
+	
+	//　導命樹
+	let obj4 = ObjMesh_Create();
+	
+	let objScene 	= GetEnemyBossSceneObjectID();
+	let OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+	let cc			= 0;
+	let i			= 0;
+	let count		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let move2		= 0;
+	let moveB		= 0;
+	
+	let IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+	let StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+	
+	//　霧用のダミー
+	ObjRender_SetPosition(def, -1024, 0, 0 );
+	ObjPrim_SetTexture(def, dummy_path );
+	ObjRender_SetBlendType(def, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(def, world_layer );
+	ObjRender_SetScaleXYZ(def, 8, 8, 0 );
+	ObjSprite3D_SetSourceDestRect(def, 0, 0, 1024, 1024 );
+	ObjRender_SetColor(def, 255, 255, 255 );
+	ObjRender_SetAlpha(def, 255 );
+	ObjSprite3D_SetBillboard(def, true );
+	
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	//  obj2
+		ascent( i in 0..( length(obj2) ) ){
+			ObjRender_SetBlendType(obj2[i], BLEND_ALPHA );
+			Obj_SetRenderPriorityI(obj2[i], world_layer );
+			ObjSprite3D_SetSourceDestRect(obj2[i], 0, 0, 2048, 2048 );
+		}
+		
+		ObjPrim_SetTexture(obj2[0], world02_texture_path[0] );
+		ObjPrim_SetTexture(obj2[1], world02_texture_path[1] );
+		
+		ObjRender_SetAlpha(obj2[1], 128 );
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	
+	
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	//  obj3
+		ascent( i in 0..( length(obj3) ) ){
+			ObjRender_SetBlendType(obj3[i], BLEND_ALPHA );
+			Obj_SetRenderPriorityI(obj3[i], world_layer );
+			ObjSprite3D_SetSourceDestRect(obj3[i], 0, 0, 2048, 2048 );
+		}
+		
+		ObjPrim_SetTexture(obj3[0], world02_texture_path[0] );
+		ObjPrim_SetTexture(obj3[1], world02_texture_path[1] );
+		
+		ObjRender_SetAlpha(obj3[1], 128 );
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	
+	
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	//　メッシュ
+	
+	let mesh_sca = 2;
+	
+	ObjRender_SetPosition(obj4, -512, 0, 0 );
+	Obj_SetRenderPriorityI(obj4, world_layer-1 );
+	ObjMesh_Load(obj4, world_mesh_path[0] );
+	ObjMesh_SetColor(obj4, 128, 255, 128 );
+	ObjRender_SetScaleXYZ(obj4, mesh_sca, mesh_sca, mesh_sca );
+	//----------------------------------------------------------------
+	//----------------------------------------------------------------
+	
+	
+	while( GetAreaCommonData( "System", "Stage_Index", 0 ) == 2 || GetAreaCommonData( "System", "Stage_Index", 0 ) == 9 ){
+		IsActive	= GetAreaCommonData("StageTrance", "active", [true,true,true,true] );
+		StageTrance	= GetAreaCommonData("StageTrance", "trance", [false,false,false,false] );
+		objScene 	= GetEnemyBossSceneObjectID();
+		OnSpell		= ObjEnemyBossScene_GetInfo(objScene,INFO_IS_SPELL);
+		
+		if( !IsActive[0] ){ break; }
+		
+		move1 = 1 * sin( moveA );
+		move2 = 1 * sin( moveA );
+		
+		if( !OnSpell ){
+			SetFogParam(256, 512 + move1*1024, 64, 96, 128 );
+			SetCameraFocusX( 256 + 128*move1 );
+			SetCameraFocusY( 64 - 128+move1*128 + 64*move2 );
+			SetCameraFocusZ( 0 );
+			SetCameraAzimuthAngle( 8*sin(count/8) );
+			SetCameraElevationAngle( 32 - move1*32 - 16*move2 + 8*sin(count/4) );
+			
+			
+			//----------------------------------------------------------------
+			//----------------------------------------------------------------
+			//  obj2
+				ObjRender_SetPosition(obj2[0], -256, -32, 0 );
+				ObjRender_SetPosition(obj2[1], -256, 0, 0 );
+				ObjRender_SetAngleXYZ(obj2[0], -70, 90, 0 );
+				ObjRender_SetAngleXYZ(obj2[1], -70, 90, 0 );
+				
+				ObjSprite3D_SetSourceDestRect(obj2[0], 0, 0 + cc, 2048, 2048 + cc );
+				ObjSprite3D_SetSourceDestRect(obj2[1], 0 - cc/4, 0 + cc*2, 2048 - cc/4, 2048 + cc*2 );
+			//----------------------------------------------------------------
+			//----------------------------------------------------------------
+			
+			
+			//----------------------------------------------------------------
+			//----------------------------------------------------------------
+			//  obj3
+				ObjRender_SetPosition(obj3[0], -256, 448+32, 0 );
+				ObjRender_SetPosition(obj3[1], -256, 448-0, 0 );
+				ObjRender_SetAngleXYZ(obj3[0], -80, 90, 0 );
+				ObjRender_SetAngleXYZ(obj3[1], -80, 90, 0 );
+				
+				ObjSprite3D_SetSourceDestRect(obj3[0], 0, 0 + cc, 2048, 2048 + cc );
+				ObjSprite3D_SetSourceDestRect(obj3[1], 0 - cc/8, 0 + cc*2, 2048 - cc/8, 2048 + cc*2 );
+			//----------------------------------------------------------------
+			//----------------------------------------------------------------
+			
+			//  obj4
+			ObjRender_SetAngleXYZ(obj4, 16*sin(cc/16), 45*sin(cc/32), 0 );
+			
+			//　エフェクト
+			if( cc%3 == 0 ){
+				let x = 384 - move1*384;
+				CreateSnow([x-256-rand(0,512),rand(0,512),rand(-512,512)],
+									[rand(-4,4),rand(-2,2),3*sin(cc/16)], rand(0.1,0.8), rand(128,255), 60+rand(0,120),
+									[32,255,32] );
+			}
+			
+			cc++;
+			if( move1 < 1 && cc > 240 ){ moveA += 0.05; }
+			if( move1 >= 1 && move2 < 1 ){ moveB += 0.01; }
+			if( move2 >= 1 ){ count++; }
+		}
+		
+		yield;
+	}
+	//　オブジェクト削除
+	Obj_Delete( def );
+	ascent( i in 0..( length(obj2) ) ){
+		Obj_Delete( obj2[i] );
+	}
+	ascent( i in 0..( length(obj3) ) ){
+		Obj_Delete( obj3[i] );
+	}
+	Obj_Delete( obj4 );
+}
