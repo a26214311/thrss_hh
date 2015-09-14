@@ -1,0 +1,476 @@
+
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　剣戟
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+function CreateSwordLaser( pos, angle, _length, width, kill, color, delay ){
+	let obj = ObjShot_Create(OBJ_STRAIGHT_LASER);
+	
+	ObjMove_SetPosition( obj, pos[0], pos[1] );
+	ObjStLaser_SetSource( obj, false );
+	ObjStLaser_SetAngle( obj, angle );
+	ObjLaser_SetRenderWidth( obj, width );
+	ObjLaser_SetIntersectionWidth( obj, width/4.4 );
+	ObjLaser_SetLength( obj, _length );
+	ObjShot_SetDelay( obj, delay );
+	ObjShot_SetAutoDelete( obj, false );
+	ObjShot_SetSpellResist( obj, true );
+	ObjShot_SetGraphic( obj, ADD_BGW_WHITE_30 );
+	ObjRender_SetColor( obj, color[0], color[1], color[2] );
+	ObjShot_Regist( obj );
+	
+	CreateSwordLaser_Update( obj, _length, width, kill, delay );
+	CreateSwordLaser_Render( obj, color, delay );
+	
+	return obj;
+}
+
+task CreateSwordLaser_Update( obj, _length, width, kill, delay ){
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	
+	loop( delay ){
+		if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+		yield;
+	}
+	
+	while( !Obj_IsDeleted(obj) && !Obj_IsDeleted(enm) && frame < kill ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjLaser_SetLength( obj, move1*_length );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		frame++;
+		
+		yield;
+	}
+	ObjShot_SetIntersectionEnable( obj, false );
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjLaser_SetRenderWidth( obj, width - move1*width );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( obj );
+}
+
+task CreateSwordLaser_Render( obj, color, delay ){
+	let ID		= [
+		ObjPrim_Create( OBJ_SPRITE_2D ),
+		ObjPrim_Create( OBJ_SPRITE_2D ),
+	];
+	let gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+	let angle	= ObjStLaser_GetAngle(obj);
+	let _length	= ObjLaser_GetLength(obj);
+	let move1	= 0;
+	let moveA	= 0;
+	let animc	= 0;
+	let anim1	= 0;
+	
+	let blend	= [ BLEND_ADD_ARGB, BLEND_SUBTRACT ];
+	let sca		= [ [ 1.04, 1.04 ], [ 1, 1 ] ];
+	
+	ascent( let i in 0..length(ID) ){
+		ObjPrim_SetTexture( ID[i], GetCurrentScriptDirectory() ~ "./../../img/stg/stg7img/slash01.png" );
+		Obj_SetRenderPriorityI( ID[i], 49 );
+		ObjRender_SetBlendType( ID[i], blend[i] );
+		ObjRender_SetColor( ID[i], color[0], color[1], color[2] );
+	}
+	ObjRender_SetAlpha( ID[1], 192 );
+	
+	CreateSwordLaser_Delay( obj, color, delay );
+	
+	loop( delay ){
+		if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+		yield;
+	}
+	while( !Obj_IsDeleted(obj) && !Obj_IsDeleted(enm) ){
+		gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+		angle	= ObjStLaser_GetAngle(obj);
+		_length	= ObjLaser_GetLength(obj);
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ( ID[i], 0, 0, angle );
+			ObjRender_SetScaleXYZ( ID[i], sca[i][0], move1*sca[i][1], 0 );
+			ObjSprite2D_SetSourceRect( ID[i], 0, 0 + anim1*32, 512, 32 + anim1*32 );
+			ObjSprite2D_SetDestRect( ID[i], 0, -16, _length, 16 );
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		if( animc > 0 && animc%2 == 0 ){ anim1++; }
+		animc++;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ( ID[i], 0, 0, angle );
+			ObjRender_SetScaleXYZ( ID[i], sca[i][0], sca[i][1] - move1*sca[i][1], 0 );
+			ObjSprite2D_SetSourceRect( ID[i], 0, 0 + anim1*32, 512, 32 + anim1*32 );
+			ObjSprite2D_SetDestRect( ID[i], 0, -16, _length, 16 );
+		}
+		
+		moveA += 10;
+		if( animc > 0 && animc%2 == 0 ){ anim1++; }
+		animc++;
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　予告線
+task CreateSwordLaser_Delay( obj, color, delay ){
+	let ID		= ObjPrim_Create( OBJ_PRIMITIVE_2D );
+	let gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+	let angle	= ObjStLaser_GetAngle(obj);
+	let _length	= ObjLaser_GetLength(obj);
+	let move1	= 0;
+	let moveA	= 0;
+	let animc	= 0;
+	
+	let sca = [ 1, 0.3 ];
+	
+	ObjPrim_SetTexture( ID, GetCurrentScriptDirectory() ~ "./../../img/stg/stg7img/slash00.png" );
+	Obj_SetRenderPriorityI( ID, 49 );
+	ObjRender_SetBlendType( ID, BLEND_ADD_ARGB );
+	ObjPrim_SetVertexCount( ID, 6 );
+	ObjPrim_SetPrimitiveType( ID, PRIMITIVE_TRIANGLESTRIP );
+	ObjRender_SetColor( ID, color[0], color[1], color[2] );
+	
+	loop( delay ){
+		if( Obj_IsDeleted(obj) || Obj_IsDeleted(enm) ){ break; }
+		
+		gpos	= [ ObjMove_GetX(obj), ObjMove_GetY(obj) ];
+		angle	= ObjStLaser_GetAngle(obj);
+		_length	= ObjLaser_GetLength(obj);
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjPrim_SetVertexPosition( ID, 0, 0, -32, 0 );
+		ObjPrim_SetVertexPosition( ID, 1, 0, 32, 0 );
+		ObjPrim_SetVertexPosition( ID, 2, _length/2, -32, 0 );
+		ObjPrim_SetVertexPosition( ID, 3, _length/2, 32, 0 );
+		ObjPrim_SetVertexPosition( ID, 4, _length, -32, 0 );
+		ObjPrim_SetVertexPosition( ID, 5, _length, 32, 0 );
+		ObjPrim_SetVertexUVT( ID, 0, 0 - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 1, 0 - animc, 64 );
+		ObjPrim_SetVertexUVT( ID, 2, _length/2 - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 3, _length/2 - animc, 64 );
+		ObjPrim_SetVertexUVT( ID, 4, _length - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 5, _length - animc, 64 );
+		ObjPrim_SetVertexAlpha( ID, 0, 0 );
+		ObjPrim_SetVertexAlpha( ID, 1, 0 );
+		ObjPrim_SetVertexAlpha( ID, 2, 255 );
+		ObjPrim_SetVertexAlpha( ID, 3, 255 );
+		ObjPrim_SetVertexAlpha( ID, 4, 0 );
+		ObjPrim_SetVertexAlpha( ID, 5, 0 );
+		
+		ObjRender_SetPosition( ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ( ID, 0, 0, angle );
+		ObjRender_SetScaleXYZ( ID, move1*sca[0], sca[1], 0 );
+		
+		if( GetAreaCommonData("Option", "Effect_Cut", 1 ) == 0 ){
+			if( animc/8%6 == 0 ){
+				let dis = rand( 0, _length );
+				let spos = [
+					gpos[0] + dis * cos( angle ),
+					gpos[1] + dis * sin( angle ),
+					0
+				];
+				let rag = rand( 0, 360 );
+				let spd = rand( -0.3, 0.3 );
+				let ag = [
+					spd * cos( rag ),
+					spd * sin( rag ),
+					rand(0,360)
+				];
+				FlashLight(
+					spos,
+					ag,
+					rand(0.02,0.08),
+					rand(192,255),
+					rand(8,16),
+					color
+				);
+			}
+		}
+		
+		if( move1 < 1 ){ moveA += 5; }
+		animc += 8;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjPrim_SetVertexUVT( ID, 0, 0 - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 1, 0 - animc, 64 );
+		ObjPrim_SetVertexUVT( ID, 2, _length/2 - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 3, _length/2 - animc, 64 );
+		ObjPrim_SetVertexUVT( ID, 4, _length - animc, 0 );
+		ObjPrim_SetVertexUVT( ID, 5, _length - animc, 64 );
+		ObjPrim_SetVertexAlpha( ID, 0, 0 );
+		ObjPrim_SetVertexAlpha( ID, 1, 0 );
+		ObjPrim_SetVertexAlpha( ID, 2, 255 - move1*255 );
+		ObjPrim_SetVertexAlpha( ID, 3, 255 - move1*255 );
+		ObjPrim_SetVertexAlpha( ID, 4, 0 );
+		ObjPrim_SetVertexAlpha( ID, 5, 0 );
+		
+		ObjRender_SetPosition( ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ( ID, 0, 0, angle );
+		ObjRender_SetScaleXYZ( ID, sca[0], sca[1] + move1*sca[1]*8, 0 );
+		
+		moveA += 5;
+		animc += 8;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　龍
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+function CreateEnemy_Dragon( enemy_life, wait_time ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Dragon_Update( obj, enemy_life, wait_time );
+	CreateEnemy_Dragon_Render( obj );
+	
+	return obj;
+}
+
+task CreateEnemy_Dragon_Update( CallID, MaxLife, wait_time ){
+	let count = 0;
+	
+	SetDamageRate( CallID, 100, true );
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let glife	= ObjEnemy_GetInfo( CallID, INFO_LIFE );
+		
+		//　蘇生
+		if( count >= wait_time ){
+			count = 0;
+			CreateWaveEffect( CallID, [255,255,255], 32 );
+			ObjEnemy_SetLife( CallID, MaxLife );
+			ObjSound_Play( CreateShotSE[7] );
+		}
+		
+		if( glife > 0 ){
+			if( Obj_GetValueD( CallID, "Collision", false ) ){
+				ObjEnemy_SetIntersectionCircleToShot( CallID, gpos[0], gpos[1], 64 );
+			}
+		}
+		else{ count++; }
+		
+		yield;
+	}
+	Obj_Delete( CallID );
+}
+
+task CreateEnemy_Dragon_Render( CallID ){
+	let ID		= [
+		ObjPrim_Create( OBJ_SPRITE_2D ),
+		ObjPrim_Create( OBJ_SPRITE_2D ),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let frame	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let blend	= [ BLEND_ALPHA, BLEND_ADD_ARGB ];
+	let scale	= [ 1, 1.02 ];
+	let alpha	= [ 192, 128 ];
+	
+	ascent( let i in 0..length(ID) ){
+		ObjPrim_SetTexture( ID[i], GetCurrentScriptDirectory() ~ "./../../img/stg/stg7img/enm07c.png" );
+		Obj_SetRenderPriorityI( ID[i], 49 );
+		ObjRender_SetBlendType( ID[i], blend[i] );
+		ObjSprite2D_SetSourceRect( ID[i], 0, 0, 512, 512 );
+		ObjSprite2D_SetDestCenter( ID[i] );
+	}
+	ObjRender_SetAlpha( ID[1], 128 );
+	
+	WorldShake_Single( 60, 4 );
+	CreateWaveEffect( CallID, [255,255,255], 32 );
+	
+	while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ( ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], move1*alpha[i] );
+		}
+		
+		moveA += 2;
+		
+		yield;
+	}
+	while( !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+		}
+		ObjRender_SetAlpha( ID[1], move1*alpha[1] + 32 * sin( frame ) );
+		
+		frame++;
+		
+		yield;
+	}
+	alpha[1] = move1*alpha[1] + 32 * sin( frame );
+	while( !Obj_IsDeleted(CallID) && move1 > 0 ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..length(ID) ){
+			ObjRender_SetPosition( ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetScaleXYZ( ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha( ID[i], alpha[i] - move1*alpha[i] );
+		}
+		
+		moveA += 2;
+		
+		yield;
+	}
+	ascent( i in 0..length(ID) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　波紋エフェクト
+task CreateWaveEffect( ID, color, sca ){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, csd ~ "./../../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 51 );
+	ObjRender_SetBlendType(effect, BLEND_SUBTRACT );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　ユーティリティ
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+//　弾作成するだけ
+function CreateShot01( pos, speed, angle, acc, maxspeed, shote, delay ){
+	let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, maxspeed, shote, delay );
+	NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	return sht;
+}
+
+//　2点間の距離を取得
+function GetDistance( pos1, pos2 ){
+	return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+}
+
+//　pos1 から見た pos2 への角度を取得
+function GetGapAngle( pos1, pos2 ){
+	return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+}
+
+//　重力ある感じで動く弾
+function CreateGravityShot( pos, speed, acceleration, maxspeed, shote, delay ){
+	let sht = CreateShotB2(
+		pos[0],
+		pos[1],
+		speed[0] * cos( speed[1] ),
+		speed[0] * sin( speed[1] ),
+		acceleration[0] * cos( acceleration[1] ),
+		acceleration[0] * sin( acceleration[1] ),
+		maxspeed[0] * cos( maxspeed[1] ),
+		maxspeed[0] * sin( maxspeed[1] ),
+		shote, delay
+	);
+	ObjSound_Play( CreateShotSE[1] );
+	NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	return sht;
+}
+
+//　一定フレーム後に弾削除
+task ShotDelete( CallID, ObjID, long ){
+	//　削除まで long フレーム待機
+	loop( long ){
+		if( Obj_IsDeleted(ObjID) ){ break; }
+		yield;
+	}
+	//　削除エフェクトだけ出るようにする
+	Obj_SetValue( ObjID, "Item_Off", true );
+	//　アイテムとして削除
+	ObjShot_ToItem( ObjID );
+}
+
+//　画面震動
+task WorldShake_Single( long, shake ){
+	SetCommonData( "WorldShake_Single", shake );
+	loop( long ){
+		if( Obj_IsDeleted(enm) ){ break; }
+		if( GetCommonData( "WorldShake_Single", 0 ) <= shake ){
+			Set2DCameraFocusX( CenX + rand(-shake,shake) );
+			Set2DCameraFocusY( CenY + rand(-shake,shake) );
+		}
+		yield;
+	}
+	SetCommonData( "WorldShake_Single", 0 );
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+}

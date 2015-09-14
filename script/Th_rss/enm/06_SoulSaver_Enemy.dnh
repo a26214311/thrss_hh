@@ -1,0 +1,450 @@
+
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　ラスペにつかう系
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+#include "./06_SoulSaver_effect04.dnh"
+#include "./06_SoulSaver_effect05.dnh"
+
+//　4ボスと5ボスの設定
+
+//　ボスオーラ色
+let boss4_aura_rgb	= [
+	[ 255, 32, 0 ],
+	[ 8, 32, 32 ],
+];
+let boss5_aura_rgb	= [
+	[ 255, 128, 64 ],
+	[ 8, 16, 32 ],
+];
+
+//　敵パワー集中エフェクト色　ボス用
+let boss4_power_rgb	= [ 17, 58, 255 ];
+let boss5_power_rgb	= [ 255, 128, 32 ];
+
+//　敵のテクスチャ
+let boss4_enemy_tex_path	= csd ~ "./../../img/stg/stg4img/enm04b.png";
+let boss4_enemy_cutin_path	= 0;
+let boss5_enemy_tex_path	= csd ~ "./../../img/stg/stg5img/enm05b.png";
+let boss5_enemy_cutin_path	= 0;
+
+
+//　初期化
+task InitializeFamily(){
+	//　皇女
+	enm04 = CreateEnemyBase( 1600 );
+	Aura_NoDistortion( enm04, 8, boss4_aura_rgb[0], boss4_aura_rgb[1] );
+	EnemyDisplay_Enm04a( enm04, true, boss4_enemy_tex_path );
+	ShotScore( enm04 );
+	ObjMove_SetPosition( enm04, MinX-128, MinY-128 );
+	ObjMove_SetDestAtWeight( enm04, CenX-128, CenY-64, 8, 8 );
+	NotifyEventAll( EV_USER + 31, enm04 );
+	
+	//　垂神
+	enm05 = CreateEnemyBase( 1900 );
+	Aura_NoDistortion( enm05, 8, boss5_aura_rgb[0], boss5_aura_rgb[1] );
+	EnemyDisplay_Enm05b( enm05, true, boss5_enemy_tex_path );
+	ShotScore( enm05 );
+	ObjMove_SetPosition( enm05, MaxX+128, MinY-128 );
+	ObjMove_SetDestAtWeight( enm05, CenX+128, CenY-64, 8, 8 );
+	NotifyEventAll( EV_USER + 31, enm05 );
+}
+
+//　皇女攻撃パターン
+task Enm04_AttackMain{
+	//　60角形　距離64　優先71　遅延なし　[ 外枠出現処理, 本体出現処理 ]
+	//　"Default" or "Normal" or "SpellCard"
+	CreateLifeBar( enm04, 60, 64, 71, 0, [255,255,255], "Default" , [ true, true ] );
+	SetDamageRate( enm04, 100, false );
+	SetEffect_Enm04( enm04, 0 );
+
+	let wt = 120;
+	let way = 3;
+	alternative( GetDifficult )
+	case( "Easy" ){
+		wt = 180;
+	}
+	case( "Normal" ){
+	}
+	case( "Hard" ){
+		way = 5;
+		wt = 90;
+	}
+	case( "Lunatic" ){
+		way = 5;
+		wt = 90;
+	}
+	
+	let frame	= 0;
+	let type	= 0;
+	let gpos = [ ObjMove_GetX(enm04), ObjMove_GetY(enm04) ];
+
+	State;
+	SetShot;
+	task State{
+		while( ObjEnemy_GetInfo( enm04, INFO_LIFE ) > 0 ){
+			gpos = [ ObjMove_GetX(enm04), ObjMove_GetY(enm04) ];
+			yield;
+		}
+	}
+
+	task SetShot{
+		let p = GetAngleToPlayer( enm04 );
+		let r = 1 - round( rand( 0, 1 ) ) * 2;
+		loop{
+			loop( way ){
+				let bx = GetPlayerX;
+				let by = GetPlayerY;
+				while( bx > MinX && bx < MaxX && by > MinY && by < MaxY ){
+					bx += 10 * cos( p + 180 );
+					by += 10 * sin( p + 180 );
+				}
+				bx += 36 * cos( p + 180 );
+				by += 36 * sin( p + 180 );
+
+				local{
+					CreateBraidAttack( [ bx, by ], p, 0.6, 60 );
+					SetAreaCommonData( "anime", "spa", true );
+				}
+				p += 360/way * r;
+				if( Wait( wt ) ){ return; }
+			}
+			EnemyMove( enm04, 2, 8 );
+			SetAreaCommonData( "anime", "spa", false );
+			r = -r;
+			p = rand( 0, 360 );
+			if( Wait( wt ) ){ return; }
+		}
+	}
+
+	function Wait(long){
+		loop(long){
+			yield;
+			if( ObjEnemy_GetInfo( enm04, INFO_LIFE ) <= 0 ){ return true; }
+		}
+		return false;
+	}
+}
+
+//　垂神攻撃パターン
+task Enm05_AttackMain{
+	//　60角形　距離64　優先71　遅延なし　[ 外枠出現処理, 本体出現処理 ]
+	//　"Default" or "Normal" or "SpellCard"
+	CreateLifeBar( enm05, 60, 64, 71, 0, [255,255,255], "Default" , [ true, true ] );
+	SetDamageRate( enm05, 100, false );
+	
+	let frame	= 0;
+	let dist	= 0;
+	let type	= 0;
+	let shote	= [
+		ADD_BGW_RED_21,
+		ADD_BGW_ORANGE_21,
+		ADD_BGW_YELLOW_21,
+		ADD_BGW_GREEN_21,
+		ADD_BGW_AQUA_21,
+		ADD_BGW_BLUE_21,
+		ADD_BGW_PURPLE_21,
+	];
+
+	let dp = 32;
+	let wtA = 8;
+	let wtB = 75;
+
+	let way = 24;
+	let roundway = 18;
+	
+	alternative( GetDifficult )
+	case( "Easy" ){
+		way = 15;
+		dp = 40;
+		roundway = 0;
+	}
+	case( "Normal" ){
+		way = 18;
+		roundway = 0;
+	}
+	case( "Hard" ){
+		dp = 24;
+		way = 15;
+		wtA = 5;
+	}
+	case( "Lunatic" ){
+		way = 16;
+		dp = 16;
+		wtA = 3;
+	}
+	
+	let fam = CreateEnemy_Jewel( "ORANGE", 0.3, 90, 1 );
+	ObjMove_SetPosition( fam, CenX, CenY-96 );
+	SetEffect01( fam );
+	let gpos = [ ObjMove_GetX(enm05), ObjMove_GetY(enm05) ];
+	State;
+	SetShot;
+	task State{
+		while( ObjEnemy_GetInfo( enm05, INFO_LIFE ) > 0 ){
+			gpos = [ ObjMove_GetX(enm05), ObjMove_GetY(enm05) ];
+			yield;
+		}
+		Obj_Delete( fam );
+	}
+	
+	task SetShot{
+		/*
+		if( frame > 0 && frame%180 == 0 ){
+			EnemyMove( enm05, 2, 8 );
+			SetEffect01( fam );
+		}
+		*/
+		//　満ち引き弾
+		local{
+			let ag = rand(0,360);
+			let agp = 360 / way / 2;
+			let dist = 32;
+			let idx = 0;
+			while( dist < 768 ){
+				let angle = ag;
+				loop( way ){
+					CreateShot_MoveEdd( gpos, dist, angle, shote[ idx%length( shote ) ], 80, idx%length( shote ) );
+					angle += 360 / way;
+				}
+				idx++;
+				dist += dp;
+				ag += agp + round( rand( -1, 1 ) ) * ( agp / 2 );
+				ObjSound_Play( CreateShotSE[1] );
+				Wait( wtA );
+			}
+			Eff;
+			task Eff{
+				loop{
+					SetEffect01( fam );
+					if( Wait( 120 ) ){ return; }
+				}
+			}
+		}
+		
+		loop{
+			loop( 4 ){
+				let ag = GetAngleToPlayer( enm05 );
+				loop( roundway ){
+					CreateShot01( gpos, 4, ag, -0.2, 1.6, BGW_ORANGE_02, 32 );
+					ag += 360 / roundway;
+					ObjSound_Play( CreateShotSE[0] );
+				}
+				if( Wait( wtB ) ){ return; }
+			}
+			EnemyMove( enm05, 2, 8 );
+		}
+	}
+	
+	function Wait(long){
+		loop(long){
+			yield;
+			if( ObjEnemy_GetInfo( enm05, INFO_LIFE ) <= 0 ){ return true; }
+		}
+		return false;
+	}
+}
+
+//　桃姫攻撃パターン
+task Enm06_AttackMain( lp ){
+	//　60角形　距離64　優先71　遅延なし　[ 外枠出現処理, 本体出現処理 ]
+	//　"Default" or "Normal" or "SpellCard"
+	CreateLifeBar( enm, 60, 64, 71, 0, [255,255,255], "Default" , [ true, true ] );
+	SetDamageRate( enm, 100, true );
+	
+	let frame	= 0;
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let sht = CreateNuClearShot01( [ CenX, MinY-512 ], 0, 90, 0, 0, "RED", 4, 64 );
+	ObjShot_SetAutoDelete( sht, false );
+	ObjShot_SetSpellResist( sht, true );
+	
+	while( ObjEnemy_GetInfo( enm, INFO_LIFE ) > 0 ){
+		let gpos = [
+			[ ObjMove_GetX(enm), ObjMove_GetY(enm) ],
+			[ ObjMove_GetX(sht), ObjMove_GetY(sht) ],
+		];
+		
+		move1 = 1 * sin( moveA );
+		
+		//　エフェクト
+		if( frame%30 == 0 ){
+			FamilyEffect( sht, [16,32,32], 64 );
+			SetAreaCommonData( "anime", "spa", true );
+		}
+		
+		//　敵移動
+		if( frame > 0 && frame%180 == 0 ){
+			EnemyMove( enm, 2, 8 );
+			SetAreaCommonData( "anime", "spa", false );
+		}
+		
+		//　太陽落下
+		ObjMove_SetPosition(sht, CenX, MinY-512 + move1*400 );
+		
+		if( frame%8 == 0 ){
+			let ag = 90 + (frame/8) * 2.4;
+			ascent( let i in 0..( lp[0] ) ){
+				let spos = [
+					gpos[1][0] + (128*3) * cos( ag + i*(360/lp[0]) ),
+					gpos[1][1] + (128*3) * sin( ag + i*(360/lp[0]) ),
+				];
+				let sht = CreateShot01( spos, -1, ag + i*(360/lp[0]), 0.06, 1.4, BGW_RED_01, 32 );
+				ObjShot_SetSpellResist( sht, true );
+			}
+			ag = 90 - (frame/8) * rand( 3, 4 );
+			ascent( i in 0..( lp[1] ) ){
+				let spos = [
+					gpos[1][0] + (128*2) * cos( ag + i*(360/lp[1]) ),
+					gpos[1][1] + (128*2) * sin( ag + i*(360/lp[1]) ),
+				];
+				CreateShot01( spos, 0, ag + i*(360/lp[1]), 0.06, 1, BGW_ORANGE_11, 32 );
+			}
+			ObjSound_Play( CreateShotSE[1] );
+		}
+		
+		if( frame%90 == 0 ){
+			let ag = GetAngleToPlayer( sht ) + rand( -64, 64 );
+			ascent( let i in 0..( lp[2] ) ){
+				let spos = [
+					gpos[1][0] + (128*1) * cos( ag + i*(360/lp[2]) ),
+					gpos[1][1] + (128*1) * sin( ag + i*(360/lp[2]) ),
+				];
+				let sht = CreateShot01( spos, 0, ag + i*(360/lp[2]), 0.06, 0.8, ADD_BGW_RED_22, 32 );
+				ObjShot_SetSpellResist( sht, true );
+			}
+			ObjSound_Play( CreateShotSE[2] );
+		}
+		
+		//　時間と体力
+		let GetTimer	= ObjEnemyBossScene_GetInfo( GetEnemyBossSceneObjectID(), INFO_TIMER );
+		let GetLife		= ObjEnemy_GetInfo( enm, INFO_LIFE );
+		
+		//　発狂
+		if( count == 1 ){
+			Concentration03_Main( enm, power_rgb, 60 );
+		}
+		if( count > 0 && count%60 == 0 ){
+			let ag = rand(0,360);
+			ascent( let i in 0..( lp[3] ) ){
+				let spos = [
+					gpos[1][0] + 96 * cos( ag + i*(360/lp[3]) ),
+					gpos[1][1] + 96 * sin( ag + i*(360/lp[3]) ),
+				];
+				let shtA = CreateShot01( spos, 0, ag + i*(360/lp[3]), 0.06, 0.8, BGW_RED_27, 32 );
+				ObjShot_SetSpellResist( shtA, true );
+				if( GetTimer < 100 ){
+					let shtB = CreateShot01( spos, 0, ag + i*(360/lp[3]), 0.06, 1.6, BGW_ORANGE_27, 32 );
+					ObjShot_SetSpellResist( shtB, true );
+				}
+			}
+			ObjSound_Play( CreateShotSE[0] );
+		}
+		
+		frame++;
+		if( move1 < 1 ){ moveA += 0.08; }
+		if( GetTimer < 100 || GetLife < 1500 ){ count++; }
+		
+		yield;
+	}
+}
+
+
+
+//　敵ベース作成
+function CreateEnemyBase( enemy_life ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	EnemyBaseMain( obj );
+	
+	return obj;
+}
+
+//　敵メイン
+task EnemyBaseMain( ID ){
+	let gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	
+	while( !Obj_IsDeleted(enm) && ObjEnemy_GetInfo( ID, INFO_LIFE ) > 0 ){
+		gpos = [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		ObjEnemy_SetIntersectionCircleToShot( ID, gpos[0], gpos[1], 64 );
+		ObjEnemy_SetIntersectionCircleToPlayer( ID, gpos[0], gpos[1], 32 );
+		
+		yield;
+	}
+	EnemyExplotion( gpos );
+	Obj_Delete( ID );
+}
+
+//　爆発四散
+task EnemyExplotion( pos ){
+	let frame = 0;
+	
+	WorldShake_Single( 30, 8 );
+	
+	loop( 48 ){
+		CreateLiberationEffect01_Boss( pos, rand(2,12), -0.1, 0.8, rand(1,1.6), [255,255,255] );
+	}
+	
+	BossDeleteSE();
+	
+	while( frame < 30 ){
+		
+		if( frame%2 == 0 ){
+			loop( 2 ){
+				CreateLiberationEffect01_Boss( pos, rand(4,8), rand(0,0.1), 10, rand(0.2,0.5), [255,255,255] );
+			}
+			loop( 2 ){
+				CreateLiberationEffect02_Boss( pos, rand(4,8), -0.1, 0.4, [128,192,255] );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	act++;
+	gl_count = 0;
+}
+
+task BossDeleteSE(){
+	let se		= ObjSound_Create();
+	let se_vol	= GetAreaCommonData("Option", "SE_Volume", 100 );
+	
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	
+	ObjSound_Load(se, csd ~ "./../../se/BossEnd.ogg" );
+	ObjSound_SetVolumeRate(se, se_vol );
+	ObjSound_SetLoopEnable(se, false );
+	ObjSound_SetSoundDivision(se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	loop( 120 ){ yield; }
+	
+	Obj_Delete( se );
+}
+
+//　画面震動
+task WorldShake_Single( long, shake ){
+	SetCommonData( "WorldShake_Single", shake );
+	loop( long ){
+		if( Obj_IsDeleted(enm) ){ break; }
+		if( GetCommonData( "WorldShake_Single", 0 ) <= shake ){
+			Set2DCameraFocusX( CenX + rand(-shake,shake) );
+			Set2DCameraFocusY( CenY + rand(-shake,shake) );
+		}
+		yield;
+	}
+	SetCommonData( "WorldShake_Single", 0 );
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+}

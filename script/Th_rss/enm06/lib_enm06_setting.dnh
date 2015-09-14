@@ -1,0 +1,31 @@
+	
+	
+	//　stage6ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 600000000;
+	
+	//　ボスオーラ色
+	let aura_rgb	= [
+		[ 240, 136, 135 ],
+		[ 8, 32, 32 ],
+	];
+	
+	//　敵パワー集中エフェクト色　ボス用
+	let power_rgb	= [ 102, 60, 107 ];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg6img/enm06a.png";
+	let enemy_cutin_path	= chara_tex[48];
+	

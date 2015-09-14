@@ -1,0 +1,32 @@
+	
+	
+	//　stage7ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 210000000;
+	
+	//　ボスオーラ色
+	let aura_rgb	= [
+		[ 64, 255, 128 ],
+		[ 32, 8, 32 ],
+	];
+	
+	//　敵パワー集中エフェクト色　ボス用
+	let power_rgb	= [ 150, 178, 34 ];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path00	= csd ~ "./../../img/stg/stg7img/enm07a.png";
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg7img/enm07b.png";
+	let enemy_cutin_path	= [ chara_tex[52], chara_tex[63] ];
+	

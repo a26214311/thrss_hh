@@ -1,0 +1,436 @@
+
+
+//--------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------
+//　弾の名前付けるやつ
+//　01:　丸弾			02:　中丸弾			03:　大弾			04:　二重丸弾		05:　小弾
+//　06:　菌弾			07:　銃弾			08:　米弾			09:　星弾			10:　クナイ弾
+//　11:　細弾			12:　札弾			13:　ゾウリムシ弾	14:　鱗弾			15:　大星弾
+//　16:　蝶弾			17:　ナイフ弾		18:　グミ弾			19:　ハート弾		20:　矢弾
+//　21:　神霊弾の元		22:　神霊弾			23:　ｻﾆｰﾚｰｻﾞｰ先端	24:　ふぐ刺し		25:　縦長弾
+//　26:　デススマの奴	27:　炎弾			28:　水滴弾			29:　金弾			30:　へにょり用
+//　31:　音符弾
+//　
+//--------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------
+	//　丸弾
+	let BGW_RED_01		= 1;
+	let BGW_GREEN_01	= 2;
+	let BGW_BLUE_01		= 3;
+	let BGW_YELLOW_01	= 4;
+	let BGW_PURPLE_01	= 5;
+	let BGW_AQUA_01		= 6;
+	let BGW_ORANGE_01	= 7;
+	let BGW_WHITE_01	= 8;
+	let BGB_RED_01		= 9;
+	let BGB_GREEN_01	= 10;
+	let BGB_BLUE_01		= 11;
+	let BGB_YELLOW_01	= 12;
+	let BGB_PURPLE_01	= 13;
+	let BGB_AQUA_01		= 14;
+	let BGB_ORANGE_01	= 15;
+	let BGB_WHITE_01	= 16;
+	
+	//　中弾
+	let BGW_RED_02		= 17;
+	let BGW_GREEN_02	= 18;
+	let BGW_BLUE_02		= 19;
+	let BGW_YELLOW_02	= 20;
+	let BGW_PURPLE_02	= 21;
+	let BGW_AQUA_02		= 22;
+	let BGW_ORANGE_02	= 23;
+	let BGW_WHITE_02	= 24;
+	
+	//　大弾
+	let BGW_RED_03		= 25;
+	let BGW_GREEN_03	= 26;
+	let BGW_BLUE_03		= 27;
+	let BGW_YELLOW_03	= 28;
+	let BGW_PURPLE_03	= 29;
+	let BGW_AQUA_03		= 30;
+	let BGW_ORANGE_03	= 31;
+	let BGW_WHITE_03	= 32;
+	
+	//　二重丸弾
+	let BGW_RED_04		= 33;
+	let BGW_GREEN_04	= 34;
+	let BGW_BLUE_04		= 35;
+	let BGW_YELLOW_04	= 36;
+	let BGW_PURPLE_04	= 37;
+	let BGW_AQUA_04		= 38;
+	let BGW_ORANGE_04	= 39;
+	let BGW_WHITE_04	= 40;
+	let BGB_RED_04		= 41;
+	let BGB_GREEN_04	= 42;
+	let BGB_BLUE_04		= 43;
+	let BGB_YELLOW_04	= 44;
+	let BGB_PURPLE_04	= 45;
+	let BGB_AQUA_04		= 46;
+	let BGB_ORANGE_04	= 47;
+	let BGB_WHITE_04	= 48;
+	
+	//　小弾
+	let BGW_RED_05		= 49;
+	let BGW_GREEN_05	= 50;
+	let BGW_BLUE_05		= 51;
+	let BGW_YELLOW_05	= 52;
+	let BGW_PURPLE_05	= 53;
+	let BGW_AQUA_05		= 54;
+	let BGW_ORANGE_05	= 55;
+	let BGW_WHITE_05	= 56;
+	let BGB_RED_05		= 57;
+	let BGB_GREEN_05	= 58;
+	let BGB_BLUE_05		= 59;
+	let BGB_YELLOW_05	= 60;
+	let BGB_PURPLE_05	= 61;
+	let BGB_AQUA_05		= 62;
+	let BGB_ORANGE_05	= 63;
+	let BGB_WHITE_05	= 64;
+	
+	//　菌弾
+	let BGW_RED_06		= 65;
+	let BGW_GREEN_06	= 66;
+	let BGW_BLUE_06		= 67;
+	let BGW_YELLOW_06	= 68;
+	let BGW_PURPLE_06	= 69;
+	let BGW_AQUA_06		= 70;
+	let BGW_ORANGE_06	= 71;
+	let BGW_WHITE_06	= 72;
+	let BGB_RED_06		= 73;
+	let BGB_GREEN_06	= 74;
+	let BGB_BLUE_06		= 75;
+	let BGB_YELLOW_06	= 76;
+	let BGB_PURPLE_06	= 77;
+	let BGB_AQUA_06		= 78;
+	let BGB_ORANGE_06	= 79;
+	let BGB_WHITE_06	= 80;
+	
+	//　銃弾
+	let BGW_RED_07		= 81;
+	let BGW_GREEN_07	= 82;
+	let BGW_BLUE_07		= 83;
+	let BGW_YELLOW_07	= 84;
+	let BGW_PURPLE_07	= 85;
+	let BGW_AQUA_07		= 86;
+	let BGW_ORANGE_07	= 87;
+	let BGW_WHITE_07	= 88;
+	let BGB_RED_07		= 89;
+	let BGB_GREEN_07	= 90;
+	let BGB_BLUE_07		= 91;
+	let BGB_YELLOW_07	= 92;
+	let BGB_PURPLE_07	= 93;
+	let BGB_AQUA_07		= 94;
+	let BGB_ORANGE_07	= 95;
+	let BGB_WHITE_07	= 96;
+	
+	//　米弾
+	let BGW_RED_08		= 97;
+	let BGW_GREEN_08	= 98;
+	let BGW_BLUE_08		= 99;
+	let BGW_YELLOW_08	= 100;
+	let BGW_PURPLE_08	= 101;
+	let BGW_AQUA_08		= 102;
+	let BGW_ORANGE_08	= 103;
+	let BGW_WHITE_08	= 104;
+	let BGB_RED_08		= 105;
+	let BGB_GREEN_08	= 106;
+	let BGB_BLUE_08		= 107;
+	let BGB_YELLOW_08	= 108;
+	let BGB_PURPLE_08	= 109;
+	let BGB_AQUA_08		= 110;
+	let BGB_ORANGE_08	= 111;
+	let BGB_WHITE_08	= 112;
+	
+	//　星弾
+	let BGW_RED_09		= 113;
+	let BGW_GREEN_09	= 114;
+	let BGW_BLUE_09		= 115;
+	let BGW_YELLOW_09	= 116;
+	let BGW_PURPLE_09	= 117;
+	let BGW_AQUA_09		= 118;
+	let BGW_ORANGE_09	= 119;
+	let BGW_WHITE_09	= 120;
+	let BGB_RED_09		= 121;
+	let BGB_GREEN_09	= 122;
+	let BGB_BLUE_09		= 123;
+	let BGB_YELLOW_09	= 124;
+	let BGB_PURPLE_09	= 125;
+	let BGB_AQUA_09		= 126;
+	let BGB_ORANGE_09	= 127;
+	let BGB_WHITE_09	= 128;
+	
+	//　クナイ弾
+	let BGW_RED_10		= 129;
+	let BGW_GREEN_10	= 130;
+	let BGW_BLUE_10		= 131;
+	let BGW_YELLOW_10	= 132;
+	let BGW_PURPLE_10	= 133;
+	let BGW_AQUA_10		= 134;
+	let BGW_ORANGE_10	= 135;
+	let BGW_WHITE_10	= 136;
+	let BGB_RED_10		= 137;
+	let BGB_GREEN_10	= 138;
+	let BGB_BLUE_10		= 139;
+	let BGB_YELLOW_10	= 140;
+	let BGB_PURPLE_10	= 141;
+	let BGB_AQUA_10		= 142;
+	let BGB_ORANGE_10	= 143;
+	let BGB_WHITE_10	= 144;
+	
+	//　細弾
+	let BGW_RED_11		= 145;
+	let BGW_GREEN_11	= 146;
+	let BGW_BLUE_11		= 147;
+	let BGW_YELLOW_11	= 148;
+	let BGW_PURPLE_11	= 149;
+	let BGW_AQUA_11		= 150;
+	let BGW_ORANGE_11	= 151;
+	let BGW_WHITE_11	= 152;
+	let BGB_RED_11		= 153;
+	let BGB_GREEN_11	= 154;
+	let BGB_BLUE_11		= 155;
+	let BGB_YELLOW_11	= 156;
+	let BGB_PURPLE_11	= 157;
+	let BGB_AQUA_11		= 158;
+	let BGB_ORANGE_11	= 159;
+	let BGB_WHITE_11	= 160;
+	
+	//　札弾
+	let BGW_RED_12		= 161;
+	let BGW_GREEN_12	= 162;
+	let BGW_BLUE_12		= 163;
+	let BGW_YELLOW_12	= 164;
+	let BGW_PURPLE_12	= 165;
+	let BGW_AQUA_12		= 166;
+	let BGW_ORANGE_12	= 167;
+	let BGW_WHITE_12	= 168;
+	let BGB_RED_12		= 169;
+	let BGB_GREEN_12	= 170;
+	let BGB_BLUE_12		= 171;
+	let BGB_YELLOW_12	= 172;
+	let BGB_PURPLE_12	= 173;
+	let BGB_AQUA_12		= 174;
+	let BGB_ORANGE_12	= 175;
+	let BGB_WHITE_12	= 176;
+	
+	//　ゾウリムシ弾
+	let BGW_RED_13		= 177;
+	let BGW_GREEN_13	= 178;
+	let BGW_BLUE_13		= 179;
+	let BGW_YELLOW_13	= 180;
+	let BGW_PURPLE_13	= 181;
+	let BGW_AQUA_13		= 182;
+	let BGW_ORANGE_13	= 183;
+	let BGW_WHITE_13	= 184;
+	let BGB_RED_13		= 185;
+	let BGB_GREEN_13	= 186;
+	let BGB_BLUE_13		= 187;
+	let BGB_YELLOW_13	= 188;
+	let BGB_PURPLE_13	= 189;
+	let BGB_AQUA_13		= 190;
+	let BGB_ORANGE_13	= 191;
+	let BGB_WHITE_13	= 192;
+	
+	//　鱗弾
+	let BGW_RED_14		= 193;
+	let BGW_GREEN_14	= 194;
+	let BGW_BLUE_14		= 195;
+	let BGW_YELLOW_14	= 196;
+	let BGW_PURPLE_14	= 197;
+	let BGW_AQUA_14		= 198;
+	let BGW_ORANGE_14	= 199;
+	let BGW_WHITE_14	= 200;
+	let BGB_RED_14		= 201;
+	let BGB_GREEN_14	= 202;
+	let BGB_BLUE_14		= 203;
+	let BGB_YELLOW_14	= 204;
+	let BGB_PURPLE_14	= 205;
+	let BGB_AQUA_14		= 206;
+	let BGB_ORANGE_14	= 207;
+	let BGB_WHITE_14	= 208;
+	
+	//　大星弾
+	let BGW_RED_15		= 209;
+	let BGW_GREEN_15	= 210;
+	let BGW_BLUE_15		= 211;
+	let BGW_YELLOW_15	= 212;
+	let BGW_PURPLE_15	= 213;
+	let BGW_AQUA_15		= 214;
+	let BGW_ORANGE_15	= 215;
+	let BGW_WHITE_15	= 216;
+	
+	//　蝶弾
+	let BGW_RED_16		= 217;
+	let BGW_GREEN_16	= 218;
+	let BGW_BLUE_16		= 219;
+	let BGW_YELLOW_16	= 220;
+	let BGW_PURPLE_16	= 221;
+	let BGW_AQUA_16		= 222;
+	let BGW_ORANGE_16	= 223;
+	let BGW_WHITE_16	= 224;
+	
+	//　ナイフ弾
+	let BGW_RED_17		= 225;
+	let BGW_GREEN_17	= 226;
+	let BGW_BLUE_17		= 227;
+	let BGW_YELLOW_17	= 228;
+	let BGW_PURPLE_17	= 229;
+	let BGW_AQUA_17		= 230;
+	let BGW_ORANGE_17	= 231;
+	let BGW_WHITE_17	= 232;
+	
+	//　グミ弾
+	let BGW_RED_18		= 233;
+	let BGW_GREEN_18	= 234;
+	let BGW_BLUE_18		= 235;
+	let BGW_YELLOW_18	= 236;
+	let BGW_PURPLE_18	= 237;
+	let BGW_AQUA_18		= 238;
+	let BGW_ORANGE_18	= 239;
+	let BGW_WHITE_18	= 240;
+	
+	//　ハート弾
+	let BGW_RED_19		= 241;
+	let BGW_GREEN_19	= 242;
+	let BGW_BLUE_19		= 243;
+	let BGW_YELLOW_19	= 244;
+	let BGW_PURPLE_19	= 245;
+	let BGW_AQUA_19		= 246;
+	let BGW_ORANGE_19	= 247;
+	let BGW_WHITE_19	= 248;
+	
+	//　矢弾
+	let BGW_RED_20		= 249;
+	let BGW_GREEN_20	= 250;
+	let BGW_BLUE_20		= 251;
+	let BGW_YELLOW_20	= 252;
+	let BGW_PURPLE_20	= 253;
+	let BGW_AQUA_20		= 254;
+	let BGW_ORANGE_20	= 255;
+	let BGW_WHITE_20	= 256;
+	
+	//　神霊弾の元
+	let BGW_RED_21		= 257;
+	let BGW_GREEN_21	= 258;
+	let BGW_BLUE_21		= 259;
+	let BGW_YELLOW_21	= 260;
+	let BGW_PURPLE_21	= 261;
+	let BGW_AQUA_21		= 262;
+	let BGW_ORANGE_21	= 263;
+	let BGW_WHITE_21	= 264;
+	
+	//　神霊弾
+	let BGW_RED_22		= 265;
+	let BGW_GREEN_22	= 266;
+	let BGW_BLUE_22		= 267;
+	let BGW_YELLOW_22	= 268;
+	let BGW_PURPLE_22	= 269;
+	let BGW_AQUA_22		= 270;
+	let BGW_ORANGE_22	= 271;
+	let BGW_WHITE_22	= 272;
+	
+	//　サニーレーザーの先っちょ
+	let BGW_RED_23		= 273;
+	let BGW_GREEN_23	= 274;
+	let BGW_BLUE_23		= 275;
+	let BGW_YELLOW_23	= 276;
+	let BGW_PURPLE_23	= 277;
+	let BGW_AQUA_23		= 278;
+	let BGW_ORANGE_23	= 279;
+	let BGW_WHITE_23	= 280;
+	let BGB_RED_23		= 281;
+	let BGB_GREEN_23	= 282;
+	let BGB_BLUE_23		= 283;
+	let BGB_YELLOW_23	= 284;
+	let BGB_PURPLE_23	= 285;
+	let BGB_AQUA_23		= 286;
+	let BGB_ORANGE_23	= 287;
+	let BGB_WHITE_23	= 288;
+	
+	//　ふぐ刺し
+	let BGW_RED_24		= 289;
+	let BGW_GREEN_24	= 290;
+	let BGW_BLUE_24		= 291;
+	let BGW_YELLOW_24	= 292;
+	let BGW_PURPLE_24	= 293;
+	let BGW_AQUA_24		= 294;
+	let BGW_ORANGE_24	= 295;
+	let BGW_WHITE_24	= 296;
+	
+	//　縦長弾
+	let BGW_RED_25		= 297;
+	let BGW_GREEN_25	= 298;
+	let BGW_BLUE_25		= 299;
+	let BGW_YELLOW_25	= 300;
+	let BGW_PURPLE_25	= 301;
+	let BGW_AQUA_25		= 302;
+	let BGW_ORANGE_25	= 303;
+	let BGW_WHITE_25	= 304;
+	
+	//　デススマのやつ
+	let BGW_RED_26		= 305;
+	let BGW_GREEN_26	= 306;
+	let BGW_BLUE_26		= 307;
+	let BGW_YELLOW_26	= 308;
+	let BGW_PURPLE_26	= 309;
+	let BGW_AQUA_26		= 310;
+	let BGW_ORANGE_26	= 311;
+	let BGW_WHITE_26	= 312;
+	
+	//　炎弾
+	let BGW_RED_27		= 313;
+	let BGW_GREEN_27	= 314;
+	let BGW_BLUE_27		= 315;
+	let BGW_YELLOW_27	= 316;
+	let BGW_PURPLE_27	= 317;
+	let BGW_AQUA_27		= 318;
+	let BGW_ORANGE_27	= 319;
+	let BGW_WHITE_27	= 320;
+	
+	//　水滴弾
+	let BGW_RED_28		= 321;
+	let BGW_GREEN_28	= 322;
+	let BGW_BLUE_28		= 323;
+	let BGW_YELLOW_28	= 324;
+	let BGW_PURPLE_28	= 325;
+	let BGW_AQUA_28		= 326;
+	let BGW_ORANGE_28	= 327;
+	let BGW_WHITE_28	= 328;
+	let BGB_RED_28		= 329;
+	let BGB_GREEN_28	= 330;
+	let BGB_BLUE_28		= 331;
+	let BGB_YELLOW_28	= 332;
+	let BGB_PURPLE_28	= 333;
+	let BGB_AQUA_28		= 334;
+	let BGB_ORANGE_28	= 335;
+	let BGB_WHITE_28	= 336;
+	
+	//　金弾
+	let BGW_RED_29		= 337;
+	let BGW_GREEN_29	= 338;
+	let BGW_BLUE_29		= 339;
+	let BGW_YELLOW_29	= 340;
+	let BGW_PURPLE_29	= 341;
+	let BGW_AQUA_29		= 342;
+	let BGW_ORANGE_29	= 343;
+	let BGW_WHITE_29	= 344;
+	
+	//　へにょり用
+	let BGW_RED_30		= 345;
+	let BGW_GREEN_30	= 346;
+	let BGW_BLUE_30		= 347;
+	let BGW_YELLOW_30	= 348;
+	let BGW_PURPLE_30	= 349;
+	let BGW_AQUA_30		= 350;
+	let BGW_ORANGE_30	= 351;
+	let BGW_WHITE_30	= 352;
+	
+	//　音符弾 IDの関係でADDの後から追加
+	let BGW_RED_31		= 705;
+	let BGW_GREEN_31	= 706;
+	let BGW_BLUE_31		= 707;
+	let BGW_YELLOW_31	= 708;
+	let BGW_PURPLE_31	= 709;
+	let BGW_AQUA_31		= 710;
+	let BGW_ORANGE_31	= 711;
+	let BGW_WHITE_31	= 712;

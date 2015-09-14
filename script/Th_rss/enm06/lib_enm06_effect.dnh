@@ -1,0 +1,597 @@
+
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　三角縁神獣鏡
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+task SetEffect_Enm06( CallID ){
+	SetEffect_Enm06_01( CallID );
+	SetEffect_Enm06_02( CallID, 96 );
+}
+
+//　鏡
+task SetEffect_Enm06_01( objID ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let count1	= 0;
+	let countA	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjSound_Play( CreateShotSE[5] );
+	
+	let scale_base	= 0.7;
+	let scale		= [ scale_base, scale_base+0.04, scale_base ];
+	
+	ascent( let i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg6img/enm6eff_01a.png" );
+		Obj_SetRenderPriorityI(ID[i], 29 );
+		ObjPrim_SetPrimitiveType(ID[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(ID[i], 4 );
+		//　頂点
+		ObjPrim_SetVertexPosition(ID[i], 0, -256, -256, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 1, -256, 256, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 2, 256, -256, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 3, 256, 256, 0 );
+		//　テクスチャ
+		ObjPrim_SetVertexUVT(ID[i], 0, 0, 0 );
+		ObjPrim_SetVertexUVT(ID[i], 1, 0, 512 );
+		ObjPrim_SetVertexUVT(ID[i], 2, 512, 0 );
+		ObjPrim_SetVertexUVT(ID[i], 3, 512, 512 );
+	}
+	
+	ObjPrim_SetVertexUVT(ID[2], 0, 512, 0 );
+	ObjPrim_SetVertexUVT(ID[2], 1, 512, 512 );
+	ObjPrim_SetVertexUVT(ID[2], 2, 1024, 0 );
+	ObjPrim_SetVertexUVT(ID[2], 3, 1024, 512 );
+	
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ADD_ARGB );
+	
+	while( !Obj_IsDeleted( objID ) ){
+		let gpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		
+		let rgb_array = [ 32, 128, 255 ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1] + 8 * sin( count1/4 ), 0 );
+			ObjRender_SetAngleZ(ID[i], 180 - move1*180 - count1/4 );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], move1*scale[i], 0 );
+		}
+		ObjRender_SetAlpha(ID[1], 160 );
+		ObjRender_SetColor(ID[2], rgb_array[0], rgb_array[1], rgb_array[2] );
+		
+		count1 += countA;
+		if( move1 < 1 ){ moveA += 1; }
+		else if( countA < 1 ){ countA += 0.01; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　桃姫オプション　横のふにゃふにゃ
+task SetEffect_Enm06_02( objID, dis ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let sca		= 0.8;
+	let count	= 0;
+	let i		= 0;
+	let j		= 0;
+	let v_num	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ascent( j in 0..( length(ID) ) ){
+		ObjRender_SetBlendType(ID[j], BLEND_ALPHA );
+		ObjPrim_SetTexture(ID[j], csd ~ "./../../img/stg/stg6img/enm6eff_01b.png" );
+		ObjPrim_SetPrimitiveType(ID[j], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(ID[j], 16 );
+		Obj_SetRenderPriorityI(ID[j], 29 );
+		ObjRender_SetScaleXYZ(ID[j], sca, sca, 0 );
+		
+		v_num = ObjPrim_GetVertexCount(ID[j])/2;
+		ascent( i in 0..( v_num ) ){
+			ObjPrim_SetVertexUVT(ID[j], 0+i*2, 0+i*(256/(v_num-1)), 0 );
+			ObjPrim_SetVertexUVT(ID[j], 1+i*2, 0+i*(256/(v_num-1)), 256 );
+		}
+		ObjRender_SetColor(ID[j], 255, 255, 255 );
+	}
+	ObjRender_SetAngleXYZ(ID[0], 0, 0, 32 );
+	ObjRender_SetAngleXYZ(ID[1], 0, 180, 32 );
+	ObjRender_SetAngleXYZ(ID[2], 0, 0, -32 );
+	ObjRender_SetAngleXYZ(ID[3], 0, 180, -32 );
+	
+	while( !Obj_IsDeleted(objID) ){
+		move1 = 1 * sin( moveA );
+		
+		let angle	= [ 225, -45, 135, 45 ];
+		ascent( j in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[j], ObjMove_GetX(objID)+dis*cos(angle[j]),
+											ObjMove_GetY(objID)+dis*sin(angle[j]), 0 );
+			ObjRender_SetAlpha(ID[j], move1*128 );
+			ascent( i in 0..( v_num ) ){
+				let val = [
+					( 16-i*(16/(v_num-1)) ) * sin( count+i*64 ),
+					( 16-i*(16/(v_num-1)) ) * sin( count+i*64 ),
+				];
+				ObjPrim_SetVertexPosition(ID[j], 0+i*2, -128 + ( i*(256/(v_num-1)) + val[i%2] ),
+												move1*-128 + val[i%2]*1, 0 );
+				ObjPrim_SetVertexPosition(ID[j], 1+i*2, -128 + ( i*(256/(v_num-1)) + val[i%2] ),
+												move1*128 + val[i%2]*1, 0 );
+			}
+		}
+		
+		count += 4;
+		if( move1 < 1 ){ moveA += 1; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　パーティクル
+task Particle_DarkPower( ID, pos, dis, angle, angle_plus, rgb_h ){
+	let id			= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let ang			= 0;
+	let sca			= rand( 0.4, 1 );
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	let angp		= 0;
+	let i			= 0;
+	
+	ang = angle;
+	
+	loop( length(id) ){
+		ObjPrim_SetTexture(id[i], path_effect01 );
+		Obj_SetRenderPriorityI(id[i], 32 );
+		i++;
+	}
+	i = 0;
+	
+	ObjRender_SetBlendType(id[0], BLEND_ADD_ARGB );
+	ObjRender_SetColor(id[0], rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjRender_SetAlpha(id[0], 128 );
+	ObjSprite2D_SetSourceRect(id[0], 0, 320, 64, 384 );
+	ObjSprite2D_SetDestCenter(id[0]);
+	ObjRender_SetBlendType(id[1], BLEND_SUBTRACT );
+	ObjSprite2D_SetSourceRect(id[1], 160-32, 288, 192-32, 320 );
+	ObjSprite2D_SetDestCenter(id[1]);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		move1	= 1 * sin( moveA );
+		
+		loop( length(id) ){
+			let spos = [
+				pos[0] + ( move1*(dis[0]/2) ) * cos( ang ),
+				pos[1] + ( move1*(dis[1]/2) ) * sin( ang ),
+			];
+			
+			ObjRender_SetPosition(id[i], spos[0], spos[1], 0 );
+			ObjRender_SetScaleXYZ(id[i], move1*(sca+0.1*i), move1*(sca+0.1*i), 0 );
+			ObjRender_SetAngleXYZ(id[i], 0, 0, -spin );
+			i++;
+		}
+		i = 0;
+		
+		angp += angle_plus;
+		ang += angp;
+		moveA += 5;
+		spin += 64;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		move1	= 1 * sin( moveA );
+		
+		loop( length(id) ){
+			let spos = [
+				pos[0] + ( dis[0]/2 + move1*(dis[0]/2) ) * cos( ang ),
+				pos[1] + ( dis[1]/2 + move1*(dis[1]/2) ) * sin( ang ),
+			];
+			
+			ObjRender_SetPosition(id[i], spos[0], spos[1], 0 );
+			ObjRender_SetScaleXYZ(id[i], move1*(sca+0.1*i) - (sca+0.1*i), move1*(sca+0.1*i) - (sca+0.1*i), 0 );
+			ObjRender_SetAngleXYZ(id[i], 0, 0, -spin );
+			i++;
+		}
+		i = 0;
+		
+		angp += angle_plus;
+		ang += angp;
+		moveA += 2;
+		spin += 64;
+		
+		yield;
+	}
+	loop( length(id) ){
+		Obj_Delete(id[i]);
+		i++;
+	}
+}
+
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　桃姫 埴輪の使い魔
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　使い魔本体
+function CreateEnemy_Haniwa( enemy_life, scale ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Haniwa_Update( obj, enemy_life );
+	CreateEnemy_Haniwa_Render( obj, scale );
+	
+	return obj;
+}
+
+//　使い魔更新
+task CreateEnemy_Haniwa_Update( CallID, MaxLife ){
+	let count = 0;
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		yield;
+	}
+	Obj_Delete( CallID );
+}
+
+//　使い魔描画
+task CreateEnemy_Haniwa_Render( CallID, scale_base ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　オブジェクト作成
+	ascent( let i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg6img/enm6eff_01c.png" );
+		Obj_SetRenderPriorityI(ID[i], 32 );
+		ObjSprite2D_SetSourceRect(ID[i], 256, 0, 512, 256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ADD_ARGB );
+	
+	ObjSprite2D_SetSourceRect(ID[2], 0, 0, 256, 256 );
+	
+	let alpha = [ 128, 128, 255 ];
+	let scale = [ (scale_base+0.08), (scale_base+0.06), scale_base ];
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count*8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(ID[i], 90 - move1*90, 180 - move1*180, ObjRender_GetAngleZ( CallID ) - 90 );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count*8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], 0 );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], scale[i]*2 - move1*scale[i], ObjRender_GetAngleZ( CallID ) - 90 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　使い魔用波紋エフェクト
+task FamilyEffect( ID, color, sca ){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, csd ~ "./../../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 51 );
+	ObjRender_SetBlendType(effect, BLEND_SUBTRACT );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}
+
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　桃姫 鏡の使い魔
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　使い魔本体
+function CreateEnemy_Mirror( enemy_life, scale, h_array, wait_time ){
+	let obj		= ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Mirror_Update( obj, enemy_life, wait_time );
+	CreateEnemy_Mirror_Render( obj, scale, h_array, 0 );
+	Obj_SetValue( obj, "Collision", true );
+	return obj;
+}
+//　生成時演出無しver(第4スペル用)
+function CreateEnemy_MirrorB( enemy_life, scale, h_array, wait_time ){
+	let obj		= ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, enemy_life );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Mirror_Update( obj, enemy_life, wait_time );
+	CreateEnemy_Mirror_Render( obj, scale, h_array, 1 );
+	Obj_SetValue( obj, "Collision", true );
+	return obj;
+}
+
+//　使い魔更新
+task CreateEnemy_Mirror_Update( CallID, MaxLife, wait_time ){
+	let count = 0;
+	
+	ObjEnemy_SetDamageRate( CallID, 100, 400 );
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		let glife	= ObjEnemy_GetInfo( CallID, INFO_LIFE );
+		
+		//　蘇生
+		if( count >= wait_time ){
+			count = 0;
+			FamilyEffect( CallID, [255,255,255], 16 );
+			ObjEnemy_SetLife( CallID, MaxLife );
+			ObjSound_Play( CreateShotSE[7] );
+		}
+		
+		if( glife > 0 ){
+			if( Obj_GetValueD( CallID, "Collision", false ) ){
+				ObjEnemy_SetIntersectionCircleToShot( CallID, gpos[0], gpos[1], 64 );
+			}
+		}
+		else{ count++; }
+		
+		yield;
+	}
+	Obj_Delete( CallID );
+}
+
+//　鏡
+task CreateEnemy_Mirror_Render( objID, scale_base, h_array, type ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let frame	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let animC	= 0;
+	let animX	= 0;
+	let animY	= 0;
+	let IsBreak	= false;
+	if( type ){ moveA = 90; }
+	
+	let scale	= [ scale_base, scale_base+0.1 ];
+	
+	ObjSound_Play( CreateShotSE[7] );
+	
+	ascent( let i in 0..( length(ID) ) ){
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg6img/enm6eff_01d.png" );
+		Obj_SetRenderPriorityI(ID[i], 31 );
+		ObjPrim_SetPrimitiveType(ID[i], PRIMITIVE_TRIANGLESTRIP );
+		ObjPrim_SetVertexCount(ID[i], 4 );
+		//　頂点
+		ObjPrim_SetVertexPosition(ID[i], 0, -64, -64, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 1, -64, 64, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 2, 64, -64, 0 );
+		ObjPrim_SetVertexPosition(ID[i], 3, 64, 64, 0 );
+	}
+	
+	ObjRender_SetBlendType(ID[0], BLEND_ALPHA );
+	ObjRender_SetBlendType(ID[1], BLEND_ADD_ARGB );
+	
+	while( !Obj_IsDeleted( objID ) ){
+		let gpos	= [ ObjMove_GetX(objID), ObjMove_GetY(objID) ];
+		let glife	= ObjEnemy_GetInfo( objID, INFO_LIFE );
+		
+		//　アニメ系変数初期化して破損状態へ移行
+		if( frame == 1 ){
+			animC	= 0;
+			animX	= 0;
+			animY	= 0;
+			IsBreak	= true;
+			loop( 16 ){
+				let dis = rand(32,128);
+				Particle_DarkPower( objID, gpos, [ dis, dis ], rand(0,360), 0, power_rgb );
+			}
+			ObjSound_Play( CreateShotSE[3] );
+			ObjSound_Play( CreateShotSE[12] );
+		}
+		
+		if( glife <= 0 ){ frame++; }
+		else{
+			frame	= 0;
+			IsBreak	= false;
+		}
+		
+		let rgb_array = [
+			HSVtoRGB( h_array[0], 255, 255 ),
+			HSVtoRGB( h_array[1], 255, 255 ),
+			HSVtoRGB( h_array[2], 255, 255 ),
+		];
+		
+		move1 = 1 * sin( moveA );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleXYZ(ID[i], 90 - move1*90, 180 - move1*180, 0 );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*255 );
+			//　テクスチャUV
+			ObjPrim_SetVertexUVT(ID[i], 0, 0 + animX*128, 0 + animY*128 + 256*IsBreak );
+			ObjPrim_SetVertexUVT(ID[i], 1, 0 + animX*128, 128 + animY*128 + 256*IsBreak );
+			ObjPrim_SetVertexUVT(ID[i], 2, 128 + animX*128, 0 + animY*128 + 256*IsBreak );
+			ObjPrim_SetVertexUVT(ID[i], 3, 128 + animX*128, 128 + animY*128 + 256*IsBreak );
+		}
+		
+		ObjPrim_SetVertexColor(ID[1], 0, rgb_array[0][0], rgb_array[0][1], rgb_array[0][2] );
+		ObjPrim_SetVertexColor(ID[1], 1, rgb_array[1][0], rgb_array[1][1], rgb_array[1][2] );
+		ObjPrim_SetVertexColor(ID[1], 2, rgb_array[1][0], rgb_array[1][1], rgb_array[1][2] );
+		ObjPrim_SetVertexColor(ID[1], 3, rgb_array[2][0], rgb_array[2][1], rgb_array[2][2] );
+		
+		//　破損状態
+		if( !IsBreak ){
+			if( animC > 0 && animC%4 == 0 ){
+				animX++;
+				if( animX >= 4 ){
+					animX = 0;
+					animY++;
+					if( animY >= 2 ){
+						animY = 0;
+					}
+				}
+			}
+		}
+		else{
+			if( animC > 0 && animC%4 == 0 ){
+				if( animY < 1 || animX < 3 ){ animX++; }
+				if( animY < 1 && animX >= 4 ){
+					animX = 0;
+					animY++;
+				}
+			}
+		}
+		animC++;
+		if( move1 < 1 ){ moveA += 2; }
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+
+
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//　ユーティリティ
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+
+//　弾作成するだけ
+function CreateShot01( pos, speed, angle, acc, maxspeed, shote, delay ){
+	let sht = CreateShotA2( pos[0], pos[1], speed, angle, acc, maxspeed, shote, delay );
+	NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	return sht;
+}
+
+//　2点間の距離を取得
+function GetDistance( pos1, pos2 ){
+	return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+}
+
+//　pos1 から見た pos2 への角度を取得
+function GetGapAngle( pos1, pos2 ){
+	return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+}
+
+//　重力ある感じで動く弾
+function CreateGravityShot( pos, speed, acceleration, maxspeed, shote, delay ){
+	let sht = CreateShotB2(
+		pos[0],
+		pos[1],
+		speed[0] * cos( speed[1] ),
+		speed[0] * sin( speed[1] ),
+		acceleration[0] * cos( acceleration[1] ),
+		acceleration[0] * sin( acceleration[1] ),
+		maxspeed[0] * cos( maxspeed[1] ),
+		maxspeed[0] * sin( maxspeed[1] ),
+		shote, delay
+	);
+	ObjSound_Play( CreateShotSE[1] );
+	NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	return sht;
+}

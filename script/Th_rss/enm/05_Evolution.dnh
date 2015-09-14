@@ -1,0 +1,355 @@
+
+//　パワーアップ
+task MegaEvolution_Enemy( CallID ){
+	let se			= ObjSound_Create;
+	let se_vol		= GetAreaCommonData( "Option", "SE_Volume", 100 );
+	se_vol = 100 - 100 * ( ( 100 - se_vol ) / 100 )^2;
+	let frame		= 0;
+	let count		= 0;
+	
+	CreatePolygon_EnemySUBT( se, 16, 384, 42, [0,-8], [255,255,255] );
+	CreatePolygon_EnemyUT( se, 16, 256, 42, [0,8], BLEND_ALPHA, [128,0,255] );
+	
+	SetPlayerInvincibilityFrame(180);
+	
+	ObjSound_Load( se, GetCurrentScriptDirectory() ~ "./../../se/flare2.ogg" );
+	ObjSound_SetVolumeRate( se, se_vol );
+	ObjSound_SetLoopEnable( se, false );
+	ObjSound_SetSoundDivision( se, SOUND_SE );
+	ObjSound_Play( se );
+	
+	SnowflakePower_Enemy( GetPlayerObjectID() );
+	
+	while( !Obj_IsDeleted(CallID) && frame < 60 ){
+		
+		if( frame%1 == 0 ){
+			let fxn = frame*rand(1,6);
+			ascent( let i in 0..6 ){
+				EnemyBraid_Effect( fxn, i*60 + fxn, [1,1], [0,0,0 + i*60 + fxn], [64,64,128] );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+	Obj_Delete( se );
+}
+
+task EnemyBraid_Effect(dis,angle,sca_array,ang_array,rgb_array){
+	//　エフェクトカット 1 以下 だとエフェクト出現
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+	let animc	= 0;
+	let anim1	= 0;
+	let anim2	= 0;
+	
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../../img/effect/braid.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, 42 );
+	ObjRender_SetScaleXYZ(ID, sca_array[0], sca_array[1], 0 );
+	ObjRender_SetAngleXYZ(ID, ang_array[0], ang_array[1], ang_array[2] );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + anim2*256, 128 + 128*anim1, 256 + anim2*256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( anim2 < 2 ){
+		ObjRender_SetPosition(ID, gpos[0] + dis * cos( angle ), gpos[1] + dis * sin( angle ), 0 );
+		
+		ObjSprite2D_SetSourceRect(ID, 0 + 128*anim1, 0 + anim2*256, 128 + 128*anim1, 256 + anim2*256 );
+		
+		animc++;
+		if( animc > 0 && animc %2 == 0 ){
+			anim1++;
+			if( anim1 >= 3 ){
+				anim1 = 0;
+				anim2++;
+			}
+		}
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+task SnowflakePower_Enemy(ID){
+	//　エフェクトカット 2 以下 だとエフェクト出現
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 2 ){ return; }
+	
+	let frame	= 0;
+	
+	while( frame < 60 ){
+		if( frame%4 == 0 && frame < 30 ){
+			ascent( let i in 0..5 ){
+				CreateSnowflake_Enemy( ID, 270 + i*72 + frame*4, 192, 0, 1, 10, [128,128,255], 255 );
+				CreateSnowflake_Enemy( ID, 270 + i*72 - frame*4, 192, 0, 1, 10, [128,128,255], 255 );
+			}
+		}
+		
+		frame++;
+		
+		yield;
+	}
+}
+
+task CreateSnowflake_Enemy(CallID,angle,disD,speed,acc,mx,rgb_h,alpha){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let gp		= [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+	let dis		= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	let frame	= 0;
+	let sca		= 2;
+	let spin	= rand(0,360);
+	let spinp	= rand(-4,4);
+	
+	while( spinp == 0 ){
+		spinp = rand(-4,4);
+	}
+	
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../../img/effect/eff_default.png" );
+	Obj_SetRenderPriorityI(ID, 42 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_h[0], rgb_h[1], rgb_h[2] );
+	ObjSprite2D_SetSourceRect(ID, 96, 192, 128, 224 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	//　自機からの距離
+	let pl_dis	= GetObjectDistance( enm, ID );
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) ){
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gp[0] + move1*disD * cos(angle), gp[1] + move1*disD * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		spin += spinp;
+		if( move1 < 1 ){ moveA += 2; }
+		else{ break; }
+		
+		yield;
+	}
+	moveA = 0;
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) && pl_dis > 32 ){
+		pl_dis	= GetObjectDistance( enm, ID );
+		angle	= atan2( ObjMove_GetY(enm) - ObjRender_GetY(ID), ObjMove_GetX(enm) - ObjRender_GetX(ID) );
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, ObjRender_GetX(ID) + dis * cos(angle), ObjRender_GetY(ID) + dis * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		
+		dis = 0;
+		
+		spin += spinp;
+		dis += speed;
+		if( speed < mx ){ speed += acc; }
+		if( move1 < 1 ){ moveA += 10; }
+		
+		yield;
+	}
+	gp = [ ObjMove_GetX(enm), ObjMove_GetY(enm) ];
+	moveA = 0;
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ID) ){
+		move1	= 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gp[0] + move1*(disD*1.4) * cos(angle), gp[1] + move1*(disD*1.4) * sin(angle), 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + spinp );
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		spin += spinp;
+		if( move1 < 1 ){ moveA += 1; }
+		else{ break; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　頂点数を奇数するときもくなるよ
+task CreatePolygon_EnemyUT(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, BLEND_TYPE, rgb_h ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let scr			= 0;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten				=  SET_POLYGON + 1 + 1 ;
+	//　回転の早さ
+	let ang_plus		= SET_ANGLE_Z[1];
+	//　画像サイズ
+	let _rect			= [0,256];
+	//　中央a値
+	let alpha_center	= 255;
+	//　外周a値
+	let alpha			= 0;
+	
+	ObjRender_SetBlendType(id, BLEND_TYPE );
+	ObjPrim_SetTexture(id, GetCurrentScriptDirectory() ~ "./../../img/effect/wave.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		ObjRender_SetPosition( id, ObjMove_GetX(enm), ObjMove_GetY(enm), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjPrim_SetVertexAlpha(id, 0, move1 * alpha_center );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, rgb_h[0], rgb_h[1], rgb_h[2] );
+			ObjPrim_SetVertexAlpha(id, 1+i, move1*alpha );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		ObjRender_SetPosition( id, ObjMove_GetX(enm), ObjMove_GetY(enm), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0], rgb_h[1], rgb_h[2] );
+		ObjPrim_SetVertexAlpha(id, 0, alpha_center - move1 * alpha_center );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, rgb_h[0], rgb_h[1], rgb_h[2] );
+			ObjPrim_SetVertexAlpha(id, 1+i, alpha - move1*alpha );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		SET_DISTANCE = SET_DISTANCE + move1 * 256;
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　こちらはサブタレクトのみ
+task CreatePolygon_EnemySUBT(SET_ID, SET_POLYGON, SET_DISTANCE, SET_PRIORITY, SET_ANGLE_Z, rgb_h ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let move1		= 0;
+	let moveA		= 0;
+	let ang			= 0;
+	let pc			= 0;
+	let i			= 0;
+	let scr			= 0;
+	
+	//　Ｎ角形 + 中心点 + 円になる時の余分な点
+	let ten				=  SET_POLYGON + 1 + 1 ;
+	//　回転の早さ
+	let ang_plus		= SET_ANGLE_Z[1];
+	//　画像サイズ
+	let _rect			= [0,256];
+	
+	ObjRender_SetBlendType(id, BLEND_SUBTRACT );
+	ObjPrim_SetTexture(id, GetCurrentScriptDirectory ~ "./../../img/effect/wave.png" );
+	Obj_SetRenderPriorityI(id, SET_PRIORITY );
+	ObjRender_SetAngleXYZ(id, 0, 0, SET_ANGLE_Z[0] );
+	ObjPrim_SetPrimitiveType(id, PRIMITIVE_TRIANGLEFAN );
+	ObjPrim_SetVertexCount(id, ten );
+	
+	while( !Obj_IsDeleted(SET_ID) ){
+		ObjRender_SetPosition( id, ObjMove_GetX(enm), ObjMove_GetY(enm), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, move1*rgb_h[0], move1*rgb_h[1], move1*rgb_h[2] );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, 0, 0, 0 );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		ObjRender_SetPosition( id, ObjMove_GetX(enm), ObjMove_GetY(enm), 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		//　中心となる点　ここから順番に頂点が結ばれていく
+		ObjPrim_SetVertexPosition(id, 0, 0, 0, 0 );
+		ObjPrim_SetVertexUVT(id, 0, 0, 0 - scr );
+		ObjPrim_SetVertexColor(id, 0, rgb_h[0] - move1*rgb_h[0], rgb_h[1] - move1*rgb_h[1], rgb_h[2] - move1*rgb_h[2] );
+		
+		//　0番目を除いた、残りの頂点設定
+		loop( SET_POLYGON+1 ){
+			ObjPrim_SetVertexPosition(id, 1+i, SET_DISTANCE * cos(pc+ang), SET_DISTANCE * sin(pc+ang), 0 );
+			ObjPrim_SetVertexUVT(id, 1+i, 0 + _rect[i%2], _rect[1] - scr );
+			ObjPrim_SetVertexColor(id, 1+i, 0, 0, 0 );
+			
+			pc	+= 360/SET_POLYGON;
+			i	++;
+		}
+		pc			= 0;
+		i			= 0;
+		
+		SET_DISTANCE = SET_DISTANCE + move1 * 256;
+		ang += ang_plus;
+		if( move1 < 1 ){ moveA += 5; }
+		scr += 32;
+		
+		yield;
+	}
+	Obj_Delete(id);
+}

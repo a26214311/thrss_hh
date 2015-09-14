@@ -1,0 +1,330 @@
+
+
+//
+//　会話シーン用
+//　char_text[2] に入力された文字列を表示します
+//　char_text[1] が "NULL" であれば、1行の文字列を表示します
+//　char_text[1] が "NULL" 以外であれば、2行の文字列を表示します
+//　number はカウンタと同期して自動削除に使用しています
+task CreateBalloonManager( pos, long, char_text, number, tex_change ){
+	let i	= 0;
+	let j	= 0;
+	let sca	= 0.6;
+	
+	loop( 2 ){
+		CreateBalloonPlayer( j, [ pos[0]+j, pos[1] + j*(128*sca) ], 0+j*3, sca, number, tex_change );
+		loop( long ){
+			CreateBalloonPlayer( j, [ pos[0] + (i+1)*(128*sca), pos[1] + j*(128*sca) ], 1, sca, number, tex_change );
+			i++;
+		}
+		CreateBalloonPlayer( j, [ pos[0] + (i+1)*(128*sca), pos[1] + j*(128*sca) ], 2, sca, number, tex_change );
+		i = 0;
+		j++;
+	}
+	
+	if( char_text[1] != "NULL" ){
+		//　表示文字列に2行目があるとき
+		CreateBalloonText( [ pos[0]-20, pos[1]+(30*sca) ], char_text[0], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(70*sca) ], char_text[1], number );
+	}
+	else{
+		//　表示文字列が1行目だけのとき
+		CreateBalloonText( [ pos[0]-20, pos[1]+(50*sca) ], char_text[0], number );
+	}
+}
+
+
+//　こっちは敵の吹きだし用
+task CreateBalloonManager_Reverse( pos, long, char_text, number, tex_change ){
+	let i	= 0;
+	let j	= 0;
+	let sca	= 0.6;
+	
+	loop( 2 ){
+		CreateBalloonEnemy( j, [ pos[0], pos[1] + j*(128*sca) ], 2, sca, number, tex_change );
+		loop( long ){
+			CreateBalloonEnemy( j, [ pos[0] + (i+1)*(128*sca), pos[1] + j*(128*sca) ], 1, sca, number, tex_change );
+			i++;
+		}
+		CreateBalloonEnemy( j, [ pos[0] + (i+1)*(128*sca), pos[1] + j*(128*sca) ], j*3, sca, number, tex_change );
+		i = 0;
+		j++;
+	}
+	
+	if( char_text[1] != "NULL" ){
+		//　表示文字列に2行目があるとき
+		CreateBalloonText( [ pos[0]-20, pos[1]+(30*sca) ], char_text[0], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(70*sca) ], char_text[1], number );
+	}
+	else{
+		//　表示文字列が1行目だけのとき
+		CreateBalloonText( [ pos[0]-20, pos[1]+(50*sca) ], char_text[0], number );
+	}
+}
+
+
+
+//　文字列作成
+task CreateBalloonText( pos, char_text, number ){
+	let text	= ObjText_Create();
+	let size	= 18;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　会話カウンター
+	let counter	= GetAreaCommonData("Talk", "counter", 0 );
+	
+	ObjRender_SetPosition(text, pos[0], pos[1], 0 );
+	Obj_SetRenderPriorityI(text, 88 );
+	ObjText_SetText(text, char_text );
+	ObjText_SetFontType(text, "simhei" );
+	ObjText_SetFontSize(text, size );
+	ObjText_SetHorizontalAlignment(text, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(text, 1024 );
+	ObjText_SetFontColorTop(text, 0, 0, 0 );
+	ObjText_SetFontColorBottom(text, 0, 0, 0 );
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(text, 1, move1*1, 0 );
+		ObjRender_SetAlpha(text, move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( counter == number ){
+		counter = GetAreaCommonData("Talk", "counter", 0 );
+		yield;
+	}
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(text, 1, 1 - move1*1, 0 );
+		ObjRender_SetAlpha(text, 255 - move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(text);
+}
+
+//　会話吹き出し作成
+task CreateBalloonPlayer( rev, pos, type, sca, number, tex_change ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　会話カウンター
+	let counter	= GetAreaCommonData("Talk", "counter", 0 );
+	
+	//　type
+	//　0 吹き出し部分
+	//　1 長い所部分
+	//　2 終端部分
+	//　3 吹き出しの下側部分
+	
+	let _rect = 0;
+	
+	if( rev != 0 ){
+		_rect += 128;
+	}
+	
+	if( tex_change != 0 ){
+		_rect += 256;
+	}
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	Obj_SetRenderPriorityI(ID, 87 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjPrim_SetTexture(ID, front_tex[4] );
+	alternative( type )
+	case( 0 ){
+		ObjSprite2D_SetSourceRect(ID, 128, 0 + _rect, 256, 128 + _rect );
+	}
+	case( 1 ){
+		ObjSprite2D_SetSourceRect(ID, 256, 0 + _rect, 384, 128 + _rect );
+	}
+	case( 2 ){
+		ObjSprite2D_SetSourceRect(ID, 512, 0 + _rect, 640, 128 + _rect );
+	}
+	case( 3 ){
+		ObjSprite2D_SetSourceRect(ID, 768, 0 + _rect, 896, 128 + _rect );
+	}
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, sca, move1*sca, 0 );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( counter == number ){
+		counter = GetAreaCommonData("Talk", "counter", 0 );
+		yield;
+	}
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, sca, sca - move1*sca, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+task CreateBalloonEnemy( rev, pos, type, sca, number, tex_change ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　会話カウンター
+	let counter	= GetAreaCommonData("Talk", "counter", 0 );
+	
+	//　type
+	//　0 長い所部分
+	//　1 吹き出し部分
+	//　2 終端部分
+	//　3 吹き出しの下側部分
+	
+	let _rect = 0;
+	
+	if( rev != 0 ){
+		_rect += 128;
+	}
+	
+	if( tex_change != 0 ){
+		_rect += 256;
+	}
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	Obj_SetRenderPriorityI(ID, 87 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjPrim_SetTexture(ID, front_tex[11] );
+	alternative( type )
+	case( 0 ){
+		ObjSprite2D_SetSourceRect(ID, 256, 0 + _rect, 384, 128 + _rect );
+	}
+	case( 1 ){
+		ObjSprite2D_SetSourceRect(ID, 128, 0 + _rect, 256, 128 + _rect );
+	}
+	case( 2 ){
+		ObjSprite2D_SetSourceRect(ID, 512, 0 + _rect, 640, 128 + _rect );
+	}
+	case( 3 ){
+		ObjSprite2D_SetSourceRect(ID, 768, 0 + _rect, 896, 128 + _rect );
+	}
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, sca, move1*sca, 0 );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( counter == number ){
+		counter = GetAreaCommonData("Talk", "counter", 0 );
+		yield;
+	}
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, sca, sca - move1*sca, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　会話用キャラクターテクスチャ
+task CreateCharacterTexture( pos, fade, type, move, angleXYZ, sca, number, path, _rect ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd		= GetCurrentScriptDirectory();
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let rgb = 255;
+	
+	//　会話カウンター
+	let counter	= GetAreaCommonData("Talk", "counter", 0 );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(ID, 86 );
+	ObjPrim_SetTexture(ID, path );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetAngleXYZ(ID, angleXYZ[0], angleXYZ[1], angleXYZ[2] );
+	ObjRender_SetColor(ID, rgb, rgb, rgb );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, _rect, _rect );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		if( fade[0] ){
+			ObjRender_SetAlpha(ID, move1*255 );
+		}
+		else{
+			ObjRender_SetAlpha(ID, 255 );
+		}
+		
+		if( move ){
+			if( type == "front" ){
+				ObjRender_SetPosition(ID, pos[0] + move1*16, pos[1] - move1*16, 0 );
+				rgb = 128 + move1*128;
+				ObjRender_SetColor(ID, rgb, rgb, rgb );
+			}
+			else{
+				ObjRender_SetPosition(ID, pos[0] + 16 - move1*16, pos[1] - 16 + move1*16, 0 );
+				rgb = 255 - move1*128;
+				ObjRender_SetColor(ID, rgb, rgb, rgb );
+			}
+		}
+		else{
+			if( type == "front" ){
+				ObjRender_SetPosition(ID, pos[0] + 16, pos[1] - 16, 0 );
+				rgb = 255;
+				ObjRender_SetColor(ID, rgb, rgb, rgb );
+			}
+			else{
+				ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+				rgb = 128;
+				ObjRender_SetColor(ID, rgb, rgb, rgb );
+			}
+		}
+		
+		moveA += 10;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( counter == number ){
+		counter = GetAreaCommonData("Talk", "counter", 0 );
+		yield;
+	}
+	Obj_Delete(ID);
+}

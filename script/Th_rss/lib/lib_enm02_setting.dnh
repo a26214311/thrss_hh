@@ -1,0 +1,51 @@
+	
+	
+	//　stage2ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 48000000;
+	
+	//　中ボスオーラ色
+	let aura_rgb_C	= [
+		[ 128, 32, 32 ],
+		[ 32, 8, 32 ],
+	];
+	
+	//　ボスオーラ色
+	let aura_rgb	= [
+		[ 255, 192, 96 ],
+		[ 8, 8, 32 ],
+	];
+	
+	//　敵パワー集中エフェクト色　中ボス用
+	let power_rgb	= [255,128,192];
+	
+	//　敵パワー集中エフェクト色　ボス用
+	let power_rgb_C	= [255,64,32];
+	
+	//　敵のテクスチャ　中ボス
+	let enemy_tex_path_C	= [
+		csd ~ "./../../img/stg/stg2img/enm2a.png",
+		csd ~ "./../../img/stg/stg2img/enm2b.png",
+		csd ~ "./../../img/stg/stg2img/enm2c.png",
+	];
+	let enemy_cutin_path_C	= [
+		chara_tex[6],
+		chara_tex[7],
+		chara_tex[8],
+	];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg2img/enm2.png";
+	let enemy_cutin_path	= chara_tex[9];

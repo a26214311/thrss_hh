@@ -1,0 +1,153 @@
+
+
+//　大幽霊作成
+function CreateEnemy_Ghost( pos, color, sca ){
+	let ID = ObjEnemy_Create(OBJ_ENEMY);
+	
+	ObjMove_SetPosition(ID, pos[0], pos[1] );
+	ObjEnemy_SetLife(ID, 1000 );
+	ObjEnemy_SetDamageRate(ID, 0, 0 );
+	ObjEnemy_Regist(ID);
+	
+	CreateEnemy_Ghost_Texture(ID, color, sca );
+	
+	return ID;
+}
+
+
+//　大幽霊
+task CreateEnemy_Ghost_Texture( CallID, color, sca ){
+	let csd			= GetCurrentScriptDirectory();
+	let enx			= ObjMove_GetX(CallID);
+	let eny			= ObjMove_GetY(CallID);
+	let sca1		= 0;
+	let scaA		= 0;
+	let anim		= 0;
+	let px			= 0;
+	let py			= 0;
+	
+	ObjRender_SetPosition(CallID, enx, eny, 0 );
+	ObjPrim_SetTexture(CallID, csd ~ "./../other/ot_img/ghost01a.png" );
+	ObjRender_SetBlendType(CallID, BLEND_ALPHA );
+	Obj_SetRenderPriorityI(CallID, 41 );
+	ObjRender_SetAngleXYZ(CallID, 0, 0, rand(0,360) );
+	
+	py = SetGhostColor( color );
+	
+	while( !Obj_IsDeleted(CallID) ){
+		enx = ObjMove_GetX(CallID);
+		eny = ObjMove_GetY(CallID);
+		
+		sca1 = 1 * sin( scaA );
+		
+		//　追従描画
+		ObjRender_SetPosition(CallID, enx, eny, 0 );
+		
+		ObjRender_SetScaleXYZ(CallID, sca1*sca, sca1*sca, 0 );
+		ObjSprite2D_SetSourceRect(CallID, 0+32*px, 0+32*py, 32+32*px, 32+32*py );
+		ObjSprite2D_SetDestCenter(CallID);
+		
+		if( anim%4 == 0 ){
+			CreateEnemy_Ghost_Aura(CallID, color, py, sca );
+			px++;
+			if( px > 7 ){ px = 0; }
+		}
+		
+		anim++;
+		if( sca1 < 1 ){ scaA += 2; }
+		
+		yield;
+	}
+	//　画面内で死んでいれば、効果音とエフェクト
+	if( enx > MinX && enx < MaxX && eny > MinY && eny < MaxY){
+		//　座標と個数データを送付
+		let data = [ enx, eny, 16 ];
+		NotifyEventAll( EV_USER + 35, data );
+		ObjSound_Play( UtilitySE[7] );
+	}
+	Obj_Delete(CallID);
+}
+
+//　大幽霊用オーラ
+task CreateEnemy_Ghost_Aura( CallID, color, py, sca ){
+	let ID			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let csd			= GetCurrentScriptDirectory;
+	let enx			= ObjMove_GetX(CallID);
+	let eny			= ObjMove_GetY(CallID);
+	let sca1		= 0;
+	let scaA		= 0;
+	let anim		= 0;
+	let px			= 0;
+	let ang			= 270+rand(-16,16);
+	
+	ObjRender_SetPosition(ID, enx, eny, 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../other/ot_img/ghost01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, 41 );
+	ObjRender_SetAngleXYZ(ID, 0, 0, rand(0,360) );
+	
+	py = SetGhostColor( color );
+	
+	while( !Obj_IsDeleted(CallID) && sca1 < 1 ){
+		enx		= ObjMove_GetX( CallID );
+		eny		= ObjMove_GetY( CallID );
+		
+		sca1 = 1 * sin( scaA );
+		
+		ObjRender_SetPosition(ID, enx+(sca1*64)*cos(ang), eny+(sca1*64)*sin(ang), 0 );
+		
+		ObjRender_SetScaleXYZ(ID, sca - sca1*sca, sca - sca1*sca, 0 );
+		
+		ObjSprite2D_SetSourceRect(ID, 0+32*px, 0+32*py, 32+32*px, 32+32*py );
+		ObjSprite2D_SetDestCenter(ID);
+		
+		anim++;
+		if( anim%2 == 0 ){
+			px++;
+			if( px > 7 ){ px = 0; }
+		}
+		if( sca1 < 1 ){ scaA += 5; }
+		
+		yield;
+	}
+	Obj_Delete(ID);
+}
+
+//　色指定
+function SetGhostColor( color ){
+	alternative(color)
+	case("RED"){
+		return 0;
+	}
+	case("GREEN"){
+		return 1;
+	}
+	case("BLUE"){
+		return 2;
+	}
+	case("YELLOW"){
+		return 3;
+	}
+	case("PURPLE"){
+		return 4;
+	}
+	case("AQUA"){
+		return 5;
+	}
+	case("ORANGE"){
+		return 6;
+	}
+	case("WHITE"){
+		return 7;
+	}
+}
+
+//　2点間の距離を取得
+function GetDistance(pos1,pos2){
+	return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+}
+
+//　pos1 から見た pos2 への角度を取得
+function GetGapAngle( pos1, pos2 ){
+	return atan2( pos2[1]-pos1[1], pos2[0]-pos1[0] );
+}

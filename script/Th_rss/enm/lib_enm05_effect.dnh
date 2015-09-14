@@ -1,0 +1,656 @@
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　垂神 宝玉変身
+
+//　描画
+task ChangeJewel( CallID, scale_base, spin ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let count	= 0;
+	let spin1	= 0;
+	let spinA	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let r_count		= GetCommonData( "R_count", 0 );
+	let rgb_array	= [ 255, 255, 255 ];
+	
+	//　オブジェクト作成
+	ascent( let i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg5img/enm5eff_01a.png" );
+		Obj_SetRenderPriorityI(ID[i], 41 );
+		ObjRender_SetBlendType(ID[i], BLEND_ALPHA );
+		ObjSprite2D_SetSourceRect(ID[i], 256, 0, 512, 256 );
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ADD_ARGB );
+	
+	ObjRender_SetColor(ID[0], rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	ObjSprite2D_SetSourceRect(ID[2], 0, 0, 256, 256 );
+	
+	let alpha = [ 128, 128, 255 ];
+	let scale = [ (scale_base+0.1), (scale_base+0.06), scale_base ];
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) && r_count > 0 ){
+		gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		r_count	= GetCommonData( "R_count", 0 );
+		
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count * 32 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], spin1 );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		spin1 += spinA;
+		if( spinA < 16 ){ spinA += spin; }
+		if( move1 < 1 ){ moveA += 5; }
+		
+		//　敵透明化
+		SetAreaCommonData("anime", "alpha", 255 - move1*255 );
+		
+		yield;
+	}
+	
+	//　敵透明化解除
+	SetAreaCommonData("anime", "alpha", 255 );
+	
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count * 32 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], spin1 );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count++;
+		spin1 += spinA;
+		spinA += spin;
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　垂神 宝玉の使い魔
+
+//　使い魔本体
+function CreateEnemy_Jewel( char_color, scale, angle, spin ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, 800 );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Jewel_Update( obj, 800 );
+	CreateEnemy_Jewel_Render( obj, char_color, scale, angle, spin );
+	
+	return obj;
+}
+
+//　使い魔更新
+task CreateEnemy_Jewel_Update( CallID, MaxLife ){
+	let count = 0;
+	
+	//　敵ダメージレート 第2引数:ボムバリア
+//	SetDamageRate(CallID, 20, false );
+//	ShotScore(CallID);
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		let EnemyLife = ObjEnemy_GetInfo( CallID, INFO_LIFE );
+		ObjEnemy_SetDamageRate( CallID, 0, 0 );
+		//　生きてる時
+		if( EnemyLife > 0 ){
+//			SetIntersection( CallID, true, false );
+		}
+		
+		yield;
+	}
+	Obj_Delete( CallID );
+}
+
+//　使い魔描画
+task CreateEnemy_Jewel_Render( CallID, char_color, scale_base, angle, spin ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let rgb_array = [ 255, 255, 255 ];
+	
+	let _rect = [ 0, 0 ];
+	alternative( char_color )
+	case( "RED" ){
+		_rect[0]	= 0;
+		rgb_array	= [ 255, 64, 64 ];
+	}
+	case( "GREEN" ){
+		_rect[0]	= 1;
+		rgb_array	= [ 64, 255, 64 ];
+	}
+	case( "BLUE" ){
+		_rect[0]	= 2;
+		rgb_array	= [ 64, 64, 255 ];
+	}
+	case( "YELLOW" ){
+		_rect[0]	= 3;
+		rgb_array	= [ 255, 255, 64 ];
+	}
+	case( "PURPLE" ){
+		_rect[0]	= 0;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 64, 255 ];
+	}
+	case( "AQUA" ){
+		_rect[0]	= 1;
+		_rect[1]	= 1;
+		rgb_array	= [ 64, 255, 255 ];
+	}
+	case( "ORANGE" ){
+		_rect[0]	= 2;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 128, 64 ];
+	}
+	case( "WHITE" ){
+		_rect[0]	= 3;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 255, 255 ];
+	}
+	
+	//　オブジェクト作成
+	ascent( let i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg5img/maga.png" );
+		Obj_SetRenderPriorityI(ID[i], 41 );
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect(ID[0], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+	ObjSprite2D_SetSourceRect(ID[1], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+	ObjSprite2D_SetSourceRect(ID[2], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+	ascent( i in 0..( length(ID) ) ){
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetColor(ID[0], rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	let alpha = [ 128, 128, 255 ];
+	let scale = [ (scale_base+0.08), (scale_base+0.06), scale_base ];
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle + count );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count += spin;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle + count );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count += spin;
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　使い魔用波紋エフェクト
+task JewelEffect( ID, color, sca ){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, csd ~ "./../../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 51 );
+	ObjRender_SetBlendType(effect, BLEND_SUBTRACT );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}
+
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　敵の特殊弾とか...
+
+function CreateFistShot( pos, speed, angle, acc, max_speed, rgb_array, scale, type ){
+	let sht		= CreateShotA2( pos[0], pos[1], 0, angle, 0, 0, BGW_RED_01, 0 );
+	
+	ObjRender_SetAlpha( sht, 0 );
+	
+	CreateFistShot_Main( sht, pos, speed, angle, acc, max_speed, rgb_array, scale, type );
+	
+	return sht;
+}
+
+//　拳弾
+task CreateFistShot_Main( CallID, pos, speed, angle, acc, max_speed, rgb_array, scale, type ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　拳
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/gupan.png" );
+	Obj_SetRenderPriorityI(ID, 50 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	if( type == "RIGHT" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	}
+	else{
+		ObjSprite2D_SetSourceRect(ID, 0, 256, 256, 512 );
+	}
+	
+	//　出現
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) && move1 < 1 ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		if( count%4 == 0 ){
+			FistVision( ID, [32,255,255], scale, 128, type );
+		}
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, ObjMove_GetAngle(CallID) );
+		ObjRender_SetScaleXYZ(ID, move1*scale, move1*scale, 0 );
+		
+		count++;
+		moveA += 5;
+		
+		yield;
+	}
+	
+	//　スピード設定
+	ObjMove_SetSpeed( CallID, speed );
+	ObjMove_SetAcceleration( CallID, acc );
+	ObjMove_SetMaxSpeed( CallID, max_speed );
+	
+	//　メイン
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		if( count%4 == 0 ){
+			FistVision( ID, [32,255,255], scale, 128, type );
+		}
+		
+		ObjShot_SetIntersectionCircleA1( CallID, 70*scale );
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, ObjMove_GetAngle(CallID) );
+		
+		count++;
+		moveA += 10;
+		
+		yield;
+	}
+	
+	//　削除
+	move1 = 0;
+	moveA = 0;
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(ID, scale + move1*scale, scale + move1*scale, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		count++;
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete( CallID );
+	Obj_Delete( ID );
+}
+
+
+
+//　残像エフェクト　拳
+task FistVision( CallID, rgb_array, scale, alpha, type ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjRender_GetX(CallID), ObjRender_GetY(CallID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　拳
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/gupan.png" );
+	Obj_SetRenderPriorityI(ID, 49 );
+	ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+	ObjRender_SetAngleZ(ID, ObjRender_GetAngleZ(CallID) );
+	ObjRender_SetScaleXYZ(ID, scale, scale, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	if( type == "RIGHT" ){
+		ObjSprite2D_SetSourceRect(ID, 0, 0, 256, 256 );
+	}
+	else{
+		ObjSprite2D_SetSourceRect(ID, 0, 256, 256, 512 );
+	}
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　残像エフェクト　アンカー
+task AnchorVision( CallID, rgb_array, alpha ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjRender_GetX(CallID), ObjRender_GetY(CallID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	//　残像アンカー
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/anchor01a.png" );
+	Obj_SetRenderPriorityI(ID, 50 );
+	ObjRender_SetBlendType(ID, BLEND_SUBTRACT );
+	ObjRender_SetAngleZ(ID, ObjRender_GetAngleZ(CallID) );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 128, 0, 256, 128 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetAlpha(ID, alpha - move1*alpha );
+		
+		moveA += 5;
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　アンカー停止エフェクト
+task AnchorStopEffect( ID, color, sca ){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ObjRender_GetX(ID),ObjRender_GetY(ID)];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, csd ~ "./../../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 51 );
+	ObjRender_SetBlendType(effect, BLEND_SUBTRACT );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ObjRender_GetX(ID),ObjRender_GetY(ID)];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}
+
+//　魚弾
+task FishBullet( CallID, rgb_array, alpha ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../../img/stg/stg5img/fish_bullet.png" );
+	Obj_SetRenderPriorityI(ID, 50 );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	ObjSprite2D_SetSourceRect(ID, 0, 0, 64, 64 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, gpos[0], gpos[1], 0 );
+		ObjRender_SetAngleZ(ID, ObjMove_GetAngle(CallID) );
+		ObjRender_SetAlpha(ID, move1*alpha );
+		
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+//　重力ある感じで動く弾
+function CreateGravityShot( pos, speed, acceleration, maxspeed, shote, delay ){
+	let sht = CreateShotB2(
+		pos[0],
+		pos[1],
+		speed[0] * cos( speed[1] ),
+		speed[0] * sin( speed[1] ),
+		acceleration[0] * cos( acceleration[1] ),
+		acceleration[0] * sin( acceleration[1] ),
+		maxspeed[0] * cos( maxspeed[1] ),
+		maxspeed[0] * sin( maxspeed[1] ),
+		shote, delay
+	);
+	ObjSound_Play( CreateShotSE[1] );
+	NotifyEventAll( EV_USER + 40, [ sht, delay ] );
+	return sht;
+}
+
+//　泡
+task CreateBubble_2D( CallID, pos, movep, sca, alpha, long, rgb_array ){
+	//　エフェクトカット設定
+	if( GetAreaCommonData("Option", "Effect_Cut", 0 ) > 1 ){ return; }
+	
+	let ID			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let move		= [ 0, 0, 0 ];
+	let frame		= 0;
+	let move1		= 0;
+	let moveA		= 0;
+	let spin		= rand(0,360);
+	let flash		= rand(2,64);
+	let r_tex		= rand(0,99);
+	
+	//　点滅の速度
+	let rc			= truncate( rand(2,4) );
+	
+	ObjRender_SetPosition(ID, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(ID, csd ~ "./../../img/effect/bubble01a.png" );
+	ObjRender_SetBlendType(ID, BLEND_ADD_ARGB );
+	Obj_SetRenderPriorityI(ID, 50 );
+	ObjRender_SetScaleXYZ(ID, sca, sca, 0 );
+	ObjRender_SetColor(ID, rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	if( r_tex >= 0 && r_tex < 30 ){
+		ObjSprite2D_SetSourceRect(ID, 0, 0, 128, 128 );
+	}
+	else if( r_tex >= 0 && r_tex < 30 ){
+		ObjSprite2D_SetSourceRect(ID, 128, 0, 256, 128 );
+	}
+	else{
+		ObjSprite2D_SetSourceRect(ID, 0, 128, 128, 256 );
+	}
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, (move1*(alpha/2)) - (move1*(alpha/4))*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	while( !Obj_IsDeleted(CallID) && frame < long ){
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		ObjRender_SetAlpha(ID, alpha/2 - alpha/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		
+		yield;
+	}
+	while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, pos[0]+move[0], pos[1]+move[1], 0 );
+		ObjRender_SetAngleXYZ(ID, 0, 0, spin + move[2] );
+		
+		let fade = alpha - move1*alpha;
+		
+		ObjRender_SetAlpha(ID, fade/2 - fade/4*sin(frame*flash) );
+		ObjRender_SetScaleXYZ(ID, sca*2 + (sca/2)*cos(frame*32), sca*2 + (sca/1.6)*sin(frame*32), 0 );
+		
+		frame++;
+		moveA += 1;
+		move[0] = move[0] + movep[0];
+		move[1] = move[1] + movep[1];
+		
+		yield;
+	}
+	Obj_Delete( ID );
+}
+
+
+function GetDistance( pos1, pos2 ){
+	return ( (pos2[1]-pos1[1])^2 + (pos2[0]-pos1[0])^2 ) ^ 0.5;
+}
+
+//　画面震動
+task WorldShake_Single( long, shake ){
+	loop( long ){
+		if( Obj_IsDeleted(enm) ){ break; }
+		Set2DCameraFocusX( CenX + rand(-shake,shake) );
+		Set2DCameraFocusY( CenY + rand(-shake,shake) );
+		yield;
+	}
+	Set2DCameraFocusX( CenX );
+	Set2DCameraFocusY( CenY );
+}

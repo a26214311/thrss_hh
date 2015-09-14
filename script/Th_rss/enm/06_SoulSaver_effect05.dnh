@@ -1,0 +1,294 @@
+
+
+
+
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+//　垂神 宝玉の使い魔
+//--------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------
+
+//　使い魔本体
+function CreateEnemy_Jewel( char_color, scale, angle, spin ){
+	let obj = ObjEnemy_Create( OBJ_ENEMY );
+	
+	ObjEnemy_SetLife(obj, 800 );
+	ObjEnemy_SetDamageRate(obj, 0, 0 );
+	ObjEnemy_Regist( obj );
+	
+	CreateEnemy_Jewel_Update( obj, 800 );
+	CreateEnemy_Jewel_Render( obj, char_color, scale, angle, spin );
+	
+	return obj;
+}
+
+//　使い魔更新
+task CreateEnemy_Jewel_Update( CallID, MaxLife ){
+	let count = 0;
+	
+	//　敵ダメージレート 第2引数:ボムバリア
+	SetDamageRate(CallID, 20, false );
+	ShotScore(CallID);
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		let EnemyLife = ObjEnemy_GetInfo( CallID, INFO_LIFE );
+		
+		//　生きてる時
+		if( EnemyLife > 0 ){
+			SetIntersection( CallID, true, false );
+		}
+		
+		yield;
+	}
+	Obj_Delete( CallID );
+}
+
+//　使い魔描画
+task CreateEnemy_Jewel_Render( CallID, char_color, scale_base, angle, spin ){
+	let ID		= [
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+		ObjPrim_Create(OBJ_SPRITE_2D),
+	];
+	let gpos	= [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+	let count	= 0;
+	let move1	= 0;
+	let moveA	= 0;
+	
+	let rgb_array = [ 255, 255, 255 ];
+	
+	let _rect = [ 0, 0 ];
+	alternative( char_color )
+	case( "RED" ){
+		_rect[0]	= 0;
+		rgb_array	= [ 255, 64, 64 ];
+	}
+	case( "GREEN" ){
+		_rect[0]	= 1;
+		rgb_array	= [ 64, 255, 64 ];
+	}
+	case( "BLUE" ){
+		_rect[0]	= 2;
+		rgb_array	= [ 64, 64, 255 ];
+	}
+	case( "YELLOW" ){
+		_rect[0]	= 3;
+		rgb_array	= [ 255, 255, 64 ];
+	}
+	case( "PURPLE" ){
+		_rect[0]	= 0;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 64, 255 ];
+	}
+	case( "AQUA" ){
+		_rect[0]	= 1;
+		_rect[1]	= 1;
+		rgb_array	= [ 64, 255, 255 ];
+	}
+	case( "ORANGE" ){
+		_rect[0]	= 2;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 128, 64 ];
+	}
+	case( "WHITE" ){
+		_rect[0]	= 3;
+		_rect[1]	= 1;
+		rgb_array	= [ 255, 255, 255 ];
+	}
+	
+	//　オブジェクト作成
+	ascent( let i in 0..( length(ID) ) ){
+		ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+		ObjPrim_SetTexture(ID[i], csd ~ "./../../img/stg/stg5img/maga.png" );
+		Obj_SetRenderPriorityI(ID[i], 41 );
+	}
+	ObjRender_SetBlendType(ID[0], BLEND_ADD_ARGB );
+	ObjRender_SetBlendType(ID[1], BLEND_SUBTRACT );
+	ObjRender_SetBlendType(ID[2], BLEND_ALPHA );
+	ObjSprite2D_SetSourceRect(ID[0], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+	ObjSprite2D_SetSourceRect(ID[1], 0 + _rect[0]*256, 512 + _rect[1]*256, 256 + _rect[0]*256, 768 + _rect[1]*256 );
+	ObjSprite2D_SetSourceRect(ID[2], 0 + _rect[0]*256, 0 + _rect[1]*256, 256 + _rect[0]*256, 256 + _rect[1]*256 );
+	ascent( i in 0..( length(ID) ) ){
+		ObjSprite2D_SetDestCenter(ID[i]);
+	}
+	
+	ObjRender_SetColor(ID[0], rgb_array[0], rgb_array[1], rgb_array[2] );
+	
+	let alpha = [ 128, 128, 255 ];
+	let scale = [ (scale_base+0.08), (scale_base+0.06), scale_base ];
+	
+	while( !Obj_IsDeleted(enm) && !Obj_IsDeleted(CallID) ){
+		gpos = [ ObjMove_GetX(CallID), ObjMove_GetY(CallID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle + count );
+			ObjRender_SetScaleXYZ(ID[i], scale[i]*2 - move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count += spin;
+		if( move1 < 1 ){ moveA += 5; }
+		
+		yield;
+	}
+	while( move1 > 0 ){
+		move1 = 1 * sin( moveA );
+		
+		scale[1] = (scale_base+0.06) + 0.01 * sin( count/spin * 8 );
+		
+		ascent( i in 0..( length(ID) ) ){
+			ObjRender_SetPosition(ID[i], gpos[0], gpos[1], 0 );
+			ObjRender_SetAngleZ(ID[i], angle + count );
+			ObjRender_SetScaleXYZ(ID[i], move1*scale[i], scale[i]*2 - move1*scale[i], 0 );
+			ObjRender_SetAlpha(ID[i], move1*alpha[i] );
+		}
+		
+		ObjRender_SetPosition(ID[0], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		ObjRender_SetPosition(ID[1], gpos[0] + rand(-1,1), gpos[1] + rand(-1,1), 0 );
+		
+		count += spin;
+		moveA += 10;
+		
+		yield;
+	}
+	ascent( i in 0..( length(ID) ) ){
+		Obj_Delete( ID[i] );
+	}
+}
+
+//　使い魔用波紋エフェクト
+task JewelEffect( ID, color, sca ){
+	let effect	= ObjPrim_Create(OBJ_SPRITE_2D);
+	let gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjPrim_SetTexture(effect, csd ~ "./../../img/effect/enm_effect01.png" );
+	Obj_SetRenderPriorityI(effect, 51 );
+	ObjRender_SetBlendType(effect, BLEND_SUBTRACT );
+	ObjRender_SetColor(effect, color[0], color[1], color[2] );
+	ObjSprite2D_SetSourceRect(effect, 128, 256, 160, 288 );
+	ObjSprite2D_SetDestCenter(effect);
+	
+	while( !Obj_IsDeleted(ID) && move1 < 1 ){
+		gpos	= [ ObjMove_GetX(ID), ObjMove_GetY(ID) ];
+		
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(effect, gpos[0], gpos[1], 0 );
+		ObjRender_SetScaleXYZ(effect, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(effect, 255 - move1*255 );
+		
+		moveA += 2;
+		
+		yield;
+	}
+	Obj_Delete(effect);
+}
+
+//　満ち引き弾
+task CreateShot_MoveEdd( pos, dist, angle, shote, delay, seidx ){
+	let spos = [
+		pos[0] + dist * cos( angle ),
+		pos[1] + dist * sin( angle ),
+	];
+	let sht		= CreateShot01( spos, 0, angle, 0, 0, shote, delay );
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjShot_SetAutoDelete( sht, false );
+	ObjShot_SetSpellResist( sht, true );
+	
+	loop( delay ){
+		if( Obj_IsDeleted(enm05) ){ break; }
+		yield;
+	}
+	
+	while( !Obj_IsDeleted(enm05) ){
+		
+		move1 = 1 * sin( moveA / 2 );
+		
+		spos = [
+			pos[0] + ( dist + move1*(dist/3) ) * cos( angle ),
+			pos[1] + ( dist + move1*(dist/2) ) * sin( angle ),
+		];
+		ObjMove_SetPosition( sht, spos[0], spos[1] );
+		
+		moveA++;
+		angle += move1 / 4;
+		
+		yield;
+	}
+	ChargeEffect( sht, CenX, CenY-96, 1, 160+round(dist/4), seidx );
+	//　削除エフェクトだけ出るようにする
+	Obj_SetValue( sht, "Item_Off", true );
+	//　アイテムとして削除
+	ObjShot_ToItem( sht );
+
+	task ChargeEffect( objE, x, y, way, time, col){
+		let shote		= [
+			ADD_BGW_RED_22,
+			ADD_BGW_ORANGE_22,
+			ADD_BGW_YELLOW_22,
+			ADD_BGW_GREEN_22,
+			ADD_BGW_AQUA_22,
+			ADD_BGW_BLUE_22,
+			ADD_BGW_PURPLE_22,
+		];
+		let angleX = rand(0, 360);
+		let angleY = rand(0, 360);
+		let angleZ = rand(0, 360);
+		let rMax = rand(120, 200);
+		let X = ObjMove_GetX(objE);
+		let Y = ObjMove_GetY(objE);
+		ascent(i in 0 .. way){
+			Effect(angleX, angleY, angleZ+360*i/way, rMax, time);
+		}
+		
+		ascent(i in 0 .. time-10){
+			X += (x-X)*0.1*(1-cos(90*i/(time-10)));
+			Y += (y-Y)*0.1*(1-cos(90*i/(time-10)));
+			yield;
+		}
+		ascent(i in 1 .. 11){
+			X += (x-X)*(1-cos(90*i/10));
+			Y += (y-Y)*(1-cos(90*i/10));
+			yield;
+		}
+		
+		task Effect(angleX, angleY, angleZ, r, time){
+			let obj = CreateShotA1(0, 0, 0, 0, shote[col], 0);
+			ObjRender_SetAlpha(obj, 64);
+			ObjShot_SetSpellResist(obj, true);
+			ObjShot_SetIntersectionEnable(obj, false);
+			ascent(i in 0 .. time){
+				let x = cos(angleY)*cos(angleZ) -cos(angleX)*sin(angleY)*sin(angleZ);
+				let y = sin(angleY)*cos(angleZ) +cos(angleX)*cos(angleY)*sin(angleZ);
+				let scale = 0.25 + 0.75 * sin(180*i/time);
+				let r = rMax*scale;
+				ObjRender_SetScaleXYZ(obj, scale, scale, 0.5);
+				ObjMove_SetPosition(obj, X+r*x, Y+r*y);
+				ObjShot_SetGraphic(obj, shote[col] );
+				angleZ += 5*(time-i)/time;
+				AI(X+r*x, Y+r*y, scale, 10, i/time);
+				if( i > time/2 ){ col = 0; }
+				yield;
+			}
+			Obj_Delete(obj);
+			
+			task AI(x, y, scale, AItime, cRate){
+				let obj = CreateShotA1(x, y, 0, 0, shote[col], AItime );
+				ObjShot_SetSpellResist(obj, true);
+				ObjShot_SetDeleteFrame(obj, 0);
+			}
+		}
+	}
+}

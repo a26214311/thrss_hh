@@ -1,0 +1,126 @@
+
+#include"./lib_ED_PL01.dnh"
+#include"./lib_ED_PL02.dnh"
+#include"./lib_ED_PL03.dnh"
+#include"./lib_StaffRoll.dnh"
+#include"./lib_StaffRoll_BG.dnh"
+
+let csd = GetCurrentScriptDirectory();
+
+task BeginEnding(){
+	//　自機選別、ノーコンならグッド
+	alternative( GetPlayerID() )
+	case( "SRR_PL01A", "SRR_PL01B", "SRR_PL01C" ){
+		if( !GetAreaCommonData("System","Continue",false) ){
+			PL01_GoodED();
+		}
+		else{
+			PL01_BadED();
+		}
+	}
+	case( "SRR_PL02A", "SRR_PL02B", "SRR_PL02C" ){
+		if( !GetAreaCommonData("System","Continue",false) ){
+			PL02_GoodED();
+		}
+		else{
+			PL02_BadED();
+		}
+	}
+	case( "SRR_PL03A", "SRR_PL03B", "SRR_PL03C" ){
+		if( !GetAreaCommonData("System","Continue",false) ){
+			PL03_GoodED();
+		}
+		else{
+			PL03_BadED();
+		}
+	}
+	DeleteMusic();
+	PlayMusic( 13, true, 0 );
+	while( GetAreaCommonData( "talk_ED", "flg", false ) ){
+		yield;
+	}
+	//　スタッフロール　勝手にフェードとかするよ
+	FadeOut_rollin();
+}
+
+//　画像パス
+task ED_BackGround( path, no, lay, IN, OUT ){
+	let id			= ObjPrim_Create(OBJ_SPRITE_2D);
+	let cc			= GetAreaCommonData("talk_ED","counter",0);
+	let pos			= [320,240];
+	let alpha1		= 0;
+	let alphaA		= 0;
+	
+	ObjRender_SetPosition(id, pos[0], pos[1], 0 );
+	ObjPrim_SetTexture(id, path );
+	Obj_SetRenderPriorityI(id, lay );
+	ObjRender_SetBlendType(id, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(id, 0, 0, 0) ;
+	ObjRender_SetScaleXYZ(id, 1, 1, 0 );
+	ObjSprite2D_SetSourceRect(id, 0, 0, 640, 480 );
+	ObjSprite2D_SetDestCenter(id);
+	
+	while( alpha1 < 1 && IN == "ON" ){
+		alphaA += 5;
+		alpha1 = 1 * sin(alphaA);
+		ObjRender_SetColor(id, alpha1*255, alpha1*255, alpha1*255 );
+		
+		yield;
+	}
+	alpha1 = 0;
+	alphaA = 0;
+	while( cc == no ){
+		cc = GetAreaCommonData("talk_ED","counter",0);
+		yield;
+	}
+	while( alpha1 < 1 && OUT == "ON" ){
+		alphaA += 5;
+		alpha1 = 1 * sin(alphaA);
+		ObjRender_SetColor(id, 255-alpha1*255, 255-alpha1*255, 255-alpha1*255 );
+		
+		yield;
+	}
+	Obj_Delete(id);
+}
+
+//　表示する位置X
+//　表示する位置Y
+//　表示する文字列char型
+//　与えるナンバー（現在の会話用共通データと一致しなければ云々）
+//　文字サイズ
+task ED_Text( x, y, char_moji, no, size, lay, IN ,color ){
+	let text	= ObjText_Create;
+	let cc		= GetAreaCommonData("talk_ED","counter",0);
+	let sca1	= 0;
+	let scaA	= 0;
+	
+	ObjRender_SetPosition(text, x, y, 0 );
+	Obj_SetRenderPriorityI(text, lay );
+	ObjText_SetText(text, char_moji );
+	ObjText_SetFontType(text, "simhei" );
+	ObjText_SetFontSize(text, size );
+	ObjText_SetHorizontalAlignment(text, ALIGNMENT_LEFT );
+	ObjText_SetMaxWidth(text, 1024 );
+	ObjText_SetFontColorTop(text, color[0], color[1], color[2] );
+	ObjText_SetFontColorBottom(text, color[0], color[1], color[2] );
+	
+	ObjText_SetFontBold(text, true );
+	
+	while( sca1 < 1 && IN == "ON" ){
+		cc = GetAreaCommonData("talk_ED","counter",0);
+		
+		scaA += 10;
+		sca1 = 1 * sin( scaA );
+		ObjRender_SetScaleXYZ(text, 1, sca1, 0 );
+		ObjRender_SetAlpha(text, sca1*255 );
+		
+		if( cc != no ){ break; }
+		
+		yield;
+	}
+	while( cc == no ){
+		cc = GetAreaCommonData("talk_ED","counter",0);
+		yield;
+	}
+	Obj_Delete(text);
+}

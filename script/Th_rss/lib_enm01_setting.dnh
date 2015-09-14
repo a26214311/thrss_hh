@@ -1,0 +1,32 @@
+	
+	
+	//　stage1ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 21000000;
+	
+	//　敵オーラ色
+	let aura_rgb	= [
+		[ 96, 64, 255 ],
+		[ 8, 32, 8 ],
+	];
+	
+	//　敵パワー集中エフェクト色
+	let power_rgb	= [128,32,255];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg1img/enm1.png";
+	let enemy_cutin_path	= chara_tex[0];
+
+	

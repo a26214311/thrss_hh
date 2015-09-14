@@ -1,0 +1,50 @@
+
+
+//　弾幕氷結
+task IceEffect( CallID, ObjID, sca ){
+	let ID		= ObjPrim_Create(OBJ_SPRITE_2D);
+	let _rect	= [ truncate(rand(0,2)), truncate(rand(0,2)) ];
+	let move1	= 0;
+	let moveA	= 0;
+	
+	ObjSound_Play( CreateShotSE[12] );
+	
+	ObjRender_SetPosition(ID, ObjMove_GetX(ObjID), ObjMove_GetY(ObjID), 0 );
+	ObjPrim_SetTexture(ID, GetCurrentScriptDirectory() ~ "./../../img/stg/stg3img/ice_shot.png" );
+	Obj_SetRenderPriorityI(ID, 51 );
+	ObjRender_SetBlendType(ID, BLEND_ALPHA );
+	ObjRender_SetAngleXYZ(ID, 0, 0, rand(0,360) );
+	ObjSprite2D_SetSourceRect(ID, 0 + _rect[0]*64, 0 + _rect[1]*64, 64 + _rect[0]*64, 64 + _rect[1]*64 );
+	ObjSprite2D_SetDestCenter(ID);
+	
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ObjID) && move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetPosition(ID, ObjMove_GetX(ObjID), ObjMove_GetY(ObjID), 0 );
+		ObjRender_SetScaleXYZ(ID, move1*sca, move1*sca, 0 );
+		ObjRender_SetAlpha(ID, move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	move1 = 0;
+	moveA = 0;
+	//　削除待機
+	while( !Obj_IsDeleted(CallID) && !Obj_IsDeleted(ObjID) ){
+		ObjRender_SetPosition(ID, ObjMove_GetX(ObjID), ObjMove_GetY(ObjID), 0 );
+		yield;
+	}
+	//　削除処理
+	while( !Obj_IsDeleted(CallID) && move1 < 1 ){
+		move1 = 1 * sin( moveA );
+		
+		ObjRender_SetScaleXYZ(ID, sca + move1*sca, sca + move1*sca, 0 );
+		ObjRender_SetAlpha(ID, 255 - move1*255 );
+		
+		moveA += 10;
+		
+		yield;
+	}
+	Obj_Delete( ID )
+}

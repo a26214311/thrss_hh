@@ -1,0 +1,38 @@
+	
+	
+	//　stage5ボスの設定、パス等
+	
+	//　カレントディレクトリ
+	let csd			= GetCurrentScriptDirectory();
+	
+	//　座標取得
+	let MinX		= 0;
+	let MinY		= 0;
+	let MaxX		= GetStgFrameWidth();
+	let MaxY		= GetStgFrameHeight();
+	let CenX		= GetStgFrameWidth()/2;
+	let CenY		= GetStgFrameHeight()/2;
+	
+	//　スペルカードボーナス
+	let SET_SCORE	= 300000000;
+	
+	//　ボスオーラ色
+	let aura_rgb	= [
+		[ 255, 128, 64 ],
+		[ 8, 16, 32 ],
+	];
+	let C_aura_rgb	= [
+		[ 255, 255, 64 ],
+		[ 32, 32, 8 ],
+	];
+	
+	//　敵パワー集中エフェクト色　ボス用
+	let power_rgb	= [ 255, 128, 32 ];
+	
+	//　敵のテクスチャ
+	let enemy_tex_path00	= csd ~ "./../../img/stg/stg5img/00_enm05.png";
+	let enemy_tex_path		= csd ~ "./../../img/stg/stg5img/enm05a.png";
+	let enemy_tex_path2		= csd ~ "./../../img/stg/stg5img/enm05b.png";
+	let enemy_cutin_path	= chara_tex[ 30 ];
+	let enemy_cutin_path2	= chara_tex[ 31 ];
+	
