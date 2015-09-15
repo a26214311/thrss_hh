@@ -8,13 +8,13 @@ QED「式神的密室杀人」
 六壬「阴阳结界八方塞」
 二式「最上级的奇术」
 「深渊弹幕结界 -星命之宫-」
-「Border of Rainbow」（虹的境界）
+「Border of Rainbow」
 冻风「交错暴风雪」
 「幻想琉璃城」
 四式「不动金缚返还之法」
 一式「潜行的混沌之蛇」
 二十一面相「无脸的黑色怪神」
-冰壁「Freezonable Charger」（可冻猛攻者）
+冰壁「Freezonable Charger」
 冰盾「伊基尔斯之角」
 冰盾「埃癸斯之壁」
 冰盾「埃癸斯之壁」
@@ -75,8 +75,8 @@ QED「式神的密室杀人」
 菊符「菊翼之阵」
 菊符「菊翼之阵」
 讨鬼「菅原式缩地法」
-转移「Illusion Drive」（幻象加速）
-转移「Illusion Drive」（幻象加速）
+转移「Illusion Drive」
+转移「Illusion Drive」
 松符「空行松」
 松符「云来松风来松」
 松符「云来松风来松」
@@ -88,8 +88,8 @@ QED「式神的密室杀人」
 神鼓「堀川雷鼓」
 弩符「三支的雷矢」
 符心「天满宫弓始神事的练习」
-逆矢「Reverse Rising Arrow」（逆转升龙箭）
-逆矢「Reverse Rising Arrow」（逆转升龙箭）
+逆矢「Reverse Rising Arrow」
+逆矢「Reverse Rising Arrow」
 樱符「有孔樱花结界」
 樱符「樱天门之变」
 樱符「樱天门之变」
@@ -103,7 +103,7 @@ QED「式神的密室杀人」
 六剑「庆祝桃姬解放之筷」
 十拳剑「恨剑·天羽羽斩」
 十拳剑「恨剑·天羽羽斩」
-炎风「Super-rotation」（特快自转）
+炎风「Super-rotation」
 八龙「天崩地裂之火」
 八龙「天崩地裂之火」
 艰难「你在米吉多之丘的呼唤」
@@ -151,10 +151,10 @@ _(:3 」∠ )_
 埴轮「加古金灵摆」
 埴轮「鬼道战士-自由」
 埴轮「鬼道战士-自由」
-魔镜「Killing Mirage Mirror」（杀人幻象镜）
-神镜「Masquereidoscope」（假面万花筒）
-神镜「Masquereidoscope」（假面万花筒）
-神镜「Masquereidoscope」（假面万花筒）
+魔镜「Killing Mirage Mirror」
+神镜「Masquereidoscope」
+神镜「Masquereidoscope」
+神镜「Masquereidoscope」
 山幸「千量钩锚」
 怒符「愤怒之锚」
 海幸「可喜可鲷辉亮钩锚」
