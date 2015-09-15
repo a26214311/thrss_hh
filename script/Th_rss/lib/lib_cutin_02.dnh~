@@ -17,7 +17,7 @@ task CutinSP2(ID,char_sn,getspell,playspell,BOOL_SPELLCARDATTACK_DISPLAY){
 	ObjText_SetText(cid1, char_sn );
 	Obj_SetRenderPriorityI(cid1, 80 );
 	ObjText_SetFontType(cid1, "simhei" );
-	ObjText_SetFontSize(cid1, 17 );
+	ObjText_SetFontSize(cid1, 16 );
 	ObjText_SetHorizontalAlignment(cid1, ALIGNMENT_RIGHT );
 	ObjText_SetMaxWidth(cid1, 512 );
 	ObjText_SetFontBold(cid1, false );
