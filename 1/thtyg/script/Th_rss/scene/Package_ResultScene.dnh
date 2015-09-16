@@ -293,9 +293,9 @@ task ResultMain{
 				//　更新時の装備表示
 				let wepon_text;
 				alternative( TypeData[i] )
-				case( 0 ){ wepon_text = "壹"; }
-				case( 1 ){ wepon_text = "贰"; }
-				case( 2 ){ wepon_text = "叁"; }
+				case( 0 ){ wepon_text = "一"; }
+				case( 1 ){ wepon_text = "二"; }
+				case( 2 ){ wepon_text = "三"; }
 				others{ wepon_text = ""; }
 				DrawText( [320,y+(i+1)*32], [255-i*32,255-i*32,255], type, wepon_text, 16, "Highlight LET Plain:1.0", ALIGNMENT_CENTER );
 				
@@ -683,7 +683,7 @@ function DataLoad( type, stc ){
 			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 			TypeData	= GetAreaCommonData("Score","TypeData_pl01_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
 		}
-		text = "博麗 霊夢";
+		text = "博丽灵梦";
 	}
 	case( 1 ){
 		//　金かわ
@@ -744,7 +744,7 @@ function DataLoad( type, stc ){
 			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 			TypeData	= GetAreaCommonData("Score","TypeData_pl02_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
 		}
-		text = "霧雨 魔理沙";
+		text = "雾雨魔理沙沙";
 	}
 	case( 2 ){
 		//　布都
@@ -805,7 +805,7 @@ function DataLoad( type, stc ){
 			HiddenData	= [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
 			TypeData	= GetAreaCommonData("Score","TypeData_pl03_overdrive",[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]);
 		}
-		text = "物部 布都";
+		text = "物部布都";
 	}
 	return text;
 }
