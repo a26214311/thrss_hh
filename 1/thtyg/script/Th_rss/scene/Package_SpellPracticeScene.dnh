@@ -605,7 +605,7 @@ task TSpellSelectSpellScene(type){
 						//　プレイ回数 1 以上ならスペカ名を表示
 						DrawText2( [128,365], [255,255,255], 0, snh[ array_num ], 26, "メイリオ" );
 						if( ( type == 9 && array_num == 10 ) && !IsClearOverDrive ){
-							DrawText2( [44,402], [255,255,255], 0, "***この文章はオーバードライブモードクリア時に公開されます***", 14, "simhei" );
+							DrawText2( [44,402], [255,255,255], 0, "***这篇补足当通关Overdrive Mode时才能看到***", 14, "simhei" );
 						}else{
 							DrawText2( [44,402], [255,255,255], 0, sch[ array_num ], 14, "ＭＳ ゴシック" );
 						}
