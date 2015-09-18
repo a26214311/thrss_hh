@@ -24,8 +24,8 @@ task CreateBalloonManager( pos, long, char_text, number, tex_change ){
 	
 	if( char_text[1] != "NULL" ){
 		//　表示文字列に2行目があるとき
-		CreateBalloonText( [ pos[0]-20, pos[1]+(30*sca) ], char_text[0], number );
-		CreateBalloonText( [ pos[0]-20, pos[1]+(70*sca) ], char_text[1], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(25*sca) ], char_text[0], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(75*sca) ], char_text[1], number );
 	}
 	else{
 		//　表示文字列が1行目だけのとき
@@ -53,8 +53,8 @@ task CreateBalloonManager_Reverse( pos, long, char_text, number, tex_change ){
 	
 	if( char_text[1] != "NULL" ){
 		//　表示文字列に2行目があるとき
-		CreateBalloonText( [ pos[0]-20, pos[1]+(30*sca) ], char_text[0], number );
-		CreateBalloonText( [ pos[0]-20, pos[1]+(70*sca) ], char_text[1], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(25*sca) ], char_text[0], number );
+		CreateBalloonText( [ pos[0]-20, pos[1]+(75*sca) ], char_text[1], number );
 	}
 	else{
 		//　表示文字列が1行目だけのとき
